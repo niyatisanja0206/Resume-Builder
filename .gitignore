@@ -4,4 +4,4 @@ my-portfolio-cms/node_modules/
 
 # Ignore environment files
 backend/.env
-my-portfolio-cms/.env
+
