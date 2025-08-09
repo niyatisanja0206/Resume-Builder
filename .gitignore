@@ -1,5 +1,7 @@
-# Ignore node_modules folders
-**/node_modules/
+# Ignore node_modules for both projects
+backend/node_modules/
+my-portfolio-cms/node_modules/
 
-# Ignore .env files
-.env
+# Ignore environment files
+backend/.env
+my-portfolio-cms/.env
