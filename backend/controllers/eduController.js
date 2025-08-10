@@ -76,3 +76,47 @@ exports.deleteEducation = async (req, res) => {
         res.status(500).json({ message: 'Server error', error: error.message });
     }
 };
+
+exports.deleteAllEducation = async (req, res) => {
+    try {
+        const { email } = req.query;
+
+        if (!email) {
+            return res.status(400).json({ message: 'Email is required as a query parameter.' });
+        }
+
+        const updated = await User.findOneAndUpdate(
+            { "basic.email": email },
+            { $set: { education: [] } },
+            { new: true }
+        );
+
+        if (!updated) return res.status(404).json({ message: 'User not found' });
+
+        res.status(200).json({ message: 'All education entries deleted successfully' });
+    } catch (error) {
+        res.status(500).json({ message: 'Server error', error: error.message });
+    }
+};
+
+exports.updateEducation = async (req, res) => {
+    try {
+        const { email, id, education } = req.body;
+
+        if (!email || !id || !education) {
+            return res.status(400).json({ message: 'Email, Education ID, and Education data are required' });
+        }
+
+        const updated = await User.findOneAndUpdate(
+            { "basic.email": email, "education._id": id },
+            { $set: { "education.$": education } },
+            { new: true, runValidators: true }
+        );
+
+        if (!updated) return res.status(404).json({ message: 'User or Education not found' });
+
+        res.status(200).json({ message: 'Education updated successfully', data: updated.education });
+    } catch (error) {
+        res.status(500).json({ message: 'Server error', error: error.message });
+    }
+};

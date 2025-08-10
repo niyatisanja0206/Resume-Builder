@@ -6,5 +6,7 @@ const eduController = require('../controllers/eduController');
 router.get('/get', eduController.getEducation); 
 router.post('/post', eduController.addEducation);
 router.delete('/delete', eduController.deleteEducation);
+router.delete('/deleteAll', eduController.deleteAllEducation);
+router.put('/update', eduController.updateEducation);
 
 module.exports = router;

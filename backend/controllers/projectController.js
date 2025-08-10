@@ -59,3 +59,45 @@ exports.deleteProject = async (req, res) => {
     res.status(500).json({ message: 'Server error', error: error.message });
   }
 };
+
+exports.updateProject = async (req, res) => {
+  try {
+    const { email, id, project } = req.body;
+    if (!email || !id || !project) {
+      return res.status(400).json({ message: 'Email, Project ID, and Project data are required' });
+    }
+
+    const updated = await User.findOneAndUpdate(
+      { "basic.email": email, "projects._id": id },
+      { $set: { "projects.$": project } },
+      { new: true, runValidators: true }
+    );
+
+    if (!updated) return res.status(404).json({ message: 'User or Project not found' });
+
+    res.status(200).json({ message: 'Project updated successfully', data: updated.projects });
+  } catch (error) {
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+};
+
+exports.deleteAllProjects = async (req, res) => {
+  try {
+    const { email } = req.query;
+    if (!email) {
+      return res.status(400).json({ message: 'Email is required as a query parameter.' });
+    }
+
+    const updated = await User.findOneAndUpdate(
+      { "basic.email": email },
+      { $set: { projects: [] } },
+      { new: true }
+    );
+
+    if (!updated) return res.status(404).json({ message: 'User not found' });
+
+    res.status(200).json({ message: 'All projects deleted successfully' });
+  } catch (error) {
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+};

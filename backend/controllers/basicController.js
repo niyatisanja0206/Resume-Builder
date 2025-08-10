@@ -68,3 +68,25 @@ exports.deleteBasic = async (req, res) => {
         res.status(500).json({ message: 'Server error', error: error.message });
     }
 };
+
+exports.updateBasic = async (req, res) => {
+    try {
+        const { email, basicInfo } = req.body;
+
+        if (!email || !basicInfo) {
+            return res.status(400).json({ message: 'Email and Basic Information are required' });
+        }
+
+        const updated = await User.findOneAndUpdate(
+            { "basic.email": email },
+            { $set: { basic: basicInfo } },
+            { new: true, runValidators: true }
+        );
+
+        if (!updated) return res.status(404).json({ message: 'User not found' });
+
+        res.status(200).json({ message: 'Basic information updated successfully', data: updated.basic });
+    } catch (error) {
+        res.status(500).json({ message: 'Server error', error: error.message });
+    }
+};

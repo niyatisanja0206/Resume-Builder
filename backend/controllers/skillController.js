@@ -65,3 +65,51 @@ exports.deleteSkill = async (req, res) => {
         res.status(500).json({ message: 'Server error', error: error.message });
     }
 };
+
+exports.deleteAllSkills = async (req, res) => {
+    try {
+        const { email } = req.query;
+
+        if (!email) {
+            return res.status(400).json({ message: 'Email is required as a query parameter.' });
+        }
+
+        const updatedUser = await User.findOneAndUpdate(
+            { "basic.email": email },
+            { $set: { skills: [] } },
+            { new: true }
+        );
+
+        if (!updatedUser) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        res.status(200).json({ message: 'All skills deleted successfully' });
+    } catch (error) {
+        res.status(500).json({ message: 'Server error', error: error.message });
+    }
+};
+
+exports.updateSkill = async (req, res) => {
+    try {
+        const { email, id, skill } = req.body;
+
+        if (!email || !id || !skill) {
+            return res.status(400).json({ message: 'Email, skill ID, and skill data are required.' });
+        }
+
+        const updatedUser = await User.findOneAndUpdate(
+            { "basic.email": email, "skills._id": id },
+            { $set: { "skills.$": skill } },
+            { new: true, runValidators: true }
+        );
+
+        if (!updatedUser) {
+            return res.status(404).json({ message: 'User or skill not found' });
+        }
+
+        res.status(200).json({ message: 'Skill updated successfully', data: updatedUser.skills });
+    } catch (error) {
+        res.status(500).json({ message: 'Server error', error: error.message });
+    }
+};
