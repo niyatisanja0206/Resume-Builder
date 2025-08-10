@@ -18,9 +18,6 @@ exports.getSkills = async (req, res) => {
     }
 };
 
-// @desc    Add a new skill for a user
-// @route   POST /api/skill
-// @access  Public
 exports.addSkill = async (req, res) => {
     try {
         const { email, skill } = req.body;
@@ -45,9 +42,6 @@ exports.addSkill = async (req, res) => {
     }
 };
 
-// @desc    Delete a specific skill for a user
-// @route   DELETE /api/skill?email=...&id=...
-// @access  Public
 exports.deleteSkill = async (req, res) => {
     try {
         const { email, id } = req.query;
