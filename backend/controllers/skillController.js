@@ -1,8 +1,5 @@
-const User = require('../models/users');
+const User = require('../models/users'); // Correct: Imported as 'User'
 
-// @desc    Get all skills for a specific user
-// @route   GET /api/skill?email=...
-// @access  Public
 exports.getSkills = async (req, res) => {
     try {
         const { email } = req.query;
@@ -32,7 +29,7 @@ exports.addSkill = async (req, res) => {
             return res.status(400).json({ message: 'Email and skill data are required.' });
         }
 
-        const updatedUser = await User.findOneAndUpdate(
+        const updatedUser = await User.findOneAndUpdate( // Correct: Use 'User'
             { "basic.email": email },
             { $push: { skills: skill } },
             { new: true, runValidators: true }
@@ -59,7 +56,7 @@ exports.deleteSkill = async (req, res) => {
             return res.status(400).json({ message: 'Email and skill ID are required.' });
         }
 
-        const updatedUser = await User.findOneAndUpdate(
+        const updatedUser = await User.findOneAndUpdate( // Correct: Use 'User'
             { "basic.email": email },
             { $pull: { skills: { _id: id } } },
             { new: true }

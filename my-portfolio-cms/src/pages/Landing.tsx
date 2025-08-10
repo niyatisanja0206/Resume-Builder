@@ -313,11 +313,11 @@ const LandingPage: React.FC = () => {
             Join thousands of professionals who have successfully landed their dream jobs
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button size="lg" className="bg-white dark:bg-gray-800 text-blue-600 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700">
+            <Button size="lg" className="bg-black dark:bg-gray-800 text-blue-600 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700">
               <Zap className="w-5 h-5 mr-2" />
               Get Started Free
             </Button>
-            <Button size="lg" variant="outline" className="border-white text-white dark:text-white hover:bg-white dark:hover:bg-gray-800 hover:text-blue-600 dark:hover:text-white">
+            <Button size="lg" className="bg-black dark:bg-gray-800 text-blue-600 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700">
               <Eye className="w-5 h-5 mr-2" />
               Preview Portfolio
             </Button>

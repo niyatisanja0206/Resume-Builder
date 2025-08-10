@@ -8,9 +8,10 @@ const userSchema = new mongoose.Schema({
         location: String,
         about: String
     },
-    skills: {
-        type: [String],
-    },
+    skills: [{
+        name: String,
+        level: String
+    }],
     education: [{
         degree: String,
         institution: String,
