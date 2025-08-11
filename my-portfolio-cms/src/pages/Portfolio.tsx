@@ -1,24 +1,23 @@
 import { useRef } from "react";
 import PortfolioPreview from "@/components/PortfolioPreview";
 import ResumePDF from "@/components/ResumePDF";
-import { type Basic, type Project, type Experience, type Skill, type Education } from "@/types/portfolio";
+import { useBasic } from "@/hooks/useBasic";
+import { useProject } from "@/hooks/useProject";
+import { useExperience } from "@/hooks/useExperience";
+import { useSkill } from "@/hooks/useSkills";
+import { useEducation } from "@/hooks/useEducation";
 
-type PortfolioProps = {
-  basicInfo?: Basic;
-  projects: Project[];
-  experiences: Experience[];
-  skills: Skill[];
-  education?: Education[];
-};
-
-export default function Portfolio({
-  basicInfo,
-  projects,
-  experiences,
-  skills,
-  education,
-}: PortfolioProps) {
+export default function Portfolio() {
   const resumeRef = useRef<HTMLDivElement>(null);
+  
+  // Fetch data using hooks
+  const { basic } = useBasic();
+  const userEmail = basic?.email || '';
+  
+  const { projects } = useProject(userEmail);
+  const { experiences } = useExperience(userEmail);
+  const { skills } = useSkill(userEmail);
+  const { education } = useEducation(userEmail);
 
   return (
     <>
@@ -27,11 +26,11 @@ export default function Portfolio({
         <div className="container max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">
           <div ref={resumeRef} className="w-full">
             <PortfolioPreview
-              basicInfo={basicInfo}
-              projects={projects}
-              experiences={experiences}
-              skills={skills}
-              education={education}
+              basicInfo={basic || undefined}
+              projects={projects || []}
+              experiences={experiences || []}
+              skills={skills || []}
+              education={education || []}
             />
           </div>
         </div>
@@ -60,7 +59,9 @@ export default function Portfolio({
             <p className="text-muted-foreground mb-4 text-sm">
               Generate and download your portfolio as a PDF document
             </p>
-            <ResumePDF targetRef={resumeRef} />
+                      <div className="container max-w-4xl mx-auto text-center">
+            <ResumePDF targetRef={resumeRef as React.RefObject<HTMLDivElement>} />
+          </div>
           </div>
         </div>
       </section>

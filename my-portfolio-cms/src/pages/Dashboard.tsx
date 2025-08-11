@@ -5,33 +5,7 @@ import BasicForm from "@/components/BasicForm";
 import EducationForm from "@/components/EducationForm";
 import { Link } from "react-router-dom";
 
-import { type Basic, type Project, type Experience, type Skill, type Education } from '@/types/portfolio';
-
-type DashboardProps = {
-  basicInfo?: Basic;
-  setBasicInfo: (basic: Basic) => void;
-  projects: Project[];
-  setProjects: (projects: Project[]) => void;
-  experiences: Experience[];
-  setExperiences: (experiences: Experience[]) => void;
-  skills: Skill[];
-  setSkills: (skills: Skill[]) => void;
-  education: Education[];
-  setEducation: (education: Education[]) => void;
-};
-
-export default function Dashboard({
-  basicInfo,
-  setBasicInfo,
-  projects,
-  setProjects,
-  skills,
-  setSkills,
-  experiences,
-  setExperiences,
-  education,
-  setEducation
-}: DashboardProps) {
+export default function Dashboard() {
     return (
         <div className="min-h-screen bg-background">
             <div className="container max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">
@@ -69,7 +43,7 @@ export default function Dashboard({
                     </div>
                     </div>
                     <div className="p-6">
-                    <BasicForm basicInfo={basicInfo} setBasicInfo={setBasicInfo} />
+                    <BasicForm />
                     </div>
                 </section>
 
@@ -89,7 +63,7 @@ export default function Dashboard({
                     </div>
                     </div>
                     <div className="p-6">
-                        <EducationForm education={education} setEducation={setEducation}/>
+                        <EducationForm />
                     </div>
                 </section>
 
@@ -109,7 +83,7 @@ export default function Dashboard({
                     </div>
                     </div>
                     <div className="p-6">
-                    <ProjectForm projects={projects} setProjects={setProjects}/>
+                    <ProjectForm />
                     </div>
                 </section>
 
@@ -129,7 +103,7 @@ export default function Dashboard({
                     </div>
                     </div>
                     <div className="p-6">
-                    <ExperienceForm experiences={experiences} setExperiences={setExperiences}/>
+                    <ExperienceForm />
                     </div>
                 </section>
 
@@ -149,7 +123,7 @@ export default function Dashboard({
                     </div>
                     </div>
                     <div className="p-6">
-                    <SkillForm skills={skills} setSkills={setSkills}/>
+                    <SkillForm />
                     </div>
                 </section>
 

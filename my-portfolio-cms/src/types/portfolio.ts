@@ -1,5 +1,5 @@
 export type Basic = {
-  id: string;
+  id?: string;
   name: string;
   contact_no: string;
   email: string;

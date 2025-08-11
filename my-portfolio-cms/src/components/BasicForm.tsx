@@ -17,8 +17,9 @@ import { Textarea } from '@/components/ui/textarea';
 import { type Basic } from '@/types/portfolio';
 
 export default function BasicForm() {
-    const { basic, isLoading, updateBasic, removeBasicMutation } = useBasic();
+    const { basic, isLoading, error, updateBasic, removeBasicMutation } = useBasic();
     const [editing, setEditing] = useState(false);
+    const [successMessage, setSuccessMessage] = useState<string>('');
 
     const form = useForm<BasicFormSchema>({
         resolver: zodResolver(basicSchema),
@@ -47,6 +48,14 @@ export default function BasicForm() {
         }
     }, [basic, form]);
 
+    // Clear success message after 3 seconds
+    useEffect(() => {
+        if (successMessage) {
+            const timer = setTimeout(() => setSuccessMessage(''), 3000);
+            return () => clearTimeout(timer);
+        }
+    }, [successMessage]);
+
     const onSubmit = (data: BasicFormSchema) => {
         // Create a new object that combines the existing basic data with the form data.
         // This ensures the ID from the backend is included.
@@ -56,8 +65,47 @@ export default function BasicForm() {
         };
 
         // Pass the correctly-typed object to the mutate function
-        updateBasic.mutate(payload as Basic);
-        setEditing(false);
+        updateBasic.mutate(payload as Basic, {
+            onSuccess: () => {
+                setEditing(false);
+                setSuccessMessage('Profile updated successfully!');
+            },
+            onError: (error) => {
+                console.error('Failed to update profile:', error);
+            }
+        });
+    };
+
+    const handleDelete = () => {
+        if (window.confirm('Are you sure you want to delete your profile? This action cannot be undone.')) {
+            removeBasicMutation.mutate(undefined, {
+                onSuccess: () => {
+                    setSuccessMessage('Profile deleted successfully!');
+                    setEditing(false);
+                    form.reset();
+                },
+                onError: (error) => {
+                    console.error('Failed to delete profile:', error);
+                }
+            });
+        }
+    };
+
+    const handleEdit = () => {
+        setEditing(!editing);
+        if (!editing) {
+            if (basic) {
+                form.reset({
+                    name: basic.name || '',
+                    contact_no: basic.contact_no || '',
+                    email: basic.email || '',
+                    location: basic.location || '',
+                    about: basic.about || '',
+                });
+            } else {
+                form.reset();
+            }
+        }
     };
 
     if (isLoading) {
@@ -68,10 +116,51 @@ export default function BasicForm() {
             </div>
         );
     }
+
+    if (error) {
+        return (
+            <div className="w-full max-w-4xl mx-auto p-4 space-y-8">
+                <div className="border border-destructive/50 rounded-xl shadow-sm bg-destructive/5 overflow-hidden">
+                    <div className="p-6 text-center">
+                        <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-destructive/10 flex items-center justify-center">
+                            <svg className="w-8 h-8 text-destructive" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                        </div>
+                        <h3 className="text-lg font-semibold text-destructive mb-2">Error Loading Profile</h3>
+                        <p className="text-sm text-muted-foreground mb-4">
+                            There was an error loading your profile information. Please try refreshing the page.
+                        </p>
+                        <Button 
+                            onClick={() => window.location.reload()} 
+                            variant="outline"
+                            className="border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground"
+                        >
+                            Refresh Page
+                        </Button>
+                    </div>
+                </div>
+            </div>
+        );
+    }
     
     return (
         <>
         <div className="w-full max-w-4xl mx-auto p-4 space-y-8">
+            {/* Success Message */}
+            {successMessage && (
+                <div className="border border-green-200 rounded-xl shadow-sm bg-green-50 overflow-hidden">
+                    <div className="p-4 flex items-center space-x-3">
+                        <div className="w-6 h-6 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0">
+                            <svg className="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                            </svg>
+                        </div>
+                        <p className="text-sm text-green-800">{successMessage}</p>
+                    </div>
+                </div>
+            )}
+
             {/* Profile Form */}
             <div className="border border-border rounded-xl shadow-sm bg-card overflow-hidden">
             <div className="bg-gradient-to-r from-primary/10 via-primary/5 to-transparent p-6 border-b border-border">
@@ -101,6 +190,7 @@ export default function BasicForm() {
                             <Input 
                                 placeholder="Enter your full name" 
                                 className="bg-background border-input focus:ring-ring focus:border-ring transition-colors"
+                                disabled={!editing && !!basic}
                                 {...field} 
                             />
                             </FormControl>
@@ -124,6 +214,7 @@ export default function BasicForm() {
                             <Input 
                                 placeholder="Enter your contact number" 
                                 className="bg-background border-input focus:ring-ring focus:border-ring transition-colors"
+                                disabled={!editing && !!basic}
                                 {...field} 
                             />
                             </FormControl>
@@ -151,6 +242,7 @@ export default function BasicForm() {
                                 type="email"
                                 placeholder="Enter your email address" 
                                 className="bg-background border-input focus:ring-ring focus:border-ring transition-colors"
+                                disabled={!editing && !!basic}
                                 {...field} 
                             />
                             </FormControl>
@@ -175,6 +267,7 @@ export default function BasicForm() {
                             <Input 
                                 placeholder="Enter your location" 
                                 className="bg-background border-input focus:ring-ring focus:border-ring transition-colors"
+                                disabled={!editing && !!basic}
                                 {...field} 
                             />
                             </FormControl>
@@ -200,6 +293,7 @@ export default function BasicForm() {
                             <Textarea 
                             placeholder="Tell us about yourself, your background, interests, and professional experience..." 
                             className="bg-background border-input focus:ring-ring focus:border-ring transition-colors min-h-[120px] resize-none"
+                            disabled={!editing && !!basic}
                             {...field} 
                             />
                         </FormControl>
@@ -210,48 +304,61 @@ export default function BasicForm() {
 
                     {/* Action Buttons */}
                     <div className="flex flex-col sm:flex-row justify-end space-y-2 sm:space-y-0 sm:space-x-3 pt-4 border-t border-border">
-                    <Button
-                        type="button"
-                        variant="outline"
-                        className="border-border hover:bg-accent hover:text-accent-foreground transition-colors"
-                        onClick={() => {
-                        setEditing(!editing);
-                        if (!editing) {
-                            if (basic) {
-                            form.reset(basic);
-                            } else {
-                            form.reset();
-                            }
-                        }
-                        }}
-                    >
-                        {editing ? 'Cancel Changes' : 'Edit Profile'}
-                    </Button>
-                    
-                    <Button
-                        type="button"
-                        variant="destructive"
-                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90 transition-colors"
-                        onClick={() => removeBasicMutation.mutate()}
-                        disabled={!basic}
-                    >
-                        Delete Profile
-                    </Button>
-                    
-                    <Button 
-                        type="submit" 
-                        disabled={updateBasic.isPending}
-                        className="bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 transition-colors"
-                    >
-                        {updateBasic.isPending ? (
-                        <div className="flex items-center space-x-2">
-                            <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
-                            <span>Saving...</span>
-                        </div>
-                        ) : (
-                        'Save Changes'
-                        )}
-                    </Button>
+                    {!editing ? (
+                        <>
+                        <Button
+                            type="button"
+                            variant="outline"
+                            className="border-border hover:bg-accent hover:text-accent-foreground transition-colors"
+                            onClick={handleEdit}
+                        >
+                            Edit Profile
+                        </Button>
+                        
+                        <Button
+                            type="button"
+                            variant="destructive"
+                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90 transition-colors"
+                            onClick={handleDelete}
+                            disabled={!basic || removeBasicMutation.isPending}
+                        >
+                            {removeBasicMutation.isPending ? (
+                                <div className="flex items-center space-x-2">
+                                    <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
+                                    <span>Deleting...</span>
+                                </div>
+                            ) : (
+                                'Delete Profile'
+                            )}
+                        </Button>
+                        </>
+                    ) : (
+                        <>
+                        <Button
+                            type="button"
+                            variant="outline"
+                            className="border-border hover:bg-accent hover:text-accent-foreground transition-colors"
+                            onClick={handleEdit}
+                        >
+                            Cancel Changes
+                        </Button>
+                        
+                        <Button 
+                            type="submit" 
+                            disabled={updateBasic.isPending}
+                            className="bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 transition-colors"
+                        >
+                            {updateBasic.isPending ? (
+                            <div className="flex items-center space-x-2">
+                                <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
+                                <span>Saving...</span>
+                            </div>
+                            ) : (
+                            'Save Changes'
+                            )}
+                        </Button>
+                        </>
+                    )}
                     </div>
                 </form>
                 </Form>
