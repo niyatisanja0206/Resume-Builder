@@ -22,8 +22,19 @@ export default function ProjectForm() {
   const { currentUser } = useUserContext();
   const userEmail = currentUser?.email || '';
   
-  const { projects, isLoading, error, addProject, removeProject, removeAllProjects, addProjectLoading } = useProject(userEmail);
+  const { 
+    projects, 
+    isLoading, 
+    error, 
+    addProject, 
+    removeProject, 
+    removeAllProjects, 
+    addProjectLoading,
+    updateProject,
+    updateProjectLoading
+  } = useProject(userEmail);
   const [successMessage, setSuccessMessage] = useState<string>('');
+  const [editingProject, setEditingProject] = useState<Project | null>(null);
 
   const form = useForm<ProjectFormSchema>({
     resolver: zodResolver(projectSchema),
@@ -47,19 +58,46 @@ export default function ProjectForm() {
 
   const onSubmit = async (data: ProjectFormSchema) => {
     try {
-      const newProject: Omit<Project, 'id' | '_id'> = {
-        ...data,
-        // Let MongoDB generate _id automatically
-      };
+      if (editingProject) {
+        // Update existing project
+        const updatedProject: Project = {
+          ...editingProject,
+          ...data,
+        };
 
-      if (userEmail) {
-        await addProject(newProject as Project);
-        setSuccessMessage('Project added successfully!');
-        form.reset();
-        setTech("");
+        if (userEmail) {
+          await updateProject(editingProject._id || editingProject.id || '', updatedProject);
+          setSuccessMessage('Project updated successfully!');
+          setEditingProject(null);
+          form.reset({
+            title: "",
+            description: "",
+            techStack: [],
+            link: "",
+          });
+          setTech("");
+        }
+      } else {
+        // Add new project
+        const newProject: Omit<Project, 'id' | '_id'> = {
+          ...data,
+          // Let MongoDB generate _id automatically
+        };
+
+        if (userEmail) {
+          await addProject(newProject as Project);
+          setSuccessMessage('Project added successfully!');
+          form.reset({
+            title: "",
+            description: "",
+            techStack: [],
+            link: "",
+          });
+          setTech("");
+        }
       }
     } catch (error) {
-      console.error('Failed to add project:', error);
+      console.error('Failed to save project:', error);
     }
   };
 
@@ -87,6 +125,28 @@ export default function ProjectForm() {
         console.error('Failed to delete all projects:', error);
       }
     }
+  };
+
+  const handleEditProject = (project: Project) => {
+    setEditingProject(project);
+    form.reset({
+      title: project.title || '',
+      description: project.description || '',
+      techStack: project.techStack || [],
+      link: project.link || '',
+    });
+    setTech('');
+  };
+
+  const handleCancelEdit = () => {
+    setEditingProject(null);
+    form.reset({
+      title: '',
+      description: '',
+      techStack: [],
+      link: '',
+    });
+    setTech('');
   };
 
   if (isLoading) {
@@ -165,15 +225,32 @@ export default function ProjectForm() {
       {/* Projects Form */}
       <div className="border border-border rounded-xl shadow-sm bg-card overflow-hidden">
         <div className="bg-gradient-to-r from-primary/10 via-primary/5 to-transparent p-6 border-b border-border">
-          <h1 className="text-2xl font-semibold text-foreground flex items-center space-x-2">
-            <svg className="w-6 h-6 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-            </svg>
-            <span>Add New Project</span>
-          </h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            Showcase your work and technical expertise
-          </p>
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-2xl font-semibold text-foreground flex items-center space-x-2">
+                <svg className="w-6 h-6 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                </svg>
+                <span>{editingProject ? 'Edit Project' : 'Add New Project'}</span>
+              </h1>
+              <p className="text-sm text-muted-foreground mt-1">
+                {editingProject 
+                  ? 'Update your project information'
+                  : 'Showcase your work and technical expertise'
+                }
+              </p>
+            </div>
+            {editingProject && (
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handleCancelEdit}
+                className="border-border text-muted-foreground hover:bg-muted"
+              >
+                Cancel Edit
+              </Button>
+            )}
+          </div>
         </div>
 
         <div className="p-6">
@@ -305,20 +382,36 @@ export default function ProjectForm() {
               <Button 
                 type="submit" 
                 className="w-full bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
-                disabled={addProjectLoading || !form.formState.isValid}
+                disabled={(editingProject ? updateProjectLoading : addProjectLoading) || Object.keys(form.formState.errors).length > 0}
               >
-                {addProjectLoading ? (
-                  <div className="flex items-center space-x-2">
-                    <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
-                    <span>Adding...</span>
-                  </div>
+                {editingProject ? (
+                  updateProjectLoading ? (
+                    <div className="flex items-center space-x-2">
+                      <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
+                      <span>Updating...</span>
+                    </div>
+                  ) : (
+                    <>
+                      <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                      </svg>
+                      Update Project
+                    </>
+                  )
                 ) : (
-                  <>
-                    <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                    </svg>
-                    Add Project
-                  </>
+                  addProjectLoading ? (
+                    <div className="flex items-center space-x-2">
+                      <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
+                      <span>Adding...</span>
+                    </div>
+                  ) : (
+                    <>
+                      <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                      </svg>
+                      Add Project
+                    </>
+                  )
                 )}
               </Button>
             </form>
@@ -414,18 +507,30 @@ export default function ProjectForm() {
                           </span>
                         ))}
                       </div>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="mt-2 text-xs text-muted-foreground hover:text-foreground"
-                        onClick={() => handleDeleteProject(project._id || project.id || '')}
-                        disabled={false}
-                      >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <div className="flex gap-2 mt-3">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleEditProject(project)}
+                          className="border-primary text-primary hover:bg-primary hover:text-primary-foreground transition-colors"
+                        >
+                          <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                          </svg>
+                          Edit
+                        </Button>
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          onClick={() => handleDeleteProject(project._id || project.id || '')}
+                          className="bg-destructive text-destructive-foreground hover:bg-destructive/90 transition-colors"
+                        >
+                          <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                        </svg>
-                        Delete
-                      </Button>
+                          </svg>
+                          Delete
+                        </Button>
+                      </div>
                     </div>
                   )}
                 </div>

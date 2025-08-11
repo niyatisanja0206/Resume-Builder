@@ -22,8 +22,9 @@ export default function ExperienceForm() {
     const { currentUser } = useUserContext();
     const userEmail = currentUser?.email || '';
 
-    const { experiences, isLoading, addExperience, removeExperience, removeAllExperiences, addExperienceLoading } = useExperience(userEmail);
+    const { experiences, isLoading, addExperience, updateExperience, removeExperience, removeAllExperiences, addExperienceLoading, updateExperienceLoading } = useExperience(userEmail);
     const [successMessage, setSuccessMessage] = useState<string>("");
+    const [editingExperience, setEditingExperience] = useState<Experience | null>(null);
 
     const form = useForm<ExperienceFormSchema>({
         resolver: zodResolver(experienceSchema),
@@ -41,20 +42,38 @@ export default function ExperienceForm() {
   
     const onSubmit = async (data: ExperienceFormSchema) => {
         try {
-            const newExperience: Omit<Experience, 'id' | '_id'> = {
-              ...data,
-              // Let MongoDB generate _id automatically
-            };
-        
-            if (userEmail) {
-                await addExperience(newExperience as Experience);
-                form.reset();
-                setSkill("");
-                setSuccessMessage("Experience added successfully!");
-                setTimeout(() => setSuccessMessage(""), 3000);
+            if (editingExperience) {
+                // Update existing experience
+                const updatedExperience: Experience = {
+                    ...editingExperience,
+                    ...data,
+                };
+
+                if (userEmail) {
+                    await updateExperience(editingExperience._id || editingExperience.id || '', updatedExperience);
+                    form.reset();
+                    setSkill("");
+                    setEditingExperience(null);
+                    setSuccessMessage("Experience updated successfully!");
+                    setTimeout(() => setSuccessMessage(""), 3000);
+                }
+            } else {
+                // Add new experience
+                const newExperience: Omit<Experience, 'id' | '_id'> = {
+                  ...data,
+                  // Let MongoDB generate _id automatically
+                };
+            
+                if (userEmail) {
+                    await addExperience(newExperience as Experience);
+                    form.reset();
+                    setSkill("");
+                    setSuccessMessage("Experience added successfully!");
+                    setTimeout(() => setSuccessMessage(""), 3000);
+                }
             }
         } catch (error) {
-            console.error('Error adding experience:', error);
+            console.error('Error submitting experience:', error);
         }
     };
 
@@ -82,6 +101,31 @@ export default function ExperienceForm() {
                 console.error('Error deleting all experiences:', error);
             }
         }
+    };
+
+    const handleEditExperience = (experience: Experience) => {
+        setEditingExperience(experience);
+        form.reset({
+            company: experience.company || '',
+            position: experience.position || '',
+            startDate: experience.startDate || new Date(),
+            endDate: experience.endDate || undefined,
+            description: experience.description || '',
+            skillsLearned: experience.skillsLearned || [],
+        });
+    };
+
+    const handleCancelEdit = () => {
+        setEditingExperience(null);
+        form.reset({
+            company: '',
+            position: '',
+            startDate: new Date(),
+            endDate: undefined,
+            description: '',
+            skillsLearned: [],
+        });
+        setSkill("");
     };
 
     const addSkillToForm = () => {
@@ -139,15 +183,29 @@ export default function ExperienceForm() {
             {/* Experience Form */}
             <div className="border border-border rounded-xl shadow-sm bg-card overflow-hidden">
             <div className="bg-gradient-to-r from-primary/10 via-primary/5 to-transparent p-6 border-b border-border">
-                <h1 className="text-2xl font-semibold text-foreground flex items-center space-x-2">
-                <svg className="w-6 h-6 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2-2v2m8 0V6a2 2 0 012 2v6a2 2 0 01-2 2H6a2 2 0 01-2-2V8a2 2 0 012-2V6" />
-                </svg>
-                <span>Add Work Experience</span>
-                </h1>
-                <p className="text-sm text-muted-foreground mt-1">
-                Document your professional journey and achievements
-                </p>
+                <div className="flex items-center justify-between">
+                    <div>
+                        <h1 className="text-2xl font-semibold text-foreground flex items-center space-x-2">
+                        <svg className="w-6 h-6 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2-2v2m8 0V6a2 2 0 012 2v6a2 2 0 01-2 2H6a2 2 0 01-2-2V8a2 2 0 012-2V6" />
+                        </svg>
+                        <span>{editingExperience ? 'Edit Work Experience' : 'Add Work Experience'}</span>
+                        </h1>
+                        <p className="text-sm text-muted-foreground mt-1">
+                        {editingExperience ? 'Update your experience information' : 'Document your professional journey and achievements'}
+                        </p>
+                    </div>
+                    {editingExperience && (
+                        <Button
+                            type="button"
+                            variant="outline"
+                            onClick={handleCancelEdit}
+                            className="text-muted-foreground hover:text-foreground"
+                        >
+                            Cancel
+                        </Button>
+                    )}
+                </div>
             </div>
             <div className="p-6">
                 <Form {...form}>
@@ -336,9 +394,12 @@ export default function ExperienceForm() {
                     <Button 
                     type="submit" 
                     className="w-full bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
-                    disabled={addExperienceLoading}
+                    disabled={addExperienceLoading || updateExperienceLoading}
                     >
-                    {addExperienceLoading ? 'Adding Experience...' : 'Add Experience'}
+                    {editingExperience 
+                        ? (updateExperienceLoading ? 'Updating Experience...' : 'Update Experience')
+                        : (addExperienceLoading ? 'Adding Experience...' : 'Add Experience')
+                    }
                     </Button>
                 </form>
                 </Form>
@@ -441,17 +502,31 @@ export default function ExperienceForm() {
                             )}
                         </div>
                         
-                        <Button
-                            type="button"
-                            size="sm"
-                            variant="ghost"
-                            className="opacity-0 group-hover:opacity-100 transition-opacity text-destructive hover:text-destructive hover:bg-destructive/10 ml-4"
-                            onClick={() => handleDeleteExperience(experience._id || experience.id || '')}
-                        >
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                            </svg>
-                        </Button>
+                        <div className="flex items-center space-x-2 ml-4">
+                            <Button
+                                type="button"
+                                size="sm"
+                                variant="ghost"
+                                className="opacity-0 group-hover:opacity-100 transition-opacity text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:text-blue-400 dark:hover:text-blue-300 dark:hover:bg-blue-900/20"
+                                onClick={() => handleEditExperience(experience)}
+                            >
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                </svg>
+                            </Button>
+                            
+                            <Button
+                                type="button"
+                                size="sm"
+                                variant="ghost"
+                                className="opacity-0 group-hover:opacity-100 transition-opacity text-destructive hover:text-destructive hover:bg-destructive/10"
+                                onClick={() => handleDeleteExperience(experience._id || experience.id || '')}
+                            >
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                </svg>
+                            </Button>
+                        </div>
                         </div>
                     </div>
                     ))}

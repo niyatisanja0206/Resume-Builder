@@ -42,6 +42,18 @@ const removeAllEducation = async (email: string) => {
     });
 };
 
+// Function to update an education entry
+const updateEducation = async (educationData: { email: string; id: string; education: Education }): Promise<Education[]> => {
+    console.log('Updating education with data:', educationData);
+    const { data } = await axios.put(`${API_BASE_URL}/update`, {
+        email: educationData.email,
+        id: educationData.id,
+        education: educationData.education
+    });
+    console.log('Education update response:', data);
+    return data.data;
+};
+
 export function useEducation(email: string) {
     const queryClient = useQueryClient();
 
@@ -77,6 +89,13 @@ export function useEducation(email: string) {
         },
     });
 
+    const updateEducationMutation = useMutation({
+        mutationFn: updateEducation,
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ["education", email] });
+        },
+    });
+
     return {
         education: education || [],
         isLoading,
@@ -86,6 +105,9 @@ export function useEducation(email: string) {
         addEducation: (education: Education) => addEducation.mutateAsync({ email, education }),
         addEducationLoading: addEducation.isPending,
         addEducationError: addEducation.error,
+        updateEducation: (id: string, education: Education) => updateEducationMutation.mutateAsync({ email, id, education }),
+        updateEducationLoading: updateEducationMutation.isPending,
+        updateEducationError: updateEducationMutation.error,
         removeEducation: (id: string) => removeEducationMutation.mutateAsync({ email, id }),
         removeEducationLoading: removeEducationMutation.isPending,
         removeEducationError: removeEducationMutation.error,

@@ -34,8 +34,9 @@ export default function SkillForm() {
     console.log('SkillForm - currentUser:', currentUser);
     console.log('SkillForm - userEmail:', userEmail);
     
-    const { skills, isLoading, addSkill, removeSkill, removeAllSkills, addSkillLoading } = useSkill(userEmail);
+    const { skills, isLoading, addSkill, updateSkill, removeSkill, removeAllSkills, addSkillLoading, updateSkillLoading } = useSkill(userEmail);
     const [successMessage, setSuccessMessage] = useState<string>("");
+    const [editingSkill, setEditingSkill] = useState<Skill | null>(null);
 
     const form = useForm<SkillFormSchema>({
         resolver: zodResolver(skillSchema),
@@ -48,22 +49,43 @@ export default function SkillForm() {
     const onSubmit = async (data: SkillFormSchema) => {
         try {
             console.log('SkillForm submitting:', data);
-            const newSkill: Omit<Skill, 'id' | '_id'> = {
-                ...data,
-                // Let MongoDB generate _id automatically
-            };
+            
+            if (editingSkill) {
+                // Update existing skill
+                const updatedSkill: Skill = {
+                    ...editingSkill,
+                    ...data,
+                };
 
-            if (userEmail) {
-                console.log('Calling addSkill with skill data:', newSkill);
-                await addSkill(newSkill as Skill);
-                form.reset();
-                setSuccessMessage("Skill added successfully!");
-                setTimeout(() => setSuccessMessage(""), 3000);
+                if (userEmail) {
+                    console.log('Calling updateSkill with skill data:', updatedSkill);
+                    await updateSkill(editingSkill._id || editingSkill.id || '', updatedSkill);
+                    form.reset();
+                    setEditingSkill(null);
+                    setSuccessMessage("Skill updated successfully!");
+                    setTimeout(() => setSuccessMessage(""), 3000);
+                } else {
+                    console.error('No user email available');
+                }
             } else {
-                console.error('No user email available');
+                // Add new skill
+                const newSkill: Omit<Skill, 'id' | '_id'> = {
+                    ...data,
+                    // Let MongoDB generate _id automatically
+                };
+
+                if (userEmail) {
+                    console.log('Calling addSkill with skill data:', newSkill);
+                    await addSkill(newSkill as Skill);
+                    form.reset();
+                    setSuccessMessage("Skill added successfully!");
+                    setTimeout(() => setSuccessMessage(""), 3000);
+                } else {
+                    console.error('No user email available');
+                }
             }
         } catch (error) {
-            console.error('Error adding skill:', error);
+            console.error('Error submitting skill:', error);
         }
     };
 
@@ -91,6 +113,22 @@ export default function SkillForm() {
                 console.error('Error deleting all skills:', error);
             }
         }
+    };
+
+    const handleEditSkill = (skill: Skill) => {
+        setEditingSkill(skill);
+        form.reset({
+            name: skill.name,
+            level: skill.level,
+        });
+    };
+
+    const handleCancelEdit = () => {
+        setEditingSkill(null);
+        form.reset({
+            name: '',
+            level: 'beginner',
+        });
     };
 
     if (isLoading) {
@@ -133,11 +171,25 @@ export default function SkillForm() {
 
             {/* Skills Form */}
             <div className="border border-border rounded-xl shadow-sm bg-card p-6">
-            <div className="mb-6">
-                <h1 className="text-2xl font-semibold text-foreground">Add New Skill</h1>
-                <p className="text-sm text-muted-foreground mt-1">
-                Build your skills profile by adding your expertise levels
-                </p>
+            <div className="mb-6 flex items-center justify-between">
+                <div>
+                    <h1 className="text-2xl font-semibold text-foreground">
+                        {editingSkill ? 'Edit Skill' : 'Add New Skill'}
+                    </h1>
+                    <p className="text-sm text-muted-foreground mt-1">
+                        {editingSkill ? 'Update your skill information' : 'Build your skills profile by adding your expertise levels'}
+                    </p>
+                </div>
+                {editingSkill && (
+                    <Button
+                        type="button"
+                        variant="outline"
+                        onClick={handleCancelEdit}
+                        className="text-muted-foreground hover:text-foreground"
+                    >
+                        Cancel
+                    </Button>
+                )}
             </div>
             
             <Form {...form}>
@@ -195,9 +247,12 @@ export default function SkillForm() {
                 <Button 
                     type="submit" 
                     className="w-full bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
-                    disabled={addSkillLoading}
+                    disabled={addSkillLoading || updateSkillLoading}
                 >
-                    {addSkillLoading ? 'Adding...' : 'Add Skill'}
+                    {editingSkill 
+                        ? (updateSkillLoading ? 'Updating...' : 'Update Skill')
+                        : (addSkillLoading ? 'Adding...' : 'Add Skill')
+                    }
                 </Button>
                 </form>
             </Form>
@@ -257,17 +312,33 @@ export default function SkillForm() {
                         </div>
                     </div>
                     
-                    <Button
-                        type="button"
-                        size="sm"
-                        variant="ghost"
-                        className="opacity-0 group-hover:opacity-100 transition-opacity text-destructive hover:text-destructive hover:bg-destructive/10"
-                        onClick={() => handleDeleteSkill(skill._id || skill.id || '')}
-                    >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                        </svg>
-                    </Button>
+                    <div className="flex items-center space-x-2">
+                        {/* Edit Button */}
+                        <Button
+                            type="button"
+                            size="sm"
+                            variant="ghost"
+                            className="opacity-0 group-hover:opacity-100 transition-opacity text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:text-blue-400 dark:hover:text-blue-300 dark:hover:bg-blue-900/20"
+                            onClick={() => handleEditSkill(skill)}
+                        >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                            </svg>
+                        </Button>
+                        
+                        {/* Delete Button */}
+                        <Button
+                            type="button"
+                            size="sm"
+                            variant="ghost"
+                            className="opacity-0 group-hover:opacity-100 transition-opacity text-destructive hover:text-destructive hover:bg-destructive/10"
+                            onClick={() => handleDeleteSkill(skill._id || skill.id || '')}
+                        >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                        </Button>
+                    </div>
                     </div>
                 ))}
                 </div>

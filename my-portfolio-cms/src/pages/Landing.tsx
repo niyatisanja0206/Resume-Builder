@@ -1,7 +1,9 @@
-
 // LandingPage.tsx
 import React, { useState } from 'react';
 import { Eye, Edit, Download, Award, Users, Zap, Star } from 'lucide-react';
+// These imports are for the resume images in the carousel.
+// You need to ensure these image files (resume1, resume2, resume3) exist in your `assets` folder.
+//import { resume1 as resume1 } from '../assets'; 
 
 // Button Component (you might want to move this to a separate components file)
 const Button: React.FC<{
@@ -50,7 +52,7 @@ const CardContent: React.FC<{ children: React.ReactNode; className?: string }> =
 );
 
 // Carousel Components
-const Carousel: React.FC<{ children: React.ReactNode; className?: string }> = ({ children, className = '' }) => (
+const LocalCarousel: React.FC<{ children: React.ReactNode; className?: string }> = ({ children, className = '' }) => (
   <div className={`relative ${className}`}>
     {children}
   </div>
@@ -87,61 +89,9 @@ const CarouselContent: React.FC<{ children: React.ReactNode }> = ({ children }) 
   );
 };
 
-const CarouselItem: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-  <div className="p-1">
-    {children}
-  </div>
-);
-
-// Resume Template Component
-const ResumeTemplate: React.FC<{ variant: string; className?: string }> = ({ variant, className = '' }) => (
-  <div className={`w-full aspect-[210/297] bg-gradient-to-br ${variant} rounded-lg shadow-xl flex flex-col items-center justify-start p-6 text-white ${className}`}>
-    {/* Header Section */}
-    <div className="w-full text-center mb-4">
-      <div className="w-16 h-16 bg-white/20 rounded-full mx-auto mb-3 flex items-center justify-center">
-        <div className="w-8 h-8 bg-white/40 rounded-full"></div>
-      </div>
-      <div className="h-3 bg-white/30 rounded w-3/4 mx-auto mb-1"></div>
-      <div className="h-2 bg-white/20 rounded w-1/2 mx-auto"></div>
-    </div>
-    
-    {/* Content Sections */}
-    <div className="w-full space-y-3 flex-1">
-      <div className="space-y-1">
-        <div className="h-2 bg-white/40 rounded w-1/3"></div>
-        <div className="h-1 bg-white/20 rounded w-full"></div>
-        <div className="h-1 bg-white/20 rounded w-4/5"></div>
-        <div className="h-1 bg-white/20 rounded w-3/4"></div>
-      </div>
-      
-      <div className="space-y-1">
-        <div className="h-2 bg-white/40 rounded w-1/4"></div>
-        <div className="h-1 bg-white/20 rounded w-full"></div>
-        <div className="h-1 bg-white/20 rounded w-5/6"></div>
-      </div>
-      
-      <div className="space-y-1">
-        <div className="h-2 bg-white/40 rounded w-1/3"></div>
-        <div className="h-1 bg-white/20 rounded w-3/4"></div>
-        <div className="h-1 bg-white/20 rounded w-2/3"></div>
-      </div>
-    </div>
-    
-    {/* Footer */}
-    <div className="text-xs opacity-60 font-medium">Professional Resume</div>
-  </div>
-);
-
 // Main Landing Page Component
 const LandingPage: React.FC = () => {
-  const resumeVariants = [
-    'from-blue-500 to-purple-600',
-    'from-green-500 to-teal-600', 
-    'from-orange-500 to-red-600',
-    'from-purple-500 to-pink-600',
-    'from-indigo-500 to-blue-600'
-  ];
-
+  
   const features = [
     { icon: Edit, title: 'Easy to use interface', description: 'Intuitive drag-and-drop builder' },
     { icon: Award, title: 'Customizable templates', description: 'Professional designs for every industry' },
@@ -187,17 +137,21 @@ const LandingPage: React.FC = () => {
             {/* Hero Carousel */}
             <div className="flex justify-center">
               <div className="w-full max-w-xs">
-                <Carousel>
+                <LocalCarousel>
                   <CarouselContent>
-                    {resumeVariants.map((variant, index) => (
-                      <CarouselItem key={index}>
-                        <div className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-2xl">
-                          <ResumeTemplate variant={variant} />
-                        </div>
-                      </CarouselItem>
-                    ))}
+                    {/* The resume images are added here. */}
+                    {/* The className "h-auto" ensures the image maintains its aspect ratio while scaling to the container width. */}
+                    <div className="flex items-center justify-center bg-muted rounded-lg">
+                      <img src='../assets/resume1.png' alt="Resume template 1" className="w-full h-auto object-contain rounded-lg" />
+                    </div>
+                    <div className="flex items-center justify-center bg-muted rounded-lg">
+                      <img src='../assets/resume2.png' alt="Resume template 2" className="w-full h-auto object-contain rounded-lg" />
+                    </div>
+                    <div className="flex items-center justify-center bg-muted rounded-lg">
+                      <img src='../assets/resume3.png' alt="Resume template 3" className="w-full h-auto object-contain rounded-lg" />
+                    </div>
                   </CarouselContent>
-                </Carousel>
+                </LocalCarousel>
               </div>
             </div>
           </div>

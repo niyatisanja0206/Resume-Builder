@@ -38,6 +38,15 @@ const removeAllProjects = async (email: string) => {
     });
 };
 
+const updateProject = async (data: { email: string; id: string; project: Project }): Promise<Project> => {
+    const { data: response } = await axios.put(`${API_BASE_URL}/update`, {
+        email: data.email,
+        id: data.id,
+        project: data.project
+    });
+    return response.data;
+};
+
 export function useProject(email: string) {
     const queryClient = useQueryClient();
 
@@ -69,6 +78,13 @@ export function useProject(email: string) {
         },
     });
 
+    const updateProjectMutation = useMutation({
+        mutationFn: updateProject,
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ["projects", email] });
+        },
+    });
+
     return{
       projects: projects || [],
       isLoading,
@@ -78,6 +94,9 @@ export function useProject(email: string) {
       addProject: (project: Project) => addProjectMutation.mutateAsync({ email, project }),
       addProjectLoading: addProjectMutation.isPending,
       addProjectError: addProjectMutation.error,
+      updateProject: (id: string, project: Project) => updateProjectMutation.mutateAsync({ email, id, project }),
+      updateProjectLoading: updateProjectMutation.isPending,
+      updateProjectError: updateProjectMutation.error,
       removeProject: (id: string) => removeProjectMutation.mutateAsync({ email, id }),
       removeProjectLoading: removeProjectMutation.isPending,
       removeProjectError: removeProjectMutation.error,

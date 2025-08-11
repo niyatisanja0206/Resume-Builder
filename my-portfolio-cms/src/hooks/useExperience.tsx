@@ -42,6 +42,18 @@ const removeAllExperiences = async (email: string) => {
     });
 };
 
+// Function to update an experience entry
+const updateExperience = async (experienceData: { email: string; id: string; experience: Experience }): Promise<Experience[]> => {
+    console.log('Updating experience with data:', experienceData);
+    const { data } = await axios.put(`${API_BASE_URL}/update`, {
+        email: experienceData.email,
+        id: experienceData.id,
+        experience: experienceData.experience
+    });
+    console.log('Experience update response:', data);
+    return data.data;
+};
+
 export function useExperience(email: string) {
     const queryClient = useQueryClient();
 
@@ -74,6 +86,13 @@ export function useExperience(email: string) {
         },
     });
 
+    const updateExperienceMutation = useMutation({
+        mutationFn: updateExperience,
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ["experiences", email] });
+        },
+    });
+
     return {
         experiences: experiences || [],
         isLoading,
@@ -83,6 +102,9 @@ export function useExperience(email: string) {
         addExperience: (experience: Experience) => addExperienceMutation.mutateAsync({ email, experience }),
         addExperienceLoading: addExperienceMutation.isPending,
         addExperienceError: addExperienceMutation.error,
+        updateExperience: (id: string, experience: Experience) => updateExperienceMutation.mutateAsync({ email, id, experience }),
+        updateExperienceLoading: updateExperienceMutation.isPending,
+        updateExperienceError: updateExperienceMutation.error,
         removeExperience: (id: string) => removeExperienceMutation.mutateAsync({ email, id }),
         removeExperienceLoading: removeExperienceMutation.isPending,
         removeExperienceError: removeExperienceMutation.error,

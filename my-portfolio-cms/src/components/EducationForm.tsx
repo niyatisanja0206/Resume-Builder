@@ -20,8 +20,9 @@ export default function EducationForm() {
     const { currentUser } = useUserContext();
     const userEmail = currentUser?.email || '';
     
-    const { education, isLoading, error, addEducation, removeEducation, removeAllEducation, addEducationLoading } = useEducation(userEmail);
+    const { education, isLoading, error, addEducation, updateEducation, removeEducation, removeAllEducation, addEducationLoading, updateEducationLoading } = useEducation(userEmail);
     const [successMessage, setSuccessMessage] = useState<string>('');
+    const [editingEducation, setEditingEducation] = useState<Education | null>(null);
 
     const form = useForm<EducationFormSchema>({
         resolver: zodResolver(educationSchema),
@@ -44,18 +45,46 @@ export default function EducationForm() {
 
     const onSubmit = async (data: EducationFormSchema) => {
         try {
-            const newEducation: Omit<Education, 'id' | '_id'> = {
-                ...data,
-                // Let MongoDB generate _id automatically
-            };
+            if (editingEducation) {
+                // Update existing education
+                const updatedEducation: Education = {
+                    ...editingEducation,
+                    ...data,
+                };
 
-            if (userEmail) {
-                await addEducation(newEducation as Education);
-                setSuccessMessage('Education added successfully!');
-                form.reset();
+                if (userEmail) {
+                    await updateEducation(editingEducation._id || editingEducation.id || '', updatedEducation);
+                    setSuccessMessage('Education updated successfully!');
+                    setEditingEducation(null);
+                    form.reset({
+                        institution: '',
+                        degree: '',
+                        startDate: new Date(),
+                        endDate: undefined,
+                        Grade: '',
+                    });
+                }
+            } else {
+                // Add new education
+                const newEducation: Omit<Education, 'id' | '_id'> = {
+                    ...data,
+                    // Let MongoDB generate _id automatically
+                };
+
+                if (userEmail) {
+                    await addEducation(newEducation as Education);
+                    setSuccessMessage('Education added successfully!');
+                    form.reset({
+                        institution: '',
+                        degree: '',
+                        startDate: new Date(),
+                        endDate: undefined,
+                        Grade: '',
+                    });
+                }
             }
         } catch (error) {
-            console.error('Failed to add education:', error);
+            console.error('Failed to submit education:', error);
         }
     };
 
@@ -83,6 +112,28 @@ export default function EducationForm() {
                 console.error('Error deleting all education:', error);
             }
         }
+    };
+
+    const handleEditEducation = (education: Education) => {
+        setEditingEducation(education);
+        form.reset({
+            institution: education.institution || '',
+            degree: education.degree || '',
+            startDate: education.startDate || new Date(),
+            endDate: education.endDate || undefined,
+            Grade: education.Grade || '',
+        });
+    };
+
+    const handleCancelEdit = () => {
+        setEditingEducation(null);
+        form.reset({
+            institution: '',
+            degree: '',
+            startDate: new Date(),
+            endDate: undefined,
+            Grade: '',
+        });
     };
 
     if (isLoading) {
@@ -167,11 +218,28 @@ export default function EducationForm() {
 
             {/* Education Form */}
             <div className="border border-border rounded-xl shadow-sm bg-card p-6">
-                <div className="mb-6">
-                    <h1 className="text-2xl font-semibold text-foreground">Add New Education</h1>
-                    <p className="text-sm text-muted-foreground mt-1">
-                        Add your educational background to showcase your qualifications
-                    </p>
+                <div className="mb-6 flex items-center justify-between">
+                    <div>
+                        <h1 className="text-2xl font-semibold text-foreground">
+                            {editingEducation ? 'Edit Education' : 'Add New Education'}
+                        </h1>
+                        <p className="text-sm text-muted-foreground mt-1">
+                            {editingEducation 
+                                ? 'Update your educational background information'
+                                : 'Add your educational background to showcase your qualifications'
+                            }
+                        </p>
+                    </div>
+                    {editingEducation && (
+                        <Button
+                            type="button"
+                            variant="outline"
+                            onClick={handleCancelEdit}
+                            className="border-border text-muted-foreground hover:bg-muted"
+                        >
+                            Cancel Edit
+                        </Button>
+                    )}
                 </div>
                 
                 <Form {...form}>
@@ -249,9 +317,12 @@ export default function EducationForm() {
                         <Button 
                             type="submit" 
                             className="w-full bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
-                            disabled={addEducationLoading || !form.formState.isValid}
+                            disabled={(editingEducation ? updateEducationLoading : addEducationLoading) || Object.keys(form.formState.errors).length > 0}
                         >
-                            {addEducationLoading ? 'Adding...' : 'Add Education'}
+                            {editingEducation 
+                                ? (updateEducationLoading ? 'Updating...' : 'Update Education')
+                                : (addEducationLoading ? 'Adding...' : 'Add Education')
+                            }
                         </Button>
 
 
@@ -286,22 +357,26 @@ export default function EducationForm() {
                                     {edu.startDate ? new Date(edu.startDate).toLocaleDateString() : 'N/A'} - {edu.endDate ? new Date(edu.endDate).toLocaleDateString() : 'Present'}
                                 </p>
                                 <p className="text-sm text-muted-foreground">Grade: {edu.Grade}</p>
-                                <Button 
-                                    className="mt-2 bg-destructive text-destructive-foreground hover:bg-destructive/90 transition-colors"
-                                    onClick={() => handleDelete(edu._id || edu.id || '')}
-                                    disabled={false}
-                                >
-                                    Delete
-                                </Button>
-                                {/* Edit button logic is not implemented yet */}
+                                <div className="flex gap-2 mt-3">
+                                    <Button 
+                                        size="sm"
+                                        variant="outline"
+                                        onClick={() => handleEditEducation(edu)}
+                                        className="border-primary text-primary hover:bg-primary hover:text-primary-foreground transition-colors"
+                                    >
+                                        Edit
+                                    </Button>
+                                    <Button 
+                                        size="sm"
+                                        variant="destructive"
+                                        onClick={() => handleDelete(edu._id || edu.id || '')}
+                                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90 transition-colors"
+                                    >
+                                        Delete
+                                    </Button>
+                                </div>
                             </li>
                         ))}
-                        {/*Options for edit and delete education*/}
-                        <Button 
-                            className="mt-4 bg-secondary text-secondary-foreground hover:bg-secondary/90 transition-colors"
-                            onClick={() => {}} >
-                                {/* We can add a function to clear all education here if needed */}
-                        </Button>
                     </ul>
                 )}
             </div>

@@ -44,6 +44,18 @@ const removeAllSkills = async (email: string) => {
     });
 };
 
+// Function to update a skill
+const updateSkill = async (skillData: { email: string; id: string; skill: Skill }): Promise<Skill[]> => {
+    console.log('Updating skill with data:', skillData);
+    const { data } = await axios.put(`${API_BASE_URL}/update`, {
+        email: skillData.email,
+        id: skillData.id,
+        skill: skillData.skill
+    });
+    console.log('Skill update response:', data);
+    return data.data;
+};
+
 export function useSkill(email: string) {
     const queryClient = useQueryClient();
 
@@ -76,6 +88,13 @@ export function useSkill(email: string) {
         },
     });
 
+    const updateSkillMutation = useMutation({
+        mutationFn: updateSkill,
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ["skills", email] });
+        },
+    });
+
     return {
         skills: skills || [],
         isLoading,
@@ -85,6 +104,9 @@ export function useSkill(email: string) {
         addSkill: (skill: Skill) => addSkillMutation.mutateAsync({ email, skill }),
         addSkillLoading: addSkillMutation.isPending,
         addSkillError: addSkillMutation.error,
+        updateSkill: (id: string, skill: Skill) => updateSkillMutation.mutateAsync({ email, id, skill }),
+        updateSkillLoading: updateSkillMutation.isPending,
+        updateSkillError: updateSkillMutation.error,
         removeSkill: (id: string) => removeSkillMutation.mutateAsync({ email, id }),
         removeSkillLoading: removeSkillMutation.isPending,
         removeSkillError: removeSkillMutation.error,
