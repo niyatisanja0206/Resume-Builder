@@ -24,8 +24,10 @@ exports.getBasic = async (req, res) => {
 
 exports.createBasic = async (req, res) => {
     try {
+        console.log('Basic Controller - Create/Update Basic Request:', req.body);
         const { name, contact_no, email, location, about } = req.body;
         
+        console.log('Looking for user with email:', email);
         let user = await User.findOne({ "basic.email": email }); // Find the user by their email
 
         if (!user) {
@@ -71,22 +73,30 @@ exports.deleteBasic = async (req, res) => {
 
 exports.updateBasic = async (req, res) => {
     try {
+        console.log('Basic Controller - Update Basic Request:', req.body);
         const { email, basicInfo } = req.body;
 
         if (!email || !basicInfo) {
+            console.log('Missing email or basicInfo:', { email, basicInfo });
             return res.status(400).json({ message: 'Email and Basic Information are required' });
         }
 
+        console.log('Updating user with email:', email);
         const updated = await User.findOneAndUpdate(
             { "basic.email": email },
             { $set: { basic: basicInfo } },
             { new: true, runValidators: true }
         );
 
-        if (!updated) return res.status(404).json({ message: 'User not found' });
+        if (!updated) {
+            console.log('User not found for email:', email);
+            return res.status(404).json({ message: 'User not found' });
+        }
 
+        console.log('User updated successfully:', updated.basic);
         res.status(200).json({ message: 'Basic information updated successfully', data: updated.basic });
     } catch (error) {
+        console.error('Error updating basic info:', error);
         res.status(500).json({ message: 'Server error', error: error.message });
     }
 };

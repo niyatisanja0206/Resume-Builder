@@ -13,9 +13,11 @@ const userSchema = new mongoose.Schema({
         level: String
     }],
     education: [{
-        degree: String,
         institution: String,
-        year: String
+        degree: String,
+        startDate: Date,
+        endDate: Date,
+        Grade: String
     }],
     experience: [{
         company: String,
@@ -30,15 +32,9 @@ const userSchema = new mongoose.Schema({
         description: String,
         techStack: [String],
         link: String
-    }],
-    education: [{
-        degree: String,
-        institution: String,
-        startDate: Date,
-        endDate: Date,
-        grade: String
-    }],
-
-})
+    }]
+}, {
+    timestamps: true
+});
 
 module.exports = mongoose.model('User', userSchema);

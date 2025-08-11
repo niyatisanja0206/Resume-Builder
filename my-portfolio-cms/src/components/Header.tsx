@@ -22,7 +22,7 @@ export default function Header() {
                 {/* Navigation */}
                 <nav className="flex items-center space-x-1">
                     <Link
-                    to="/"
+                    to="/portfolio"
                     className="relative px-4 py-2 rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-colors group"
                     >
                     <span className="flex items-center space-x-2">

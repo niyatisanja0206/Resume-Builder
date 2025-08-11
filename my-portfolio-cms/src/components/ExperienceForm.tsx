@@ -13,17 +13,17 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { useExperience } from '../hooks/useExperience';
-import { useBasic } from '../hooks/useBasic';
-import { v4 as uuidv4 } from "uuid";
+import { useUserContext } from '@/contexts/useUserContext';
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { type Experience } from "@/types/portfolio";
 
 export default function ExperienceForm() {
-    const { basic } = useBasic();
-    const userEmail = basic?.email || '';
+    const { currentUser } = useUserContext();
+    const userEmail = currentUser?.email || '';
 
-    const { experiences, isLoading, addExperience, removeExperience } = useExperience(userEmail);
+    const { experiences, isLoading, addExperience, removeExperience, removeAllExperiences, addExperienceLoading } = useExperience(userEmail);
+    const [successMessage, setSuccessMessage] = useState<string>("");
 
     const form = useForm<ExperienceFormSchema>({
         resolver: zodResolver(experienceSchema),
@@ -39,18 +39,63 @@ export default function ExperienceForm() {
     
     const [skill, setSkill] = useState("");
   
-    const onSubmit = (data: ExperienceFormSchema) => {
-        const newExperience: Experience = {
-          ...data,
-          id: uuidv4(),
-        };
-    
-        if (userEmail) {
-            addExperience.mutate({ email: userEmail, experience: newExperience });
+    const onSubmit = async (data: ExperienceFormSchema) => {
+        try {
+            const newExperience: Omit<Experience, 'id' | '_id'> = {
+              ...data,
+              // Let MongoDB generate _id automatically
+            };
+        
+            if (userEmail) {
+                await addExperience(newExperience as Experience);
+                form.reset();
+                setSkill("");
+                setSuccessMessage("Experience added successfully!");
+                setTimeout(() => setSuccessMessage(""), 3000);
+            }
+        } catch (error) {
+            console.error('Error adding experience:', error);
         }
-    
-        form.reset();
-        setSkill("");
+    };
+
+    const handleDeleteExperience = async (experienceId: string) => {
+        try {
+            if (userEmail) {
+                await removeExperience(experienceId);
+                setSuccessMessage("Experience deleted successfully!");
+                setTimeout(() => setSuccessMessage(""), 3000);
+            }
+        } catch (error) {
+            console.error('Error deleting experience:', error);
+        }
+    };
+
+    const handleDeleteAllExperiences = async () => {
+        if (window.confirm('Are you sure you want to delete all experiences? This action cannot be undone.')) {
+            try {
+                if (userEmail) {
+                    await removeAllExperiences();
+                    setSuccessMessage("All experiences deleted successfully!");
+                    setTimeout(() => setSuccessMessage(""), 3000);
+                }
+            } catch (error) {
+                console.error('Error deleting all experiences:', error);
+            }
+        }
+    };
+
+    const addSkillToForm = () => {
+        if (skill.trim()) {
+            const currentSkills = form.getValues("skillsLearned") || [];
+            form.setValue("skillsLearned", [...currentSkills, skill.trim()]);
+            setSkill("");
+        }
+    };
+
+    const removeSkillFromForm = (index: number) => {
+        const currentSkills = form.getValues("skillsLearned") || [];
+        const newSkills = currentSkills.filter((_, i) => i !== index);
+        form.setValue("skillsLearned", newSkills);
     };
 
     if (isLoading) {
@@ -60,10 +105,37 @@ export default function ExperienceForm() {
         </div>
       );
     }
+
+    // Show message if no basic info exists
+    if (!userEmail) {
+        return (
+            <div className="w-full max-w-4xl mx-auto p-4 space-y-8">
+                <div className="border border-border rounded-xl shadow-sm bg-card p-6 text-center">
+                    <div className="mb-4">
+                        <svg className="w-12 h-12 text-muted-foreground mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <h3 className="text-lg font-semibold text-foreground mb-2">Basic Information Required</h3>
+                        <p className="text-muted-foreground">
+                            Please fill out your basic information first before adding experience. 
+                            Go to the "Basic Information" section above to get started.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        );
+    }
     
-    return(
+    return (
         <>
         <div className="w-full max-w-4xl mx-auto p-4 space-y-8">
+            {/* Success Message */}
+            {successMessage && (
+                <div className="border border-green-200 bg-green-50 text-green-800 px-4 py-3 rounded-lg dark:bg-green-900/30 dark:border-green-800 dark:text-green-300">
+                    {successMessage}
+                </div>
+            )}
+
             {/* Experience Form */}
             <div className="border border-border rounded-xl shadow-sm bg-card overflow-hidden">
             <div className="bg-gradient-to-r from-primary/10 via-primary/5 to-transparent p-6 border-b border-border">
@@ -127,6 +199,7 @@ export default function ExperienceForm() {
                         )}
                     />
                     </div>
+                    
                     {/* Date Range Row */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <FormField
@@ -197,198 +270,189 @@ export default function ExperienceForm() {
                             <span>Job Description</span>
                         </FormLabel>
                         <FormControl>
-                            <Textarea 
-                            placeholder="Describe your role, responsibilities, achievements, and key contributions..." 
-                            className="bg-background border-input focus:ring-ring focus:border-ring transition-colors min-h-[120px] resize-none"
-                            {...field} 
+                            <Textarea
+                            placeholder="Describe your responsibilities, achievements, and impact in this role..."
+                            className="bg-background border-input focus:ring-ring focus:border-ring transition-colors min-h-[120px]"
+                            {...field}
                             />
                         </FormControl>
                         <FormMessage className="text-destructive" />
                         </FormItem>
                     )}
                     />
+
                     {/* Skills Learned Section */}
                     <div className="space-y-4">
                     <FormLabel className="text-foreground font-medium flex items-center space-x-2">
                         <svg className="w-4 h-4 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
                         </svg>
-                        <span>Skills Learned</span>
+                        <span>Skills & Technologies Learned</span>
                     </FormLabel>
-
-                    {/* Skills Display */}
-                    {form.watch("skillsLearned").length > 0 && (
-                        <div className="p-4 bg-muted/20 rounded-lg border border-muted">
-                        <div className="flex flex-wrap gap-2">
-                            {form.watch("skillsLearned").map((skill, index) => (
-                                <Badge 
-                                key={index} 
-                                className="cursor-pointer bg-primary/10 text-primary border-primary/20 hover:bg-destructive/10 hover:text-destructive hover:border-destructive/20 transition-colors group"
-                                onClick={() => {
-                                    const updatedSkills = form.getValues("skillsLearned").filter((s) => s !== skill);
-                                    form.setValue("skillsLearned", updatedSkills, { shouldValidate: true });
-                                }}
-                                >
-                                <span>{skill}</span>
-                                <span className="ml-1 group-hover:text-destructive transition-colors">✕</span>
-                                </Badge>
-                            ))}
-                        </div>
-                        </div>
-                    )}
-
-                    {/* Add Skill Input */}
-                    <div className="flex flex-col sm:flex-row gap-3">
+                    
+                    <div className="flex space-x-2">
                         <Input
-                        placeholder="Add a skill you learned (e.g., React, Leadership)"
+                        placeholder="Add a skill or technology..."
                         value={skill}
                         onChange={(e) => setSkill(e.target.value)}
                         onKeyDown={(e) => {
-                            if (e.key === "Enter" && skill.trim()) {
+                            if (e.key === "Enter") {
                             e.preventDefault();
-                            const currentSkills = form.getValues("skillsLearned");
-                            if (!currentSkills.includes(skill.trim())) {
-                                form.setValue("skillsLearned", [...currentSkills, skill.trim()], { shouldValidate: true });
-                                setSkill("");
-                            }
+                            addSkillToForm();
                             }
                         }}
-                        className="bg-background border-input focus:ring-ring focus:border-ring transition-colors flex-1"
+                        className="bg-background border-input focus:ring-ring focus:border-ring transition-colors"
                         />
                         <Button
                         type="button"
+                        onClick={addSkillToForm}
                         variant="outline"
-                        onClick={() => {
-                            if (skill.trim()) {
-                            const currentSkills = form.getValues("skillsLearned");
-                            if (!currentSkills.includes(skill.trim())) {
-                                form.setValue("skillsLearned", [...currentSkills, skill.trim()], { shouldValidate: true });
-                                setSkill("");
-                            }
-                            }
-                        }}
-                        disabled={!skill.trim()}
-                        className="shrink-0"
+                        className="border-primary text-primary hover:bg-primary hover:text-primary-foreground transition-colors"
                         >
-                        <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                        </svg>
-                        Add Skill
+                        Add
                         </Button>
                     </div>
-                    <p className="text-xs text-muted-foreground">
-                        Press Enter to quickly add skills or click on badges to remove them
-                    </p>
+
+                    {/* Display added skills */}
+                    {form.watch("skillsLearned") && form.watch("skillsLearned").length > 0 && (
+                        <div className="flex flex-wrap gap-2 p-4 bg-muted/30 rounded-lg border border-muted">
+                        {form.watch("skillsLearned").map((skill, index) => (
+                            <Badge
+                            key={index}
+                            variant="secondary"
+                            className="bg-primary/10 text-primary border-primary/20 hover:bg-primary/20 transition-colors group cursor-pointer"
+                            onClick={() => removeSkillFromForm(index)}
+                            >
+                            {skill}
+                            <svg className="w-3 h-3 ml-1 opacity-0 group-hover:opacity-100 transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                            </Badge>
+                        ))}
+                        </div>
+                    )}
                     </div>
+
+                    <Button 
+                    type="submit" 
+                    className="w-full bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
+                    disabled={addExperienceLoading}
+                    >
+                    {addExperienceLoading ? 'Adding Experience...' : 'Add Experience'}
+                    </Button>
                 </form>
                 </Form>
-                <Button 
-                type="submit" 
-                className="w-full mt-6 bg-primary text-primary-foreground hover:bg-primary/90 transition-colors" 
-                onClick={form.handleSubmit(onSubmit)}
-                >
-                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                </svg>
-                Add Experience
-                </Button>
             </div>
             </div>
+
             {/* Experience List */}
             <div className="border border-border rounded-xl shadow-sm bg-card overflow-hidden">
-            <div className="bg-gradient-to-r from-secondary/20 via-secondary/10 to-transparent p-6 border-b border-border">
-                <h2 className="text-xl font-semibold text-foreground flex items-center space-x-2">
-                <svg className="w-5 h-5 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2-2v2m8 0V6a2 2 0 012 2v6a2 2 0 01-2 2H6a2 2 0 01-2-2V8a2 2 0 012-2V6" />
-                </svg>
-                <span>Work Experience</span>
-                </h2>
-                <p className="text-sm text-muted-foreground mt-1">
-                {experiences?.length === 0 ? "No experience added yet" : `${experiences?.length} experience${experiences?.length === 1 ? '' : 's'} recorded`}
-                </p>
+            <div className="bg-gradient-to-r from-secondary/10 via-secondary/5 to-transparent p-6 border-b border-border">
+                <div className="flex items-center justify-between">
+                <div>
+                    <h2 className="text-xl font-semibold text-foreground flex items-center space-x-2">
+                    <svg className="w-5 h-5 text-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                    </svg>
+                    <span>Your Experience History</span>
+                    </h2>
+                    <p className="text-sm text-muted-foreground">
+                    {!experiences || experiences.length === 0 ? "No experience added yet" : `${experiences.length} experience${experiences.length === 1 ? '' : 's'} recorded`}
+                    </p>
+                </div>
+                
+                {experiences && experiences.length > 0 && (
+                    <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={handleDeleteAllExperiences}
+                        className="border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground transition-colors"
+                    >
+                        Clear All
+                    </Button>
+                )}
+                </div>
             </div>
+
             <div className="p-6">
                 {!experiences || experiences.length === 0 ? (
                 <div className="text-center py-12">
-                    <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-muted/50 flex items-center justify-center">
+                    <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-muted flex items-center justify-center">
                     <svg className="w-10 h-10 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2-2v2m8 0V6a2 2 0 012 2v6a2 2 0 01-2 2H6a2 2 0 01-2-2V8a2 2 0 012-2V6" />
                     </svg>
                     </div>
-                    <h3 className="text-lg font-medium text-foreground mb-2">No experience yet</h3>
-                    <p className="text-muted-foreground">Start building your professional profile by adding your work experience above</p>
+                    <h3 className="text-lg font-medium text-foreground mb-2">No Experience Added Yet</h3>
+                    <p className="text-muted-foreground mb-4">Start building your professional profile by adding your work experience above</p>
                 </div>
                 ) : (
                 <div className="space-y-6">
-                    {experiences.map((exp) => (
+                    {experiences.map((experience, index) => (
                     <div 
-                        key={exp.id} 
-                        className="border border-border rounded-lg p-6 bg-card/50 hover:bg-card transition-colors group relative"
+                        key={experience._id || experience.id || `experience-${index}`} 
+                        className="border border-border rounded-lg p-6 bg-card hover:shadow-md transition-shadow group"
                     >
-                        {/* Remove Button */}
+                        <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                            <div className="flex items-center space-x-3 mb-2">
+                            <h3 className="text-lg font-semibold text-foreground">{experience.position}</h3>
+                            <span className="text-muted-foreground">•</span>
+                            <span className="text-lg font-medium text-primary">{experience.company}</span>
+                            </div>
+                            
+                            <div className="flex items-center space-x-2 text-sm text-muted-foreground mb-3">
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
+                            <span>
+                                {new Date(experience.startDate).toLocaleDateString()} - {
+                                experience.endDate 
+                                    ? new Date(experience.endDate).toLocaleDateString()
+                                    : "Present"
+                                }
+                            </span>
+                            </div>
+
+                            {experience.description && (
+                            <p className="text-foreground mb-4 leading-relaxed">{experience.description}</p>
+                            )}
+
+                            {experience.skillsLearned && experience.skillsLearned.length > 0 && (
+                            <div className="space-y-2">
+                                <h4 className="text-sm font-medium text-foreground flex items-center space-x-2">
+                                <svg className="w-4 h-4 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                                </svg>
+                                <span>Skills & Technologies</span>
+                                </h4>
+                                <div className="flex flex-wrap gap-2">
+                                {experience.skillsLearned.map((skill, index) => (
+                                    <Badge 
+                                    key={index} 
+                                    variant="outline" 
+                                    className="bg-secondary/10 text-secondary border-secondary/30"
+                                    >
+                                    {skill}
+                                    </Badge>
+                                ))}
+                                </div>
+                            </div>
+                            )}
+                        </div>
+                        
                         <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => removeExperience.mutate({ email: userEmail, id: exp.id || '' })}
-                        className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity text-destructive hover:text-destructive hover:bg-destructive/10"
+                            type="button"
+                            size="sm"
+                            variant="ghost"
+                            className="opacity-0 group-hover:opacity-100 transition-opacity text-destructive hover:text-destructive hover:bg-destructive/10 ml-4"
+                            onClick={() => handleDeleteExperience(experience._id || experience.id || '')}
                         >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                        </svg>
+                            </svg>
                         </Button>
-
-                        {/* Header */}
-                        <div className="flex items-start justify-between mb-4 pr-12">
-                        <div>
-                            <h3 className="text-lg font-semibold text-foreground group-hover:text-primary transition-colors">
-                            {exp.position}
-                            </h3>
-                            <div className="flex items-center space-x-2 mt-1">
-                            <p className="text-primary font-medium">{exp.company}</p>
-                            <span className="w-1 h-1 bg-muted-foreground rounded-full"></span>
-                            <p className="text-sm text-muted-foreground">
-                                {new Date(exp.startDate).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })} - {' '}
-                                {exp.endDate ? new Date(exp.endDate).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) : (
-                                <span className="text-primary font-medium">Present</span>
-                                )}
-                            </p>
-                            </div>
                         </div>
-                        </div>
-
-                        {/* Description */}
-                        {exp.description && (
-                        <div className="mb-4">
-                            <p className="text-sm text-muted-foreground leading-relaxed">
-                            {exp.description}
-                            </p>
-                        </div>
-                        )}
-
-                        {/* Skills Learned */}
-                        {exp.skillsLearned.length > 0 && (
-                        <div className="space-y-3">
-                            <h4 className="text-xs font-medium text-foreground uppercase tracking-wide">
-                            Skills Developed
-                            </h4>
-                            <div className="flex flex-wrap gap-2">
-                            {exp.skillsLearned.map((skill, index) => (
-                                <Badge 
-                                key={index} 
-                                className="cursor-pointer bg-accent/50 text-accent-foreground border-accent hover:bg-destructive/10 hover:text-destructive hover:border-destructive/20 transition-colors group/skill"
-                                onClick={() => {
-                                    const updatedSkills = form.getValues("skillsLearned").filter((s) => s !== skill);
-                                    form.setValue("skillsLearned", updatedSkills, { shouldValidate: true });
-                                }}
-                                >
-                                <span>{skill}</span>
-                                <span className="ml-1 opacity-0 group-hover/skill:opacity-100 transition-opacity">✕</span>
-                                </Badge>
-                            ))}
-                            </div>
-                        </div>
-                        )}
                     </div>
                     ))}
                 </div>

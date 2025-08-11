@@ -12,12 +12,14 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
-import { useBasic } from '../hooks/useBasic';
+import { useBasicForm } from '../hooks/useBasic';
 import { Textarea } from '@/components/ui/textarea';
 import { type Basic } from '@/types/portfolio';
+import { useUserContext } from '@/contexts/useUserContext';
 
 export default function BasicForm() {
-    const { basic, isLoading, error, updateBasic, removeBasicMutation } = useBasic();
+    const { basic, isLoading, error, updateBasic, removeBasicMutation } = useBasicForm();
+    const { setCurrentUser } = useUserContext();
     const [editing, setEditing] = useState(false);
     const [successMessage, setSuccessMessage] = useState<string>('');
 
@@ -45,8 +47,10 @@ export default function BasicForm() {
                 location: basic.location || '',
                 about: basic.about || '',
             });
+            // Also set the current user in context when basic data is loaded
+            setCurrentUser(basic);
         }
-    }, [basic, form]);
+    }, [basic, form, setCurrentUser]);
 
     // Clear success message after 3 seconds
     useEffect(() => {
@@ -57,6 +61,7 @@ export default function BasicForm() {
     }, [successMessage]);
 
     const onSubmit = (data: BasicFormSchema) => {
+        console.log('BasicForm submitting:', data);
         // Create a new object that combines the existing basic data with the form data.
         // This ensures the ID from the backend is included.
         const payload = {
@@ -64,9 +69,12 @@ export default function BasicForm() {
             ...data,
         };
 
+        console.log('BasicForm payload:', payload);
         // Pass the correctly-typed object to the mutate function
         updateBasic.mutate(payload as Basic, {
-            onSuccess: () => {
+            onSuccess: (data) => {
+                console.log('BasicForm - Save successful for email:', data.email);
+                setCurrentUser(data);
                 setEditing(false);
                 setSuccessMessage('Profile updated successfully!');
             },
@@ -78,16 +86,19 @@ export default function BasicForm() {
 
     const handleDelete = () => {
         if (window.confirm('Are you sure you want to delete your profile? This action cannot be undone.')) {
-            removeBasicMutation.mutate(undefined, {
-                onSuccess: () => {
-                    setSuccessMessage('Profile deleted successfully!');
-                    setEditing(false);
-                    form.reset();
-                },
-                onError: (error) => {
-                    console.error('Failed to delete profile:', error);
-                }
-            });
+            if (basic?.email) {
+                removeBasicMutation.mutate(basic.email, {
+                    onSuccess: () => {
+                        setCurrentUser(null);
+                        setSuccessMessage('Profile deleted successfully!');
+                        setEditing(false);
+                        form.reset();
+                    },
+                    onError: (error) => {
+                        console.error('Failed to delete profile:', error);
+                    }
+                });
+            }
         }
     };
 

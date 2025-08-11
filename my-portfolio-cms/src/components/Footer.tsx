@@ -1,3 +1,4 @@
+import {Link} from "react-router-dom";
 export default function Footer(){
     return (
         <footer className="border-t border-border bg-card/30 backdrop-blur supports-[backdrop-filter]:bg-card/20">
@@ -32,7 +33,8 @@ export default function Footer(){
                         <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                         </svg>
-                        Get Started Today
+                        <Link to="/Dashboard">Get Started Today</Link>
+
                     </button>
                     </div>
                 </div>

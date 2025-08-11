@@ -11,19 +11,19 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { v4 as uuidv4 } from "uuid";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { type Project } from "@/types/portfolio";
 import { useProject } from "../hooks/useProject";
-import { useBasic } from "../hooks/useBasic";
+import { useUserContext } from "@/contexts/useUserContext";
 
 export default function ProjectForm() {
-  const { basic } = useBasic();
-  const userEmail = basic?.email || '';
-
-  const { projects, isLoading, addProject, removeProject } = useProject(userEmail);
+  const { currentUser } = useUserContext();
+  const userEmail = currentUser?.email || '';
+  
+  const { projects, isLoading, error, addProject, removeProject, removeAllProjects, addProjectLoading } = useProject(userEmail);
+  const [successMessage, setSuccessMessage] = useState<string>('');
 
   const form = useForm<ProjectFormSchema>({
     resolver: zodResolver(projectSchema),
@@ -37,24 +37,110 @@ export default function ProjectForm() {
 
   const [tech, setTech] = useState("");
 
-  const onSubmit = (data: ProjectFormSchema) => {
-    const newProject: Project = {
-      ...data,
-      id: uuidv4(),
-    };
-
-    if (userEmail) {
-      addProject.mutate({ email: userEmail, project: newProject });
+  // Clear success message after 3 seconds
+  useEffect(() => {
+    if (successMessage) {
+      const timer = setTimeout(() => setSuccessMessage(''), 3000);
+      return () => clearTimeout(timer);
     }
+  }, [successMessage]);
 
-    form.reset();
-    setTech("");
+  const onSubmit = async (data: ProjectFormSchema) => {
+    try {
+      const newProject: Omit<Project, 'id' | '_id'> = {
+        ...data,
+        // Let MongoDB generate _id automatically
+      };
+
+      if (userEmail) {
+        await addProject(newProject as Project);
+        setSuccessMessage('Project added successfully!');
+        form.reset();
+        setTech("");
+      }
+    } catch (error) {
+      console.error('Failed to add project:', error);
+    }
+  };
+
+  const handleDeleteProject = async (projectId: string) => {
+    if (window.confirm('Are you sure you want to delete this project?')) {
+      try {
+        if (userEmail) {
+          await removeProject(projectId);
+          setSuccessMessage('Project deleted successfully!');
+        }
+      } catch (error) {
+        console.error('Failed to delete project:', error);
+      }
+    }
+  };
+
+  const handleDeleteAllProjects = async () => {
+    if (window.confirm('Are you sure you want to delete all projects? This action cannot be undone.')) {
+      try {
+        if (userEmail) {
+          await removeAllProjects();
+          setSuccessMessage('All projects deleted successfully!');
+        }
+      } catch (error) {
+        console.error('Failed to delete all projects:', error);
+      }
+    }
   };
 
   if (isLoading) {
     return (
       <div className="w-full max-w-4xl mx-auto p-4 space-y-8 text-center text-muted-foreground">
+        <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
         <p>Loading projects...</p>
+      </div>
+    );
+  }
+
+  // Show message if no basic info exists
+  if (!userEmail) {
+    return (
+      <div className="w-full max-w-4xl mx-auto p-4 space-y-8">
+        <div className="border border-border rounded-xl shadow-sm bg-card p-6 text-center">
+          <div className="mb-4">
+            <svg className="w-12 h-12 text-muted-foreground mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <h3 className="text-lg font-semibold text-foreground mb-2">Basic Information Required</h3>
+            <p className="text-muted-foreground">
+              Please fill out your basic information first before adding projects. 
+              Go to the "Basic Information" section above to get started.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="w-full max-w-4xl mx-auto p-4 space-y-8">
+        <div className="border border-destructive/50 rounded-xl shadow-sm bg-destructive/5 overflow-hidden">
+          <div className="p-6 text-center">
+            <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-destructive/10 flex items-center justify-center">
+              <svg className="w-8 h-8 text-destructive" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <h3 className="text-lg font-semibold text-destructive mb-2">Error Loading Projects</h3>
+            <p className="text-sm text-muted-foreground mb-4">
+              There was an error loading your projects. Please try refreshing the page.
+            </p>
+            <Button 
+              onClick={() => window.location.reload()} 
+              variant="outline"
+              className="border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground"
+            >
+              Refresh Page
+            </Button>
+          </div>
+        </div>
       </div>
     );
   }
@@ -62,6 +148,20 @@ export default function ProjectForm() {
   return (
     <>
     <div className="w-full max-w-4xl mx-auto p-4 space-y-8">
+      {/* Success Message */}
+      {successMessage && (
+        <div className="border border-green-200 rounded-xl shadow-sm bg-green-50 overflow-hidden">
+          <div className="p-4 flex items-center space-x-3">
+            <div className="w-6 h-6 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0">
+              <svg className="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+            </div>
+            <p className="text-sm text-green-800">{successMessage}</p>
+          </div>
+        </div>
+      )}
+
       {/* Projects Form */}
       <div className="border border-border rounded-xl shadow-sm bg-card overflow-hidden">
         <div className="bg-gradient-to-r from-primary/10 via-primary/5 to-transparent p-6 border-b border-border">
@@ -187,8 +287,7 @@ export default function ProjectForm() {
                       <svg className="w-4 h-4 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                       </svg>
-                      <span>Live Link</span>
-                      <span className="text-xs text-muted-foreground">(optional)</span>
+                      <span>Live Link/Code Link</span>
                     </FormLabel>
                     <FormControl>
                       <Input 
@@ -206,9 +305,9 @@ export default function ProjectForm() {
               <Button 
                 type="submit" 
                 className="w-full bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
-                disabled={addProject.isPending || !form.formState.isValid}
+                disabled={addProjectLoading || !form.formState.isValid}
               >
-                {addProject.isPending ? (
+                {addProjectLoading ? (
                   <div className="flex items-center space-x-2">
                     <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
                     <span>Adding...</span>
@@ -230,15 +329,31 @@ export default function ProjectForm() {
       {/* Saved Projects */}
       <div className="border border-border rounded-xl shadow-sm bg-card overflow-hidden">
         <div className="bg-gradient-to-r from-secondary/20 via-secondary/10 to-transparent p-6 border-b border-border">
-          <h2 className="text-xl font-semibold text-foreground flex items-center space-x-2">
-            <svg className="w-5 h-5 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-            </svg>
-            <span>Your Projects</span>
-          </h2>
-          <p className="text-sm text-muted-foreground mt-1">
-            {projects?.length === 0 ? "No projects added yet" : `${projects?.length} project${projects?.length === 1 ? '' : 's'} in your portfolio`}
-          </p>
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-xl font-semibold text-foreground flex items-center space-x-2">
+                <svg className="w-5 h-5 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                </svg>
+                <span>Your Projects</span>
+              </h2>
+              <p className="text-sm text-muted-foreground mt-1">
+                {projects?.length === 0 ? "No projects added yet" : `${projects?.length} project${projects?.length === 1 ? '' : 's'} in your portfolio`}
+              </p>
+            </div>
+            
+            {projects && projects.length > 0 && (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={handleDeleteAllProjects}
+                className="border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground transition-colors"
+              >
+                Clear All
+              </Button>
+            )}
+          </div>
         </div>
 
         <div className="p-6">
@@ -254,9 +369,9 @@ export default function ProjectForm() {
             </div>
           ) : (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {projects.map((project) => (
+              {projects.map((project, index) => (
                 <div 
-                  key={project.id} 
+                  key={project._id || project.id || `project-${index}`} 
                   className="border border-border rounded-lg p-6 bg-card/50 hover:bg-card transition-colors group"
                 >
                   <div className="flex items-start justify-between mb-4">
@@ -303,11 +418,13 @@ export default function ProjectForm() {
                         variant="outline"
                         size="sm"
                         className="mt-2 text-xs text-muted-foreground hover:text-foreground"
-                        onClick={() => removeProject.mutate({ email: userEmail, id: project.id })}
+                        onClick={() => handleDeleteProject(project._id || project.id || '')}
+                        disabled={false}
                       >
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                         </svg>
+                        Delete
                       </Button>
                     </div>
                   )}

@@ -8,7 +8,8 @@ export type Basic = {
 };
 
 export type Project = {
-  id: string;
+  id?: string;
+  _id?: string;
   title: string;
   description: string;
   techStack: string[];
@@ -16,7 +17,8 @@ export type Project = {
 };
 
 export type Experience = {
-  id: string;
+  id?: string;
+  _id?: string;
   company: string;
   position: string;
   startDate: Date;
@@ -26,13 +28,15 @@ export type Experience = {
 }
 
 export type Skill = {
-  id: string;
+  id?: string;
+  _id?: string;
   name: string;
   level: "beginner"|"intermediate"|"advanced";
 };
 
 export type Education = {
-  id: string;
+  id?: string;
+  _id?: string;
   institution: string;
   degree: string;
   startDate: Date;
