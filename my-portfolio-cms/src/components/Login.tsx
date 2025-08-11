@@ -49,7 +49,7 @@ export default function Login() {
                     </form>
                 </CardContent>
                 <CardFooter className="flex-col gap-2">
-                    <Button type="submit" className="w-full">
+                    <Button type="submit" className="w-full bg-gradient-to-r from-blue-500 to-purple-500 hover:bg-blue-700">
                     Login
                     </Button>
                     <p className="text-sm text-center mt-4">
