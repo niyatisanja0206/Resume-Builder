@@ -59,3 +59,11 @@ export const educationSchema = z.object({
 });
 
 export type EducationFormSchema = z.infer<typeof educationSchema>;
+
+export const userSchema = z.object({
+  id: z.string().optional(),
+  email: z.string().email("Invalid email address"),
+  password: z.string().min(6, "Password must be at least 6 characters"),
+});
+
+export type UserFormSchema = z.infer<typeof userSchema>;

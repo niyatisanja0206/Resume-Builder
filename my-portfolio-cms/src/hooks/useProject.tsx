@@ -39,11 +39,13 @@ const removeAllProjects = async (email: string) => {
 };
 
 const updateProject = async (data: { email: string; id: string; project: Project }): Promise<Project> => {
+    console.log('UpdateProject called with:', data);
     const { data: response } = await axios.put(`${API_BASE_URL}/update`, {
         email: data.email,
         id: data.id,
         project: data.project
     });
+    console.log('UpdateProject response:', response);
     return response.data;
 };
 
@@ -82,6 +84,8 @@ export function useProject(email: string) {
         mutationFn: updateProject,
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["projects", email] });
+            // Force refetch to ensure UI updates
+            queryClient.refetchQueries({ queryKey: ["projects", email] });
         },
     });
 

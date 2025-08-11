@@ -1,11 +1,10 @@
 // LandingPage.tsx
 import React, { useState } from 'react';
 import { Eye, Edit, Download, Award, Users, Zap, Star } from 'lucide-react';
-// These imports are for the resume images in the carousel.
-// You need to ensure these image files (resume1, resume2, resume3) exist in your `assets` folder.
-//import { resume1 as resume1 } from '../assets'; 
+import resume1 from '@/assets/resume1.png';
+import resume2 from '@/assets/resume2.png';
+import resume3 from '@/assets/resume3.png';
 
-// Button Component (you might want to move this to a separate components file)
 const Button: React.FC<{
   children: React.ReactNode;
   className?: string;
@@ -111,7 +110,7 @@ const LandingPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-background text-foreground">
       {/* Hero Section */}
-      <section className="relative py-20 px-4 sm:px-6 lg:px-8">
+      <section className="relative py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-r from-blue-100 to-purple-100">
         <div className="container mx-auto max-w-7xl">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
             {/* Hero Text */}
@@ -142,13 +141,13 @@ const LandingPage: React.FC = () => {
                     {/* The resume images are added here. */}
                     {/* The className "h-auto" ensures the image maintains its aspect ratio while scaling to the container width. */}
                     <div className="flex items-center justify-center bg-muted rounded-lg">
-                      <img src='../assets/resume1.png' alt="Resume template 1" className="w-full h-auto object-contain rounded-lg" />
+                      <img src={resume1} alt="Resume template 1" className="w-full h-auto object-contain rounded-lg" />
                     </div>
                     <div className="flex items-center justify-center bg-muted rounded-lg">
-                      <img src='../assets/resume2.png' alt="Resume template 2" className="w-full h-auto object-contain rounded-lg" />
+                      <img src={resume2} alt="Resume template 2" className="w-full h-auto object-contain rounded-lg" />
                     </div>
                     <div className="flex items-center justify-center bg-muted rounded-lg">
-                      <img src='../assets/resume3.png' alt="Resume template 3" className="w-full h-auto object-contain rounded-lg" />
+                      <img src={resume3} alt="Resume template 3" className="w-full h-auto object-contain rounded-lg" />
                     </div>
                   </CarouselContent>
                 </LocalCarousel>

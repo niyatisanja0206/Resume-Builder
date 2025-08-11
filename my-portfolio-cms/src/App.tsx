@@ -8,6 +8,9 @@ import Dashboard from '@/pages/Dashboard';
 import Portfolio from '@/pages/Portfolio';
 import Landing from '@/pages/Landing';
 import { UserProvider } from '@/contexts/UserContext';
+import Login from './components/Login';
+import Signup from './components/Signup';
+import ForgetPass from './components/ForgetPass';
 
 const queryClient = new QueryClient();
 
@@ -16,7 +19,7 @@ export default function App() {
     <QueryClientProvider client={queryClient}>
       <UserProvider>
         <Router>
-          <Header />
+          <Header/>
           <Routes>
             <Route path="/" element={<Landing />} />
             <Route
@@ -24,11 +27,23 @@ export default function App() {
               element={<Portfolio />}
             />
             <Route
+              path="/signup"
+              element={<Signup />}
+            />
+            <Route
               path="/dashboard"
               element={<Dashboard />}
             />
+            <Route
+              path="/login"
+              element={<Login />}
+            />
+            <Route
+              path="/forget-password"
+              element={<ForgetPass />}
+            />
           </Routes>
-          <Footer />
+          <Footer/>
         </Router>
       </UserProvider>
     </QueryClientProvider>

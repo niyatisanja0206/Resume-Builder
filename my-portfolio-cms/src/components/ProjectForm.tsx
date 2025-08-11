@@ -60,10 +60,14 @@ export default function ProjectForm() {
     try {
       if (editingProject) {
         // Update existing project
+        console.log('Editing project:', editingProject);
+        console.log('Form data:', data);
         const updatedProject: Project = {
           ...editingProject,
           ...data,
+          _id: editingProject._id || editingProject.id,
         };
+        console.log('Updated project object:', updatedProject);
 
         if (userEmail) {
           await updateProject(editingProject._id || editingProject.id || '', updatedProject);

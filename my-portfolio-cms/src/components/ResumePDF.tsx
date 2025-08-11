@@ -1,407 +1,514 @@
 import { Button } from "@/components/ui/button";
-import { jsPDF } from "jspdf";
-import html2canvas from "html2canvas";
-import React, { useState } from "react";
+import { PDFDownloadLink, Document, Page, Text, View, StyleSheet } from '@react-pdf/renderer';
+import type { Basic, Project, Experience, Skill, Education } from '@/types/portfolio';
 
 interface ResumePDFProps {
-  targetRef: React.RefObject<HTMLDivElement>;
+  basicInfo: Basic | null;
+  projects: Project[];
+  experiences: Experience[];
+  skills: Skill[];
+  education: Education[];
+  templateType?: 'classic' | 'modern' | 'creative' | 'original';
 }
 
-export default function ResumePDF({ targetRef }: ResumePDFProps) {
-  const [isGenerating, setIsGenerating] = useState(false);
+// Define styles for different templates
+const classicStyles = StyleSheet.create({
+  page: {
+    fontFamily: 'Times-Roman',
+    fontSize: 11,
+    paddingTop: 30,
+    paddingLeft: 30,
+    paddingRight: 30,
+    paddingBottom: 30,
+    backgroundColor: '#ffffff',
+  },
+  section: {
+    marginBottom: 10,
+  },
+  header: {
+    marginBottom: 20,
+    textAlign: 'center',
+  },
+  name: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    marginBottom: 5,
+  },
+  contactInfo: {
+    fontSize: 10,
+    marginBottom: 3,
+  },
+  sectionTitle: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    marginBottom: 8,
+    marginTop: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: '#000',
+    paddingBottom: 2,
+  },
+  text: {
+    fontSize: 11,
+    lineHeight: 1.4,
+    marginBottom: 4,
+  },
+  jobTitle: {
+    fontSize: 12,
+    fontWeight: 'bold',
+    marginBottom: 2,
+  },
+  company: {
+    fontSize: 11,
+    fontWeight: 'bold',
+    marginBottom: 2,
+  },
+  date: {
+    fontSize: 10,
+    fontStyle: 'italic',
+    marginBottom: 4,
+  },
+  skillsContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 5,
+  },
+  skill: {
+    fontSize: 10,
+    backgroundColor: '#f0f0f0',
+    padding: '2 6',
+    marginRight: 5,
+    marginBottom: 3,
+  },
+});
 
-  const handleDownload = async () => {
-    if (!targetRef.current) return;
+const modernStyles = StyleSheet.create({
+  page: {
+    fontFamily: 'Helvetica',
+    fontSize: 10,
+    paddingTop: 40,
+    paddingLeft: 40,
+    paddingRight: 40,
+    paddingBottom: 40,
+    backgroundColor: '#ffffff',
+  },
+  section: {
+    marginBottom: 15,
+  },
+  header: {
+    marginBottom: 25,
+    paddingBottom: 15,
+    borderBottomWidth: 2,
+    borderBottomColor: '#2563eb',
+  },
+  name: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    marginBottom: 8,
+    color: '#1e40af',
+  },
+  contactInfo: {
+    fontSize: 9,
+    marginBottom: 2,
+    color: '#4b5563',
+  },
+  sectionTitle: {
+    fontSize: 13,
+    fontWeight: 'bold',
+    marginBottom: 10,
+    marginTop: 18,
+    color: '#1e40af',
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+  },
+  text: {
+    fontSize: 10,
+    lineHeight: 1.5,
+    marginBottom: 5,
+    color: '#374151',
+  },
+  jobTitle: {
+    fontSize: 11,
+    fontWeight: 'bold',
+    marginBottom: 3,
+    color: '#1f2937',
+  },
+  company: {
+    fontSize: 10,
+    fontWeight: 'bold',
+    marginBottom: 3,
+    color: '#4b5563',
+  },
+  date: {
+    fontSize: 9,
+    fontStyle: 'italic',
+    marginBottom: 5,
+    color: '#6b7280',
+  },
+  skillsContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+  },
+  skill: {
+    fontSize: 9,
+    backgroundColor: '#dbeafe',
+    color: '#1e40af',
+    padding: '3 8',
+    marginRight: 6,
+    marginBottom: 4,
+    borderRadius: 3,
+  },
+});
 
-    setIsGenerating(true);
-    
-    try {
-      // Store original styles
-      const originalOverflow = document.body.style.overflow;
-      
-      // Temporarily modify body to prevent scrolling issues
-      document.body.style.overflow = 'hidden';
-      
-      // Add comprehensive print styles that target the actual element structure
-      const printStyles = document.createElement('style');
-      printStyles.innerHTML = `
-        /* Apply to the target element directly */
-        [data-pdf-capture="true"] {
-          font-family: 'Times New Roman', Times, serif !important;
-          background: white !important;
-          box-shadow: none !important;
-          border: none !important;
-          margin: 0 !important;
-          padding: 20px !important;
-          max-width: none !important;
-          width: 794px !important;
-          min-height: auto !important;
-          position: relative !important;
-          transform: none !important;
-          overflow: visible !important;
-        }
-        
-        [data-pdf-capture="true"] * {
-          font-family: 'Times New Roman', Times, serif !important;
-          box-sizing: border-box !important;
-        }
-        
-        /* Reset all padding on sections */
-        [data-pdf-capture="true"] .px-6,
-        [data-pdf-capture="true"] .px-10 {
-          padding-left: 0 !important;
-          padding-right: 0 !important;
-        }
-        
-        [data-pdf-capture="true"] .py-4,
-        [data-pdf-capture="true"] .py-5,
-        [data-pdf-capture="true"] .pt-6,
-        [data-pdf-capture="true"] .pt-8,
-        [data-pdf-capture="true"] .pb-4,
-        [data-pdf-capture="true"] .pb-5 {
-          padding-top: 8px !important;
-          padding-bottom: 8px !important;
-        }
-        
-        /* Section spacing */
-        [data-pdf-capture="true"] .mb-3 {
-          margin-bottom: 6px !important;
-        }
-        
-        [data-pdf-capture="true"] .mb-4 {
-          margin-bottom: 8px !important;
-        }
-        
-        [data-pdf-capture="true"] .space-y-4 > * + * {
-          margin-top: 8px !important;
-        }
-        
-        /* Border and visual elements */
-        [data-pdf-capture="true"] .border-b {
-          border-bottom: 1px solid #d1d5db !important;
-          margin-bottom: 6px !important;
-          padding-bottom: 3px !important;
-        }
-        
-        /* Badges and chips styling */
-        [data-pdf-capture="true"] .bg-gray-100,
-        [data-pdf-capture="true"] .bg-gray-50 {
-          background-color: #f3f4f6 !important;
-          color: #374151 !important;
-          border: 1px solid #d1d5db !important;
-          padding: 2px 6px !important;
-          border-radius: 3px !important;
-          font-size: 10px !important;
-          display: inline-block !important;
-        }
-        
-        /* Grid layouts */
-        [data-pdf-capture="true"] .grid {
-          display: grid !important;
-        }
-        
-        [data-pdf-capture="true"] .grid-cols-2 {
-          grid-template-columns: repeat(2, 1fr) !important;
-        }
-        
-        [data-pdf-capture="true"] .grid-cols-3 {
-          grid-template-columns: repeat(3, 1fr) !important;
-        }
-        
-        [data-pdf-capture="true"] .grid-cols-4 {
-          grid-template-columns: repeat(4, 1fr) !important;
-        }
-        
-        [data-pdf-capture="true"] .grid-cols-5 {
-          grid-template-columns: repeat(5, 1fr) !important;
-        }
-        
-        [data-pdf-capture="true"] .gap-2 {
-          gap: 4px !important;
-        }
-        
-        /* Flex layouts */
-        [data-pdf-capture="true"] .flex {
-          display: flex !important;
-        }
-        
-        [data-pdf-capture="true"] .flex-wrap {
-          flex-wrap: wrap !important;
-        }
-        
-        [data-pdf-capture="true"] .gap-1 {
-          gap: 2px !important;
-        }
-        
-        [data-pdf-capture="true"] .gap-3 {
-          gap: 6px !important;
-        }
-        
-        [data-pdf-capture="true"] .justify-center {
-          justify-content: center !important;
-        }
-        
-        [data-pdf-capture="true"] .justify-between {
-          justify-content: space-between !important;
-        }
-        
-        [data-pdf-capture="true"] .items-center {
-          align-items: center !important;
-        }
-        
-        [data-pdf-capture="true"] .items-start {
-          align-items: flex-start !important;
-        }
-        
-        /* Text alignment */
-        [data-pdf-capture="true"] .text-center {
-          text-align: center !important;
-        }
-        
-        [data-pdf-capture="true"] .text-right {
-          text-align: right !important;
-        }
-        
-        /* Typography */
-        [data-pdf-capture="true"] .text-2xl {
-          font-size: 24px !important;
-          line-height: 1.2 !important;
-        }
-        
-        [data-pdf-capture="true"] .text-lg {
-          font-size: 18px !important;
-          line-height: 1.3 !important;
-        }
-        
-        [data-pdf-capture="true"] .text-base {
-          font-size: 16px !important;
-          line-height: 1.4 !important;
-        }
-        
-        [data-pdf-capture="true"] .text-sm {
-          font-size: 14px !important;
-          line-height: 1.3 !important;
-        }
-        
-        [data-pdf-capture="true"] .text-xs {
-          font-size: 12px !important;
-          line-height: 1.2 !important;
-        }
-        
-        [data-pdf-capture="true"] .font-bold {
-          font-weight: bold !important;
-        }
-        
-        [data-pdf-capture="true"] .font-semibold {
-          font-weight: 600 !important;
-        }
-        
-        [data-pdf-capture="true"] .font-medium {
-          font-weight: 500 !important;
-        }
-        
-        /* Colors */
-        [data-pdf-capture="true"] .text-gray-900 {
-          color: #111827 !important;
-        }
-        
-        [data-pdf-capture="true"] .text-gray-700 {
-          color: #374151 !important;
-        }
-        
-        [data-pdf-capture="true"] .text-gray-600 {
-          color: #4b5563 !important;
-        }
-        
-        /* Hide elements not needed in PDF */
-        [data-pdf-capture="true"] .print\\:hidden {
-          display: none !important;
-        }
-        
-        /* SVG icons */
-        [data-pdf-capture="true"] svg {
-          width: 12px !important;
-          height: 12px !important;
-          display: inline-block !important;
-          vertical-align: middle !important;
-        }
-      `;
-      document.head.appendChild(printStyles);
+const creativeStyles = StyleSheet.create({
+  page: {
+    fontFamily: 'Helvetica',
+    fontSize: 11,
+    paddingTop: 30,
+    paddingLeft: 30,
+    paddingRight: 30,
+    paddingBottom: 30,
+    backgroundColor: '#ffffff',
+    flexDirection: 'row',
+  },
+  leftColumn: {
+    width: '35%',
+    backgroundColor: '#f8fafc',
+    padding: 20,
+    marginRight: 15,
+  },
+  rightColumn: {
+    width: '65%',
+    padding: 20,
+  },
+  section: {
+    marginBottom: 12,
+  },
+  header: {
+    marginBottom: 20,
+  },
+  name: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    marginBottom: 6,
+    color: '#0f172a',
+  },
+  contactInfo: {
+    fontSize: 9,
+    marginBottom: 3,
+    color: '#475569',
+  },
+  sectionTitle: {
+    fontSize: 12,
+    fontWeight: 'bold',
+    marginBottom: 8,
+    marginTop: 15,
+    color: '#0f172a',
+    backgroundColor: '#e2e8f0',
+    padding: 4,
+  },
+  text: {
+    fontSize: 10,
+    lineHeight: 1.4,
+    marginBottom: 4,
+    color: '#334155',
+  },
+  jobTitle: {
+    fontSize: 11,
+    fontWeight: 'bold',
+    marginBottom: 2,
+    color: '#1e293b',
+  },
+  company: {
+    fontSize: 10,
+    fontWeight: 'bold',
+    marginBottom: 2,
+    color: '#475569',
+  },
+  date: {
+    fontSize: 9,
+    fontStyle: 'italic',
+    marginBottom: 4,
+    color: '#64748b',
+  },
+  skillsContainer: {
+    flexDirection: 'column',
+    gap: 3,
+  },
+  skill: {
+    fontSize: 9,
+    backgroundColor: '#334155',
+    color: '#ffffff',
+    padding: '2 6',
+    marginBottom: 2,
+    textAlign: 'center',
+  },
+});
 
-      // Add the PDF-specific data attribute to the target element
-      const element = targetRef.current;
-      const originalDataAttr = element.getAttribute('data-pdf-capture');
-      element.setAttribute('data-pdf-capture', 'true');
+export default function ResumePDF({ basicInfo, projects, experiences, skills, education, templateType = 'classic' }: ResumePDFProps) {
+  const getFileName = () => {
+    const name = basicInfo?.name?.replace(/\s+/g, '_') || 'resume';
+    return `${name}_${templateType}_resume.pdf`;
+  };
 
-      // Wait for styles to apply and any dynamic content to render
-      await new Promise(resolve => setTimeout(resolve, 800));
-
-      // Get the full dimensions
-      const fullHeight = Math.max(element.scrollHeight, element.offsetHeight);
-      const fullWidth = 794; // Fixed A4 width in pixels
-
-      // Create canvas with proper dimensions for full-width capture
-      const canvas = await html2canvas(element, {
-        scale: 2, // Higher scale for better quality
-        useCORS: true,
-        allowTaint: false,
-        backgroundColor: '#ffffff',
-        width: fullWidth,
-        height: fullHeight,
-        scrollX: 0,
-        scrollY: 0,
-        windowWidth: fullWidth,
-        windowHeight: fullHeight,
-        x: 0,
-        y: 0,
-        logging: false,
-        imageTimeout: 0,
-        removeContainer: false,
-      });
-
-      const imgData = canvas.toDataURL("image/png", 1.0);
-
-      // Create PDF with proper sizing
-      const pdf = new jsPDF({
-        orientation: "portrait",
-        unit: "pt",
-        format: "a4",
-        compress: true
-      });
-
-      const pdfWidth = pdf.internal.pageSize.getWidth(); // 595.28 pts
-      const pdfHeight = pdf.internal.pageSize.getHeight(); // 841.89 pts
-      const imgWidth = canvas.width / 2; // Divide by scale
-      const imgHeight = canvas.height / 2; // Divide by scale
-
-      // Scale to fit full width with minimal margins
-      const scaleX = (pdfWidth - 20) / imgWidth; // 10pt margin on each side
-      //const scaleY = (pdfHeight - 20) / imgHeight; // 10pt margin top/bottom
-      const scale = Math.min(scaleX, 1); // Don't scale up, but use full width
-
-      const scaledWidth = imgWidth * scale;
-      const scaledHeight = imgHeight * scale;
-
-      // Center with minimal margins
-      const offsetX = (pdfWidth - scaledWidth) / 2;
-      const offsetY = 10; // Small top margin
-
-      // If content is taller than one page, split across multiple pages
-      if (scaledHeight > (pdfHeight - 40)) { // Account for margins
-        const usablePageHeight = pdfHeight - 40; // 20pt margins top/bottom
-        const pagesNeeded = Math.ceil(scaledHeight / usablePageHeight);
-        
-        for (let page = 0; page < pagesNeeded; page++) {
-          if (page > 0) {
-            pdf.addPage();
-          }
-          
-          // Calculate the portion of the image for this page
-          const sourceYPx = (page * usablePageHeight / scale) * 2; // Convert to canvas pixels
-          const sourceHeightPx = Math.min((usablePageHeight / scale) * 2, (canvas.height - sourceYPx));
-          
-          // Create a temporary canvas for this page portion
-          const pageCanvas = document.createElement('canvas');
-          const pageCtx = pageCanvas.getContext('2d');
-          pageCanvas.width = canvas.width;
-          pageCanvas.height = sourceHeightPx;
-          
-          if (pageCtx) {
-            // Fill with white background
-            pageCtx.fillStyle = '#ffffff';
-            pageCtx.fillRect(0, 0, pageCanvas.width, pageCanvas.height);
-            
-            // Draw the portion of the original image
-            pageCtx.drawImage(
-              canvas,
-              0, sourceYPx, // Source x, y
-              canvas.width, sourceHeightPx, // Source width, height
-              0, 0, // Dest x, y
-              canvas.width, sourceHeightPx // Dest width, height
-            );
-            
-            const pageImgData = pageCanvas.toDataURL("image/png", 1.0);
-            pdf.addImage(
-              pageImgData,
-              "PNG",
-              offsetX,
-              offsetY,
-              scaledWidth,
-              Math.min(usablePageHeight, (sourceHeightPx / 2) * scale)
-            );
-          }
-        }
-      } else {
-        // Single page - simple case
-        pdf.addImage(
-          imgData,
-          "PNG",
-          offsetX,
-          offsetY,
-          scaledWidth,
-          scaledHeight
-        );
-      }
-
-      // Save the PDF
-      pdf.save("resume.pdf");
-
-      // Restore original styles and attributes
-      if (originalDataAttr) {
-        element.setAttribute('data-pdf-capture', originalDataAttr);
-      } else {
-        element.removeAttribute('data-pdf-capture');
-      }
-      document.head.removeChild(printStyles);
-      document.body.style.overflow = originalOverflow;
-      
-    } catch (error) {
-      console.error("Error generating PDF:", error);
-      alert("There was an error generating the PDF. Please try again.");
-    } finally {
-      setIsGenerating(false);
+  const getStyles = () => {
+    switch (templateType) {
+      case 'modern':
+        return modernStyles;
+      case 'creative':
+        return creativeStyles;
+      case 'original':
+        return classicStyles; // Use classic styles for original template in PDF
+      default:
+        return classicStyles;
     }
+  };
+
+  const styles = getStyles();
+
+  // Classic Template
+  const ClassicTemplate = () => (
+    <Document>
+      <Page size="A4" style={styles.page}>
+        {/* Header */}
+        <View style={styles.header}>
+          <Text style={styles.name}>{basicInfo?.name || 'Your Name'}</Text>
+          <Text style={styles.contactInfo}>{basicInfo?.email || 'email@example.com'}</Text>
+          <Text style={styles.contactInfo}>{basicInfo?.contact_no || 'Phone Number'}</Text>
+          <Text style={styles.contactInfo}>{basicInfo?.location || 'Location'}</Text>
+        </View>
+
+        {/* About */}
+        {basicInfo?.about && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>SUMMARY</Text>
+            <Text style={styles.text}>{basicInfo.about}</Text>
+          </View>
+        )}
+
+        {/* Experience */}
+        {experiences && experiences.length > 0 && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>WORK EXPERIENCE</Text>
+            {experiences.map((exp, index) => (
+              <View key={index} style={{ marginBottom: 8 }}>
+                <Text style={styles.jobTitle}>{exp.position}</Text>
+                <Text style={styles.company}>{exp.company}</Text>
+                <Text style={styles.date}>
+                  {new Date(exp.startDate).toLocaleDateString()} - {exp.endDate ? new Date(exp.endDate).toLocaleDateString() : 'Present'}
+                </Text>
+                {exp.description && <Text style={styles.text}>{exp.description}</Text>}
+                {exp.skillsLearned && exp.skillsLearned.length > 0 && (
+                  <Text style={styles.text}>Skills: {exp.skillsLearned.join(', ')}</Text>
+                )}
+              </View>
+            ))}
+          </View>
+        )}
+
+        {/* Education */}
+        {education && education.length > 0 && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>EDUCATION</Text>
+            {education.map((edu, index) => (
+              <View key={index} style={{ marginBottom: 8 }}>
+                <Text style={styles.company}>{edu.degree}</Text>
+                <Text style={styles.text}>{edu.institution}</Text>
+                <Text style={styles.date}>
+                  {new Date(edu.startDate).toLocaleDateString()} - {edu.endDate ? new Date(edu.endDate).toLocaleDateString() : 'Present'}
+                </Text>
+                {edu.Grade && <Text style={styles.text}>Grade: {edu.Grade}</Text>}
+              </View>
+            ))}
+          </View>
+        )}
+
+        {/* Projects */}
+        {projects && projects.length > 0 && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>PROJECTS</Text>
+            {projects.map((project, index) => (
+              <View key={index} style={{ marginBottom: 8 }}>
+                <Text style={styles.jobTitle}>{project.title}</Text>
+                <Text style={styles.text}>{project.description}</Text>
+                {project.techStack && project.techStack.length > 0 && (
+                  <Text style={styles.text}>Technologies: {project.techStack.join(', ')}</Text>
+                )}
+                {project.link && <Text style={styles.text}>Link: {project.link}</Text>}
+              </View>
+            ))}
+          </View>
+        )}
+
+        {/* Skills */}
+        {skills && skills.length > 0 && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>SKILLS</Text>
+            <View style={styles.skillsContainer}>
+              {skills.map((skill, index) => (
+                <Text key={index} style={styles.skill}>
+                  {skill.name} ({skill.level})
+                </Text>
+              ))}
+            </View>
+          </View>
+        )}
+      </Page>
+    </Document>
+  );
+
+  // Creative Template (Two-column layout)
+  const CreativeTemplate = () => (
+    <Document>
+      <Page size="A4" style={creativeStyles.page}>
+        {/* Left Column */}
+        <View style={creativeStyles.leftColumn}>
+          {/* Contact Info */}
+          <View style={creativeStyles.section}>
+            <Text style={creativeStyles.sectionTitle}>CONTACT</Text>
+            <Text style={creativeStyles.contactInfo}>{basicInfo?.email || 'email@example.com'}</Text>
+            <Text style={creativeStyles.contactInfo}>{basicInfo?.contact_no || 'Phone Number'}</Text>
+            <Text style={creativeStyles.contactInfo}>{basicInfo?.location || 'Location'}</Text>
+          </View>
+
+          {/* Skills */}
+          {skills && skills.length > 0 && (
+            <View style={creativeStyles.section}>
+              <Text style={creativeStyles.sectionTitle}>SKILLS</Text>
+              <View style={creativeStyles.skillsContainer}>
+                {skills.map((skill, index) => (
+                  <Text key={index} style={creativeStyles.skill}>
+                    {skill.name}
+                  </Text>
+                ))}
+              </View>
+            </View>
+          )}
+
+          {/* Education */}
+          {education && education.length > 0 && (
+            <View style={creativeStyles.section}>
+              <Text style={creativeStyles.sectionTitle}>EDUCATION</Text>
+              {education.map((edu, index) => (
+                <View key={index} style={{ marginBottom: 8 }}>
+                  <Text style={creativeStyles.company}>{edu.degree}</Text>
+                  <Text style={creativeStyles.text}>{edu.institution}</Text>
+                  <Text style={creativeStyles.date}>
+                    {new Date(edu.startDate).getFullYear()} - {edu.endDate ? new Date(edu.endDate).getFullYear() : 'Present'}
+                  </Text>
+                </View>
+              ))}
+            </View>
+          )}
+        </View>
+
+        {/* Right Column */}
+        <View style={creativeStyles.rightColumn}>
+          {/* Header */}
+          <View style={creativeStyles.header}>
+            <Text style={creativeStyles.name}>{basicInfo?.name || 'Your Name'}</Text>
+          </View>
+
+          {/* About */}
+          {basicInfo?.about && (
+            <View style={creativeStyles.section}>
+              <Text style={creativeStyles.sectionTitle}>SUMMARY</Text>
+              <Text style={creativeStyles.text}>{basicInfo.about}</Text>
+            </View>
+          )}
+
+          {/* Experience */}
+          {experiences && experiences.length > 0 && (
+            <View style={creativeStyles.section}>
+              <Text style={creativeStyles.sectionTitle}>EXPERIENCE</Text>
+              {experiences.map((exp, index) => (
+                <View key={index} style={{ marginBottom: 10 }}>
+                  <Text style={creativeStyles.jobTitle}>{exp.position}</Text>
+                  <Text style={creativeStyles.company}>{exp.company}</Text>
+                  <Text style={creativeStyles.date}>
+                    {new Date(exp.startDate).toLocaleDateString()} - {exp.endDate ? new Date(exp.endDate).toLocaleDateString() : 'Present'}
+                  </Text>
+                  {exp.description && <Text style={creativeStyles.text}>{exp.description}</Text>}
+                </View>
+              ))}
+            </View>
+          )}
+
+          {/* Projects */}
+          {projects && projects.length > 0 && (
+            <View style={creativeStyles.section}>
+              <Text style={creativeStyles.sectionTitle}>PROJECTS</Text>
+              {projects.map((project, index) => (
+                <View key={index} style={{ marginBottom: 8 }}>
+                  <Text style={creativeStyles.jobTitle}>{project.title}</Text>
+                  <Text style={creativeStyles.text}>{project.description}</Text>
+                  {project.techStack && project.techStack.length > 0 && (
+                    <Text style={creativeStyles.text}>Tech: {project.techStack.join(', ')}</Text>
+                  )}
+                </View>
+              ))}
+            </View>
+          )}
+        </View>
+      </Page>
+    </Document>
+  );
+
+  const MyDocument = () => {
+    if (templateType === 'creative') {
+      return <CreativeTemplate />;
+    }
+    // For original, classic, and modern templates, use the ClassicTemplate with appropriate styles
+    return <ClassicTemplate />;
   };
 
   return (
     <div className="bg-white p-6 rounded-lg shadow-sm border">
       <div className="text-center mb-4">
         <h3 className="text-lg font-semibold text-gray-900 mb-2">
-          PDF Preview
+          PDF Download
         </h3>
         <p className="text-sm text-gray-600 leading-relaxed">
-          This will generate a full-width PDF with minimal margins, maximizing your content space while maintaining professional formatting.
+          Download your resume as a professionally formatted PDF using React-PDF. 
+          Perfect layout with A4 size formatting.
         </p>
       </div>
       
       <div className="space-y-3">
         <div className="flex items-center justify-between text-xs text-gray-500 bg-gray-50 px-3 py-2 rounded">
-          <span>Format: A4 Portrait (Full Width)</span>
-          <span>Quality: High Resolution</span>
+          <span>Format: A4 Portrait ({templateType})</span>
+          <span>Quality: Vector-based PDF</span>
         </div>
         
-        <Button 
-          className="w-full font-medium" 
-          onClick={handleDownload}
-          disabled={isGenerating}
+        <PDFDownloadLink
+          document={<MyDocument />}
+          fileName={getFileName()}
+          className="w-full"
         >
-          {isGenerating ? (
-            <div className="flex items-center">
-              <svg className="animate-spin -ml-1 mr-3 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-              </svg>
-              Generating PDF...
-            </div>
-          ) : (
-            <div className="flex items-center justify-center">
-              <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-              </svg>
-              Download Full-Width Resume PDF
-            </div>
+          {({ loading }) => (
+            <Button 
+              className="w-full font-medium" 
+              disabled={loading}
+            >
+              {loading ? (
+                <div className="flex items-center">
+                  <svg className="animate-spin -ml-1 mr-3 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Generating PDF...
+                </div>
+              ) : (
+                <div className="flex items-center justify-center">
+                  <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                  Download {templateType.charAt(0).toUpperCase() + templateType.slice(1)} Resume PDF
+                </div>
+              )}
+            </Button>
           )}
-        </Button>
+        </PDFDownloadLink>
       </div>
       
       <div className="mt-4 text-xs text-gray-500 space-y-1">
@@ -409,25 +516,25 @@ export default function ResumePDF({ targetRef }: ResumePDFProps) {
           <svg className="w-3 h-3 mr-1 text-green-500" fill="currentColor" viewBox="0 0 20 20">
             <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"/>
           </svg>
-          Full-width layout with minimal margins
+          Vector-based PDF with crisp text
         </p>
         <p className="flex items-center">
           <svg className="w-3 h-3 mr-1 text-green-500" fill="currentColor" viewBox="0 0 20 20">
             <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"/>
           </svg>
-          Professional Times New Roman font
+          Professional Times Roman font
         </p>
         <p className="flex items-center">
           <svg className="w-3 h-3 mr-1 text-green-500" fill="currentColor" viewBox="0 0 20 20">
             <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"/>
           </svg>
-          Auto-pagination for long content
+          A4 size formatting
         </p>
         <p className="flex items-center">
           <svg className="w-3 h-3 mr-1 text-green-500" fill="currentColor" viewBox="0 0 20 20">
             <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"/>
           </svg>
-          Optimized for ATS systems
+          ATS-friendly format
         </p>
       </div>
     </div>

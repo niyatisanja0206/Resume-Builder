@@ -43,3 +43,9 @@ export type Education = {
   endDate?: Date;
   Grade: string;
 };
+
+export type user = {
+  id?: string;
+  email: string;
+  password: string;
+}
