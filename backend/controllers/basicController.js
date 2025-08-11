@@ -1,7 +1,7 @@
 // controllers/basicController.js
 // This controller handles the logic for the basic user information.
 
-const User = require('../models/users');
+const User = require('../models/resumes');
 
 exports.getBasic = async (req, res) => {
     try {

@@ -1,5 +1,5 @@
 // controllers/eduController.js
-const User = require('../models/users');
+const User = require('../models/resumes');
 
 // @desc    Get education data for a specific user
 // @route   GET /api/edu?email=...

@@ -1,4 +1,4 @@
-const User = require('../models/users'); // Correct: Imported as 'User'
+const User = require('../models/resumes'); // Correct: Imported as 'User'
 
 exports.getSkills = async (req, res) => {
     try {
