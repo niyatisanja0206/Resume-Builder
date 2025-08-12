@@ -1,7 +1,7 @@
 // controllers/basicController.js
 // This controller handles the logic for the basic user information.
 
-const User = require('../models/resumes');
+const Resume = require('../models/resumes');
 
 exports.getBasic = async (req, res) => {
     try {
@@ -12,11 +12,11 @@ exports.getBasic = async (req, res) => {
             return res.status(400).json({ message: 'Email is required as a query parameter.' });
         }
 
-        const user = await User.findOne({ "basic.email": email });
-        if (!user) {
-            return res.status(404).json({ message: 'User not found' });
+        const resume = await Resume.findOne({ userEmail: email, isDownloaded: false });
+        if (!resume) {
+            return res.status(404).json({ message: 'Resume not found' });
         }
-        res.status(200).json(user.basic);
+        res.status(200).json(resume.basic);
     } catch (error) {
         res.status(500).json({ message: 'Server error', error: error.message });
     }
@@ -27,24 +27,40 @@ exports.createBasic = async (req, res) => {
         console.log('Basic Controller - Create/Update Basic Request:', req.body);
         const { name, contact_no, email, location, about } = req.body;
         
-        console.log('Looking for user with email:', email);
-        let user = await User.findOne({ "basic.email": email }); // Find the user by their email
+        console.log('Extracted email:', email, 'Type:', typeof email);
+        
+        if (!email) {
+            return res.status(400).json({ message: 'Email is required' });
+        }
+        
+        console.log('Looking for resume with userEmail:', email);
+        let resume = await Resume.findOne({ userEmail: email, isDownloaded: false });
 
-        if (!user) {
-            user = new User({
+        if (!resume) {
+            console.log('Creating new resume for email:', email);
+            const resumeData = {
+                userEmail: email,  // This is the key field
                 basic: { name, contact_no, email, location, about },
-            });
+                isDownloaded: false
+            };
+            console.log('Resume data to create:', JSON.stringify(resumeData, null, 2));
+            
+            resume = new Resume(resumeData);
         } else {
-            user.basic = { name, contact_no, email, location, about };
+            console.log('Updating existing resume for email:', email);
+            resume.basic = { name, contact_no, email, location, about };
         }
 
-        await user.save();
+        console.log('Resume before save:', JSON.stringify(resume.toObject(), null, 2));
+        await resume.save();
+        console.log('Resume saved successfully:', resume._id);
 
         res.status(200).json({
             message: 'Basic data saved successfully',
-            data: user.basic,
+            data: resume.basic,
         });
     } catch (error) {
+        console.error('Error in createBasic:', error);
         res.status(500).json({ message: 'Server error', error: error.message });
     }
 };
@@ -58,14 +74,14 @@ exports.deleteBasic = async (req, res) => {
             return res.status(400).json({ message: 'Email is required as a query parameter.' });
         }
 
-        // Find and delete the user document
-        const result = await User.findOneAndDelete({ "basic.email": email });
+        // Find and delete the temporary resume document
+        const result = await Resume.findOneAndDelete({ userEmail: email, isDownloaded: false });
 
         if (!result) {
-            return res.status(404).json({ message: 'User not found' });
+            return res.status(404).json({ message: 'Resume not found' });
         }
 
-        res.status(200).json({ message: 'User deleted successfully' });
+        res.status(200).json({ message: 'Resume deleted successfully' });
     } catch (error) {
         res.status(500).json({ message: 'Server error', error: error.message });
     }
@@ -81,19 +97,19 @@ exports.updateBasic = async (req, res) => {
             return res.status(400).json({ message: 'Email and Basic Information are required' });
         }
 
-        console.log('Updating user with email:', email);
-        const updated = await User.findOneAndUpdate(
-            { "basic.email": email },
+        console.log('Updating resume with userEmail:', email);
+        const updated = await Resume.findOneAndUpdate(
+            { userEmail: email, isDownloaded: false },
             { $set: { basic: basicInfo } },
-            { new: true, runValidators: true }
+            { new: true, runValidators: true, upsert: true }
         );
 
         if (!updated) {
-            console.log('User not found for email:', email);
-            return res.status(404).json({ message: 'User not found' });
+            console.log('Resume not found for email:', email);
+            return res.status(404).json({ message: 'Resume not found' });
         }
 
-        console.log('User updated successfully:', updated.basic);
+        console.log('Resume updated successfully:', updated.basic);
         res.status(200).json({ message: 'Basic information updated successfully', data: updated.basic });
     } catch (error) {
         console.error('Error updating basic info:', error);

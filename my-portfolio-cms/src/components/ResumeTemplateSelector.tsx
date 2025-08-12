@@ -96,7 +96,7 @@ export default function ResumeTemplateSelector({ basicInfo, projects, experience
 
       {/* Download Section */}
       <div className="border-t border-border pt-6">
-        <Card>
+        <Card className="bg-card shadow-sm">
           <CardContent className="p-4">
             <div className="flex items-center justify-between mb-4">
               <div>

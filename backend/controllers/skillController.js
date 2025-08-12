@@ -1,4 +1,4 @@
-const User = require('../models/resumes'); // Correct: Imported as 'User'
+const Resume = require('../models/resumes');
 
 exports.getSkills = async (req, res) => {
     try {
@@ -8,11 +8,11 @@ exports.getSkills = async (req, res) => {
             return res.status(400).json({ message: 'Email is required as a query parameter.' });
         }
 
-        const user = await User.findOne({ "basic.email": email });
-        if (!user) {
-            return res.status(404).json({ message: 'User not found' });
+        const resume = await Resume.findOne({ userEmail: email, isDownloaded: false });
+        if (!resume) {
+            return res.status(404).json({ message: 'Resume not found' });
         }
-        res.status(200).json(user.skills);
+        res.status(200).json(resume.skills || []);
     } catch (error) {
         res.status(500).json({ message: 'Server error', error: error.message });
     }
@@ -28,22 +28,28 @@ exports.addSkill = async (req, res) => {
             return res.status(400).json({ message: 'Email and skill data are required.' });
         }
 
-        console.log('Looking for user with email:', email);
-        const updatedUser = await User.findOneAndUpdate( // Correct: Use 'User'
-            { "basic.email": email },
-            { $push: { skills: skill } },
-            { new: true, runValidators: true }
-        );
-
-        console.log('MongoDB findOneAndUpdate result:', updatedUser);
-
-        if (!updatedUser) {
-            console.log('User not found for email:', email);
-            return res.status(404).json({ message: 'User not found' });
+        console.log('Looking for resume with userEmail:', email);
+        let resume = await Resume.findOne({ userEmail: email, isDownloaded: false });
+        
+        if (!resume) {
+            // Create new resume if it doesn't exist
+            resume = new Resume({
+                userEmail: email,
+                skills: [skill],
+                isDownloaded: false
+            });
+        } else {
+            // Add the new skill entry to the array
+            if (!resume.skills) {
+                resume.skills = [];
+            }
+            resume.skills.push(skill);
         }
+        
+        await resume.save();
 
-        console.log('Skill added successfully, returning skills:', updatedUser.skills);
-        res.status(201).json({ message: 'Skill added successfully', data: updatedUser.skills });
+        console.log('Skill added successfully, returning skills:', resume.skills);
+        res.status(201).json({ message: 'Skill added successfully', data: resume.skills });
     } catch (error) {
         res.status(500).json({ message: 'Server error', error: error.message });
     }

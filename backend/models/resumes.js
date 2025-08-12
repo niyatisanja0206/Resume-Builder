@@ -10,10 +10,6 @@ const resumeSchema = new mongoose.Schema({
         type: Boolean,
         default: false
     },
-    isCreated: {
-        type: Boolean,
-        default: false
-    },
     basic: {
         name: String,
         email: String,

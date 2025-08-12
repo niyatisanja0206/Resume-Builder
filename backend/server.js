@@ -24,6 +24,11 @@ app.use((req, res, next) => {
     next();
 });
 
+// Test route
+app.get('/test', (req, res) => {
+    res.json({ message: 'Server is working!' });
+});
+
 // Session management (optional but good practice)
 app.use(session({
     secret: process.env.SESSION_SECRET || 'defaultsecret',

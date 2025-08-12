@@ -80,6 +80,8 @@ const classicStyles = StyleSheet.create({
     marginRight: 5,
     marginBottom: 3,
   },
+
+  
 });
 
 const modernStyles = StyleSheet.create({
