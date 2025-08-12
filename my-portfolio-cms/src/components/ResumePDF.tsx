@@ -251,6 +251,22 @@ const creativeStyles = StyleSheet.create({
 export default function ResumePDF({ basicInfo, projects, experiences, skills, education, templateType = 'classic' }: ResumePDFProps) {
   const { incrementDownloadCount } = useUserStats();
   
+  // Helper function to safely format dates
+  const formatDate = (dateInput: Date | string | undefined): string => {
+    if (!dateInput) return '';
+    try {
+      const date = new Date(dateInput);
+      if (isNaN(date.getTime())) return '';
+      return date.toLocaleDateString('en-US', { 
+        year: 'numeric', 
+        month: 'short' 
+      });
+    } catch (error) {
+      console.error('Error formatting date:', error);
+      return '';
+    }
+  };
+  
   const getFileName = () => {
     const name = basicInfo?.name?.replace(/\s+/g, '_') || 'resume';
     return `${name}_${templateType}_resume.pdf`;
@@ -265,55 +281,46 @@ export default function ResumePDF({ basicInfo, projects, experiences, skills, ed
     }
   };
 
-  const getStyles = () => {
-    switch (templateType) {
-      case 'modern':
-        return modernStyles;
-      case 'creative':
-        return creativeStyles;
-      case 'original':
-        return classicStyles; // Use classic styles for original template in PDF
-      default:
-        return classicStyles;
-    }
-  };
-
-  const styles = getStyles();
-
   // Classic Template
   const ClassicTemplate = () => (
     <Document>
-      <Page size="A4" style={styles.page}>
+      <Page size="A4" style={classicStyles.page}>
         {/* Header */}
-        <View style={styles.header}>
-          <Text style={styles.name}>{basicInfo?.name || 'Your Name'}</Text>
-          <Text style={styles.contactInfo}>{basicInfo?.email || 'email@example.com'}</Text>
-          <Text style={styles.contactInfo}>{basicInfo?.contact_no || 'Phone Number'}</Text>
-          <Text style={styles.contactInfo}>{basicInfo?.location || 'Location'}</Text>
+        <View style={classicStyles.header}>
+          <Text style={classicStyles.name}>{basicInfo?.name || 'Your Name'}</Text>
+          <Text style={classicStyles.contactInfo}>{basicInfo?.email || 'email@example.com'}</Text>
+          <Text style={classicStyles.contactInfo}>{basicInfo?.contact_no || 'Phone Number'}</Text>
+          <Text style={classicStyles.contactInfo}>{basicInfo?.location || 'Location'}</Text>
         </View>
 
         {/* About */}
         {basicInfo?.about && (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>SUMMARY</Text>
-            <Text style={styles.text}>{basicInfo.about}</Text>
+          <View style={classicStyles.section}>
+            <Text style={classicStyles.sectionTitle}>SUMMARY</Text>
+            <Text style={classicStyles.text}>{basicInfo.about}</Text>
           </View>
         )}
 
         {/* Experience */}
         {experiences && experiences.length > 0 && (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>WORK EXPERIENCE</Text>
+          <View style={classicStyles.section}>
+            <Text style={classicStyles.sectionTitle}>WORK EXPERIENCE</Text>
             {experiences.map((exp, index) => (
               <View key={index} style={{ marginBottom: 8 }}>
-                <Text style={styles.jobTitle}>{exp.position}</Text>
-                <Text style={styles.company}>{exp.company}</Text>
-                <Text style={styles.date}>
-                  {new Date(exp.startDate).toLocaleDateString()} - {exp.endDate ? new Date(exp.endDate).toLocaleDateString() : 'Present'}
+                <Text style={classicStyles.jobTitle}>{exp.position}</Text>
+                <Text style={classicStyles.company}>{exp.company}</Text>
+                <Text style={classicStyles.date}>
+                  {exp.startDate ? new Date(exp.startDate).toLocaleDateString('en-US', { 
+                    year: 'numeric', 
+                    month: 'short' 
+                  }) : ''} - {exp.endDate ? new Date(exp.endDate).toLocaleDateString('en-US', { 
+                    year: 'numeric', 
+                    month: 'short' 
+                  }) : 'Present'}
                 </Text>
-                {exp.description && <Text style={styles.text}>{exp.description}</Text>}
+                {exp.description && <Text style={classicStyles.text}>{exp.description}</Text>}
                 {exp.skillsLearned && exp.skillsLearned.length > 0 && (
-                  <Text style={styles.text}>Skills: {exp.skillsLearned.join(', ')}</Text>
+                  <Text style={classicStyles.text}>Skills: {exp.skillsLearned.join(', ')}</Text>
                 )}
               </View>
             ))}
@@ -322,16 +329,16 @@ export default function ResumePDF({ basicInfo, projects, experiences, skills, ed
 
         {/* Education */}
         {education && education.length > 0 && (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>EDUCATION</Text>
+          <View style={classicStyles.section}>
+            <Text style={classicStyles.sectionTitle}>EDUCATION</Text>
             {education.map((edu, index) => (
               <View key={index} style={{ marginBottom: 8 }}>
-                <Text style={styles.company}>{edu.degree}</Text>
-                <Text style={styles.text}>{edu.institution}</Text>
-                <Text style={styles.date}>
-                  {new Date(edu.startDate).toLocaleDateString()} - {edu.endDate ? new Date(edu.endDate).toLocaleDateString() : 'Present'}
+                <Text style={classicStyles.company}>{edu.degree}</Text>
+                <Text style={classicStyles.text}>{edu.institution}</Text>
+                <Text style={classicStyles.date}>
+                  {formatDate(edu.startDate)} - {formatDate(edu.endDate) || 'Present'}
                 </Text>
-                {edu.Grade && <Text style={styles.text}>Grade: {edu.Grade}</Text>}
+                {edu.Grade && <Text style={classicStyles.text}>Grade: {edu.Grade}</Text>}
               </View>
             ))}
           </View>
@@ -339,16 +346,16 @@ export default function ResumePDF({ basicInfo, projects, experiences, skills, ed
 
         {/* Projects */}
         {projects && projects.length > 0 && (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>PROJECTS</Text>
+          <View style={classicStyles.section}>
+            <Text style={classicStyles.sectionTitle}>PROJECTS</Text>
             {projects.map((project, index) => (
               <View key={index} style={{ marginBottom: 8 }}>
-                <Text style={styles.jobTitle}>{project.title}</Text>
-                <Text style={styles.text}>{project.description}</Text>
+                <Text style={classicStyles.jobTitle}>{project.title}</Text>
+                <Text style={classicStyles.text}>{project.description}</Text>
                 {project.techStack && project.techStack.length > 0 && (
-                  <Text style={styles.text}>Technologies: {project.techStack.join(', ')}</Text>
+                  <Text style={classicStyles.text}>Technologies: {project.techStack.join(', ')}</Text>
                 )}
-                {project.link && <Text style={styles.text}>Link: {project.link}</Text>}
+                {project.link && <Text style={classicStyles.text}>Link: {project.link}</Text>}
               </View>
             ))}
           </View>
@@ -356,11 +363,11 @@ export default function ResumePDF({ basicInfo, projects, experiences, skills, ed
 
         {/* Skills */}
         {skills && skills.length > 0 && (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>SKILLS</Text>
-            <View style={styles.skillsContainer}>
+          <View style={classicStyles.section}>
+            <Text style={classicStyles.sectionTitle}>SKILLS</Text>
+            <View style={classicStyles.skillsContainer}>
               {skills.map((skill, index) => (
-                <Text key={index} style={styles.skill}>
+                <Text key={index} style={classicStyles.skill}>
                   {skill.name} ({skill.level})
                 </Text>
               ))}
@@ -408,7 +415,7 @@ export default function ResumePDF({ basicInfo, projects, experiences, skills, ed
                   <Text style={creativeStyles.company}>{edu.degree}</Text>
                   <Text style={creativeStyles.text}>{edu.institution}</Text>
                   <Text style={creativeStyles.date}>
-                    {new Date(edu.startDate).getFullYear()} - {edu.endDate ? new Date(edu.endDate).getFullYear() : 'Present'}
+                    {edu.startDate ? new Date(edu.startDate).getFullYear() : ''} - {edu.endDate ? new Date(edu.endDate).getFullYear() : 'Present'}
                   </Text>
                 </View>
               ))}
@@ -440,7 +447,7 @@ export default function ResumePDF({ basicInfo, projects, experiences, skills, ed
                   <Text style={creativeStyles.jobTitle}>{exp.position}</Text>
                   <Text style={creativeStyles.company}>{exp.company}</Text>
                   <Text style={creativeStyles.date}>
-                    {new Date(exp.startDate).toLocaleDateString()} - {exp.endDate ? new Date(exp.endDate).toLocaleDateString() : 'Present'}
+                    {formatDate(exp.startDate)} - {formatDate(exp.endDate) || 'Present'}
                   </Text>
                   {exp.description && <Text style={creativeStyles.text}>{exp.description}</Text>}
                 </View>
@@ -468,12 +475,123 @@ export default function ResumePDF({ basicInfo, projects, experiences, skills, ed
     </Document>
   );
 
+  // Modern Template
+  const ModernTemplate = () => (
+    <Document>
+      <Page size="A4" style={modernStyles.page}>
+        {/* Header */}
+        <View style={modernStyles.header}>
+          <Text style={modernStyles.name}>{basicInfo?.name || 'Your Name'}</Text>
+          <Text style={modernStyles.contactInfo}>{basicInfo?.email || 'email@example.com'}</Text>
+          <Text style={modernStyles.contactInfo}>{basicInfo?.contact_no || 'Phone Number'}</Text>
+          <Text style={modernStyles.contactInfo}>{basicInfo?.location || 'Location'}</Text>
+        </View>
+
+        {/* About */}
+        {basicInfo?.about && (
+          <View style={modernStyles.section}>
+            <Text style={modernStyles.sectionTitle}>PROFESSIONAL SUMMARY</Text>
+            <Text style={modernStyles.text}>{basicInfo.about}</Text>
+          </View>
+        )}
+
+        {/* Experience */}
+        {experiences && experiences.length > 0 && (
+          <View style={modernStyles.section}>
+            <Text style={modernStyles.sectionTitle}>WORK EXPERIENCE</Text>
+            {experiences.map((exp, index) => (
+              <View key={index} style={{ marginBottom: 12 }}>
+                <Text style={modernStyles.jobTitle}>{exp.position}</Text>
+                <Text style={modernStyles.company}>{exp.company}</Text>
+                <Text style={modernStyles.date}>
+                  {formatDate(exp.startDate)} - {formatDate(exp.endDate) || 'Present'}
+                </Text>
+                {exp.description && <Text style={modernStyles.text}>{exp.description}</Text>}
+                {exp.skillsLearned && exp.skillsLearned.length > 0 && (
+                  <Text style={modernStyles.text}>Skills: {exp.skillsLearned.join(', ')}</Text>
+                )}
+              </View>
+            ))}
+          </View>
+        )}
+
+        {/* Education */}
+        {education && education.length > 0 && (
+          <View style={modernStyles.section}>
+            <Text style={modernStyles.sectionTitle}>EDUCATION</Text>
+            {education.map((edu, index) => (
+              <View key={index} style={{ marginBottom: 10 }}>
+                <Text style={modernStyles.company}>{edu.degree}</Text>
+                <Text style={modernStyles.text}>{edu.institution}</Text>
+                <Text style={modernStyles.date}>
+                  {formatDate(edu.startDate)} - {formatDate(edu.endDate) || 'Present'}
+                </Text>
+                {edu.Grade && <Text style={modernStyles.text}>Grade: {edu.Grade}</Text>}
+              </View>
+            ))}
+          </View>
+        )}
+
+        {/* Projects */}
+        {projects && projects.length > 0 && (
+          <View style={modernStyles.section}>
+            <Text style={modernStyles.sectionTitle}>PROJECTS</Text>
+            {projects.map((project, index) => (
+              <View key={index} style={{ marginBottom: 10 }}>
+                <Text style={modernStyles.jobTitle}>{project.title}</Text>
+                <Text style={modernStyles.text}>{project.description}</Text>
+                {project.techStack && project.techStack.length > 0 && (
+                  <Text style={modernStyles.text}>Technologies: {project.techStack.join(', ')}</Text>
+                )}
+                {project.link && <Text style={modernStyles.text}>Link: {project.link}</Text>}
+              </View>
+            ))}
+          </View>
+        )}
+
+        {/* Skills */}
+        {skills && skills.length > 0 && (
+          <View style={modernStyles.section}>
+            <Text style={modernStyles.sectionTitle}>TECHNICAL SKILLS</Text>
+            <View style={modernStyles.skillsContainer}>
+              {skills.map((skill, index) => (
+                <Text key={index} style={modernStyles.skill}>
+                  {skill.name}
+                </Text>
+              ))}
+            </View>
+          </View>
+        )}
+      </Page>
+    </Document>
+  );
+
   const MyDocument = () => {
-    if (templateType === 'creative') {
-      return <CreativeTemplate />;
+    try {
+      switch (templateType) {
+        case 'modern':
+          return <ModernTemplate />;
+        case 'creative':
+          return <CreativeTemplate />;
+        case 'classic':
+          return <ClassicTemplate />;
+        default:
+          return <ClassicTemplate />;
+      }
+    } catch (error) {
+      console.error('Error creating PDF document:', error);
+      // Return a simple fallback document
+      return (
+        <Document>
+          <Page size="A4" style={classicStyles.page}>
+            <View style={classicStyles.header}>
+              <Text style={classicStyles.name}>Error generating resume</Text>
+              <Text style={classicStyles.contactInfo}>Please check your data and try again</Text>
+            </View>
+          </Page>
+        </Document>
+      );
     }
-    // For original, classic, and modern templates, use the ClassicTemplate with appropriate styles
-    return <ClassicTemplate />;
   };
 
   return (
@@ -499,13 +617,20 @@ export default function ResumePDF({ basicInfo, projects, experiences, skills, ed
           fileName={getFileName()}
           className="w-full"
         >
-          {({ loading }) => (
+          {({ loading, error }) => (
             <Button 
               className="w-full font-medium" 
-              disabled={loading}
+              disabled={loading || !!error}
               onClick={handleDownloadClick}
             >
-              {loading ? (
+              {error ? (
+                <div className="flex items-center">
+                  <svg className="w-4 h-4 mr-2 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  Error generating PDF
+                </div>
+              ) : loading ? (
                 <div className="flex items-center">
                   <svg className="animate-spin -ml-1 mr-3 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
@@ -537,7 +662,7 @@ export default function ResumePDF({ basicInfo, projects, experiences, skills, ed
           <svg className="w-3 h-3 mr-1 text-green-500" fill="currentColor" viewBox="0 0 20 20">
             <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"/>
           </svg>
-          Professional Times Roman font
+          Professional {templateType === 'classic' ? 'Times Roman' : 'Helvetica'} font
         </p>
         <p className="flex items-center">
           <svg className="w-3 h-3 mr-1 text-green-500" fill="currentColor" viewBox="0 0 20 20">

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { PDFDownloadLink, Document, Page, Text, View } from '@react-pdf/renderer';
 import type { Basic, Project, Experience, Skill, Education } from '@/types/portfolio';
 
 interface ResumePreviewProps {
@@ -14,6 +15,9 @@ interface ResumePreviewProps {
 // Classic Template Preview
 const ClassicTemplate = ({ basicInfo, projects, experiences, skills, education }: ResumePreviewProps) => (
   <div className="min-h-screen bg-white py-8 px-8 font-serif max-w-4xl mx-auto border border-gray-200 shadow-lg">
+    {/* Debug indicator */}
+    <div className="bg-red-100 text-red-800 p-2 mb-4 text-sm">CLASSIC TEMPLATE ACTIVE</div>
+    
     {/* Header Section */}
     <div className="text-center mb-8 pb-6 border-b-2 border-gray-800">
       <h1 className="text-3xl font-bold text-gray-900 mb-2 tracking-wide">
@@ -139,6 +143,9 @@ const ClassicTemplate = ({ basicInfo, projects, experiences, skills, education }
 // Modern Template Preview
 const ModernTemplate = ({ basicInfo, projects, experiences, skills, education }: ResumePreviewProps) => (
   <div className="min-h-screen bg-white py-8 px-8 font-sans max-w-4xl mx-auto border border-gray-200 shadow-lg">
+    {/* Debug indicator */}
+    <div className="bg-blue-100 text-blue-800 p-2 mb-4 text-sm">MODERN TEMPLATE ACTIVE</div>
+    
     {/* Header Section */}
     <div className="mb-8 pb-6 border-b-2 border-blue-500">
       <h1 className="text-4xl font-bold text-blue-700 mb-3">
@@ -284,9 +291,12 @@ const ModernTemplate = ({ basicInfo, projects, experiences, skills, education }:
 
 // Creative Template Preview (Two-column)
 const CreativeTemplate = ({ basicInfo, projects, experiences, skills, education }: ResumePreviewProps) => (
-  <div className="min-h-screen bg-white font-sans max-w-5xl mx-auto border border-gray-200 shadow-lg flex">
+  <div className="min-h-screen bg-white font-sans max-w-5xl mx-auto border border-gray-200 shadow-lg" style={{ display: 'flex' }}>
+    {/* Debug indicator */}
+    <div className="absolute top-0 left-0 bg-green-100 text-green-800 p-2 text-sm z-10">CREATIVE TEMPLATE ACTIVE</div>
+    
     {/* Left Sidebar */}
-    <div className="w-1/3 bg-gray-800 text-white p-6">
+    <div style={{ width: '33.333%' }} className="bg-gray-800 text-white p-6">
       {/* Profile */}
       <div className="text-center mb-8">
         <div className="w-24 h-24 bg-gray-600 rounded-full mx-auto mb-4 flex items-center justify-center">
@@ -349,7 +359,7 @@ const CreativeTemplate = ({ basicInfo, projects, experiences, skills, education 
     </div>
 
     {/* Right Content */}
-    <div className="w-2/3 p-8">
+    <div style={{ width: '66.666%' }} className="p-8">
       {/* Summary */}
       {basicInfo?.about && (
         <div className="mb-8">
@@ -422,7 +432,143 @@ const templates = [
 export default function ResumePreview({ basicInfo, projects, experiences, skills, education }: ResumePreviewProps) {
   const [currentTemplate, setCurrentTemplate] = useState(0);
 
-  const nextTemplate = () => {
+  // Get template type string for PDF component
+  const getTemplateType = (): 'classic' | 'modern' | 'creative' => {
+    switch (currentTemplate) {
+      case 1: return 'modern';
+      case 2: return 'creative';
+      default: return 'classic';
+    }
+  };
+
+  // Generate PDF document based on selected template
+  const getPDFDocument = () => {
+    try {
+      const commonStyles = {
+        fontFamily: 'Times-Roman',
+        fontSize: 11,
+        paddingTop: 30,
+        paddingLeft: 30,
+        paddingRight: 30,
+        paddingBottom: 30,
+      };
+
+      // Simplified PDF generation to avoid any style conflicts
+      const basicDocument = (
+        <Document>
+          <Page size="A4" style={commonStyles}>
+            {/* Header */}
+            <View style={{ marginBottom: 20 }}>
+              <Text style={{ fontSize: 24, fontFamily: 'Times-Bold', marginBottom: 10 }}>
+                {basicInfo?.name || 'Your Name'}
+              </Text>
+              <Text style={{ fontSize: 10 }}>
+                {basicInfo?.email || 'email@example.com'} • {basicInfo?.contact_no || 'Phone'} • {basicInfo?.location || 'Location'}
+              </Text>
+            </View>
+
+            {/* About */}
+            {basicInfo?.about && (
+              <View style={{ marginBottom: 15 }}>
+                <Text style={{ fontSize: 14, fontFamily: 'Times-Bold', marginBottom: 8 }}>
+                  SUMMARY
+                </Text>
+                <Text style={{ fontSize: 11, lineHeight: 1.4 }}>
+                  {basicInfo.about}
+                </Text>
+              </View>
+            )}
+
+            {/* Experience */}
+            {experiences && experiences.length > 0 && (
+              <View style={{ marginBottom: 15 }}>
+                <Text style={{ fontSize: 14, fontFamily: 'Times-Bold', marginBottom: 8 }}>
+                  EXPERIENCE
+                </Text>
+                {experiences.map((exp, index) => (
+                  <View key={index} style={{ marginBottom: 10 }}>
+                    <Text style={{ fontSize: 12, fontFamily: 'Times-Bold' }}>
+                      {exp.position} - {exp.company}
+                    </Text>
+                    <Text style={{ fontSize: 10, marginBottom: 4 }}>
+                      {new Date(exp.startDate).toLocaleDateString()} - {exp.endDate ? new Date(exp.endDate).toLocaleDateString() : 'Present'}
+                    </Text>
+                    {exp.description && (
+                      <Text style={{ fontSize: 11, lineHeight: 1.4 }}>
+                        {exp.description}
+                      </Text>
+                    )}
+                  </View>
+                ))}
+              </View>
+            )}
+
+            {/* Education */}
+            {education && education.length > 0 && (
+              <View style={{ marginBottom: 15 }}>
+                <Text style={{ fontSize: 14, fontFamily: 'Times-Bold', marginBottom: 8 }}>
+                  EDUCATION
+                </Text>
+                {education.map((edu, index) => (
+                  <View key={index} style={{ marginBottom: 8 }}>
+                    <Text style={{ fontSize: 12, fontFamily: 'Times-Bold' }}>
+                      {edu.degree}
+                    </Text>
+                    <Text style={{ fontSize: 11 }}>
+                      {edu.institution}
+                    </Text>
+                  </View>
+                ))}
+              </View>
+            )}
+
+            {/* Projects */}
+            {projects && projects.length > 0 && (
+              <View style={{ marginBottom: 15 }}>
+                <Text style={{ fontSize: 14, fontFamily: 'Times-Bold', marginBottom: 8 }}>
+                  PROJECTS
+                </Text>
+                {projects.map((project, index) => (
+                  <View key={index} style={{ marginBottom: 8 }}>
+                    <Text style={{ fontSize: 12, fontFamily: 'Times-Bold' }}>
+                      {project.title}
+                    </Text>
+                    <Text style={{ fontSize: 11, lineHeight: 1.4 }}>
+                      {project.description}
+                    </Text>
+                  </View>
+                ))}
+              </View>
+            )}
+
+            {/* Skills */}
+            {skills && skills.length > 0 && (
+              <View style={{ marginBottom: 15 }}>
+                <Text style={{ fontSize: 14, fontFamily: 'Times-Bold', marginBottom: 8 }}>
+                  SKILLS
+                </Text>
+                <Text style={{ fontSize: 11 }}>
+                  {skills.map(skill => skill.name).join(', ')}
+                </Text>
+              </View>
+            )}
+          </Page>
+        </Document>
+      );
+
+      return basicDocument;
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      // Return a simple fallback document
+      return (
+        <Document>
+          <Page size="A4" style={{ fontFamily: 'Times-Roman', fontSize: 12, padding: 30 }}>
+            <Text>Error generating PDF. Please try again.</Text>
+          </Page>
+        </Document>
+      );
+    }
+  };  const nextTemplate = () => {
     setCurrentTemplate((prev) => (prev + 1) % templates.length);
   };
 
@@ -430,68 +576,11 @@ export default function ResumePreview({ basicInfo, projects, experiences, skills
     setCurrentTemplate((prev) => (prev - 1 + templates.length) % templates.length);
   };
 
-  const handleDownloadPDF = async () => {
-    try {
-      // Simple approach: use browser's print functionality to save as PDF
-      const resumeElement = document.querySelector('.resume-template');
-      if (resumeElement) {
-        // Create a new window with just the resume content
-        const printWindow = window.open('', '_blank');
-        if (printWindow) {
-          printWindow.document.write(`
-            <!DOCTYPE html>
-            <html>
-              <head>
-                <title>Resume - ${basicInfo?.name || 'Resume'}</title>
-                <style>
-                  body { margin: 0; padding: 0; font-family: system-ui, sans-serif; }
-                  @media print { 
-                    body { margin: 0; padding: 0; }
-                    .no-print { display: none; }
-                  }
-                  @page { margin: 0.5in; }
-                </style>
-              </head>
-              <body>
-                ${resumeElement.outerHTML}
-              </body>
-            </html>
-          `);
-          printWindow.document.close();
-          
-          // Wait a moment for content to load, then trigger print
-          setTimeout(() => {
-            printWindow.print();
-          }, 500);
-        }
-      } else {
-        // Fallback: print current page
-        window.print();
-      }
-    } catch (error) {
-      console.error('Download error:', error);
-      alert('Error preparing download. Please try again.');
-    }
-  };
-
-  const handlePreview = () => {
-    // Scroll to resume template for better view
-    const resumeElement = document.querySelector('.resume-template');
-    if (resumeElement) {
-      resumeElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
-    
-    // Optional: Open in new tab for full-screen preview
-    const confirm = window.confirm('Open resume in new tab for full preview?');
-    if (confirm) {
-      const newWindow = window.open(window.location.href, '_blank');
-      if (newWindow) {
-        newWindow.focus();
-      }
-    }
-  };
-
   const CurrentComponent = templates[currentTemplate].component;
+
+  console.log('Current template index:', currentTemplate);
+  console.log('Current template name:', templates[currentTemplate].name);
+  console.log('Basic info:', basicInfo);
 
   return (
     <div className="relative">
@@ -560,32 +649,54 @@ export default function ResumePreview({ basicInfo, projects, experiences, skills
         </div>
 
         <div className="flex items-center gap-3">
-          <Button
-            onClick={() => handleDownloadPDF()}
-            className="flex items-center gap-2 bg-primary hover:bg-primary/90"
+          <PDFDownloadLink
+            document={getPDFDocument()}
+            fileName={`${basicInfo?.name?.replace(/\s+/g, '_') || 'resume'}_${getTemplateType()}_resume.pdf`}
           >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3M3 17V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v10a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
-            </svg>
-            Download PDF
-          </Button>
-          <Button
-            onClick={() => handlePreview()}
-            variant="outline"
-            className="flex items-center gap-2"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-            </svg>
-            Preview
-          </Button>
+            {({ loading, error }) => {
+              if (error) {
+                console.error('PDF Error:', error);
+                return (
+                  <Button 
+                    className="flex items-center gap-2 bg-red-500 hover:bg-red-600"
+                    disabled
+                  >
+                    PDF Error
+                  </Button>
+                );
+              }
+              
+              return (
+                <Button 
+                  className="flex items-center gap-2 bg-primary hover:bg-primary/90"
+                  disabled={loading}
+                >
+                  {loading ? (
+                    <>
+                      <svg className="animate-spin -ml-1 mr-2 h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      Generating PDF...
+                    </>
+                  ) : (
+                    <>
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3M3 17V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v10a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
+                      </svg>
+                      Download PDF
+                    </>
+                  )}
+                </Button>
+              );
+            }}
+          </PDFDownloadLink>
         </div>
       </div>
 
       {/* Template Preview */}
       <div className="bg-gray-100 p-8 rounded-lg overflow-auto">
-        <div className="scale-75 origin-top transform transition-transform duration-300">
+        <div className="w-full">
           <CurrentComponent
             basicInfo={basicInfo}
             projects={projects}

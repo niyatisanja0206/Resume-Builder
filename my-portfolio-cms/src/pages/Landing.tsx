@@ -4,7 +4,6 @@ import { Eye, Edit, Download, Award, Users, Zap, Star } from 'lucide-react';
 import resume1 from '@/assets/resume1.png';
 import resume2 from '@/assets/resume2.png';
 import resume3 from '@/assets/resume3.png';
-import resume4 from '@/assets/resume4.png';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -70,7 +69,7 @@ const LandingPage: React.FC = () => {
             {/* Hero Carousel */}
             <div className="flex justify-center">
               <div className="w-full max-w-xs">
-                <Carousel className="w-full" plugins={[Autoplay({delay: 5000,}),]}>
+                <Carousel className="w-full" plugins={[Autoplay({delay: 3000,}),]}>
                   <CarouselContent>
                     <CarouselItem>
                       <div className="flex items-center justify-center bg-muted rounded-lg">
@@ -85,11 +84,6 @@ const LandingPage: React.FC = () => {
                     <CarouselItem>
                       <div className="flex items-center justify-center bg-muted rounded-lg">
                         <img src={resume2} alt="Resume template 2" className="w-full h-auto object-contain rounded-lg" />
-                      </div>
-                    </CarouselItem>
-                    <CarouselItem>
-                      <div className="flex items-center justify-center bg-muted rounded-lg">
-                        <img src={resume4} alt="Resume template 4" className="w-full h-auto object-contain rounded-lg" />
                       </div>
                     </CarouselItem>
                   </CarouselContent>

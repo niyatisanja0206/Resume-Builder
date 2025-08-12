@@ -15,12 +15,6 @@ interface ResumeTemplateSelectorProps {
 
 const templates = [
   {
-    id: 'original',
-    name: 'Original',
-    description: 'Your original portfolio format with traditional styling',
-    preview: '/images/original-preview.png'
-  },
-  {
     id: 'classic',
     name: 'Classic',
     description: 'Traditional format with clean typography and professional layout',
