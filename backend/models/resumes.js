@@ -6,9 +6,24 @@ const resumeSchema = new mongoose.Schema({
         required: true,
         ref: 'User'
     },
+    title: {
+        type: String,
+        default: function() {
+            return `Resume ${new Date().toLocaleDateString()}`;
+        }
+    },
+    status: {
+        type: String,
+        enum: ['draft', 'completed'],
+        default: 'draft'
+    },
     isDownloaded: {
         type: Boolean,
         default: false
+    },
+    downloadCount: {
+        type: Number,
+        default: 0
     },
     basic: {
         name: String,

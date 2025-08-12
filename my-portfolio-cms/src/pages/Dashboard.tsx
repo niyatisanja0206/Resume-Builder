@@ -6,6 +6,7 @@ import EducationForm from "@/components/EducationForm";
 import UserStats from "@/components/UserStats";
 import { Link } from "react-router-dom";
 import AuthGuard from "@/components/AuthGuard";
+import { Button } from "@/components/ui/button";
 
 export default function Dashboard() {
     return (
@@ -23,6 +24,68 @@ export default function Dashboard() {
                     <div>
                     <h1 className="text-3xl font-bold text-foreground">Portfolio CMS</h1>
                     <p className="text-muted-foreground">Manage your professional portfolio content</p>
+                    <div className="mt-3 flex gap-3">
+                        <Button 
+                            onClick={async () => {
+                                try {
+                                    // Increment resume created counter
+                                    const response = await fetch('/api/auth/increment-resume-count', {
+                                        method: 'POST',
+                                        headers: {
+                                            'Content-Type': 'application/json',
+                                            'Authorization': `Bearer ${localStorage.getItem('token')}`
+                                        }
+                                    });
+                                    
+                                    if (response.ok) {
+                                        // Clear all form data from localStorage
+                                        const keysToRemove = [];
+                                        for (let i = 0; i < localStorage.length; i++) {
+                                            const key = localStorage.key(i);
+                                            if (key && (key.includes('resume') || key.includes('form') || key.includes('draft'))) {
+                                                keysToRemove.push(key);
+                                            }
+                                        }
+                                        keysToRemove.forEach(key => localStorage.removeItem(key));
+                                        
+                                        // Refresh the page to clear all forms
+                                        window.location.reload();
+                                    } else {
+                                        console.error('Failed to create new resume');
+                                        alert('Failed to create new resume. Please try again.');
+                                    }
+                                } catch (error) {
+                                    console.error('Error creating new resume:', error);
+                                    alert('Error creating new resume. Please check your connection.');
+                                }
+                            }}
+                            className="bg-blue-600 hover:bg-blue-700"
+                        >
+                            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                            </svg>
+                            New Resume
+                        </Button>
+                        <Button 
+                            variant="outline"
+                            onClick={() => {
+                                // Clear all form data from localStorage
+                                const keysToRemove = [];
+                                for (let i = 0; i < localStorage.length; i++) {
+                                    const key = localStorage.key(i);
+                                    if (key && (key.includes('resume') || key.includes('form') || key.includes('draft'))) {
+                                        keysToRemove.push(key);
+                                    }
+                                }
+                                keysToRemove.forEach(key => localStorage.removeItem(key));
+                                
+                                // Refresh the page to clear all forms
+                                window.location.reload();
+                            }}
+                        >
+                            Clear Current Form
+                        </Button>
+                    </div>
                     </div>
                 </div>
                 </div>

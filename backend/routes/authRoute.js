@@ -22,12 +22,12 @@ router.post('/check-user', authController.checkUser);
 router.post('/reset-password', authController.resetPassword);
 
 // Increment resume created counter
-router.post('/increment-resume-count', authController.incrementResumeCount);
+router.post('/increment-resume-count', auth, authController.incrementResumeCount);
 
 // Increment resume downloaded counter
-router.post('/increment-download-count', authController.incrementDownloadCount);
+router.post('/increment-download-count', auth, authController.incrementDownloadCount);
 
 // Get user stats
-router.get('/user-stats', authController.getUserStats);
+router.get('/user-stats', auth, authController.getUserStats);
 
 module.exports = router;

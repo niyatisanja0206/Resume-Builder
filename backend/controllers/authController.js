@@ -122,8 +122,8 @@ exports.resetPassword = async (req, res) => {
 // Increment resume created counter
 exports.incrementResumeCount = async (req, res) => {
     try {
-        const { email } = req.body;
-        const user = await User.findOne({ email });
+        const userId = req.user.userId;
+        const user = await User.findById(userId);
         if (!user) return res.status(404).json({ message: 'User not found' });
 
         user.no_of_resumes += 1;
@@ -141,8 +141,8 @@ exports.incrementResumeCount = async (req, res) => {
 // Increment resume downloaded counter
 exports.incrementDownloadCount = async (req, res) => {
     try {
-        const { email } = req.body;
-        const user = await User.findOne({ email });
+        const userId = req.user.userId;
+        const user = await User.findById(userId);
         if (!user) return res.status(404).json({ message: 'User not found' });
 
         user.resume_downloaded += 1;
@@ -160,8 +160,8 @@ exports.incrementDownloadCount = async (req, res) => {
 // Get user stats
 exports.getUserStats = async (req, res) => {
     try {
-        const { email } = req.query;
-        const user = await User.findOne({ email });
+        const userId = req.user.userId;
+        const user = await User.findById(userId);
         if (!user) return res.status(404).json({ message: 'User not found' });
 
         res.json({ 

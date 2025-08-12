@@ -1,13 +1,15 @@
 import ResumeTemplateSelector from "@/components/ResumeTemplateSelector";
 import AuthGuard from "@/components/AuthGuard";
-import { useBasic } from "@/hooks/useBasic";
-import { useProject } from "@/hooks/useProject";
-import { useExperience } from "@/hooks/useExperience";
-import { useSkill } from "@/hooks/useSkills";
-import { useEducation } from "@/hooks/useEducation";
+import { useBasic } from "../hooks/useBasic";
+import { useProject } from "../hooks/useProject";
+import { useExperience } from "../hooks/useExperience";
+import { useSkill } from "../hooks/useSkills";
+import { useEducation } from "../hooks/useEducation";
 
+// This component is the main page that fetches all data and passes it down.
+// It is the entry point to the resume builder functionality.
 export default function Portfolio() {
-  // Get current user email
+  // A helper function to safely get the current user's email from localStorage.
   const getUserEmail = () => {
     try {
       const userString = localStorage.getItem('user');
@@ -25,7 +27,7 @@ export default function Portfolio() {
   const currentEmail = getUserEmail();
   console.log('Portfolio - Current email:', currentEmail);
 
-  // Fetch all data
+  // Fetch all the necessary data from custom hooks.
   const { basic, isLoading: basicLoading, error: basicError } = useBasic(currentEmail);
   const { projects, isLoading: projectsLoading, error: projectsError } = useProject(currentEmail);
   const { experiences, isLoading: experiencesLoading, error: experiencesError } = useExperience(currentEmail);
@@ -36,7 +38,7 @@ export default function Portfolio() {
   console.log('Portfolio - Loading states:', { basicLoading, projectsLoading, experiencesLoading, skillsLoading, educationLoading });
   console.log('Portfolio - Errors:', { basicError, projectsError, experiencesError, skillsError, educationError });
 
-  // Show loading state
+  // Display a loading state while data is being fetched.
   if (basicLoading || projectsLoading || experiencesLoading || skillsLoading || educationLoading) {
     return (
       <AuthGuard>
@@ -51,7 +53,7 @@ export default function Portfolio() {
     );
   }
 
-  // Show error state
+  // Display an error state if any data fetching fails.
   const hasErrors = basicError || projectsError || experiencesError || skillsError || educationError;
   if (hasErrors) {
     return (
@@ -76,6 +78,7 @@ export default function Portfolio() {
     );
   }
 
+  // If data is loaded successfully, render the main resume builder component.
   return (
     <AuthGuard>
       <div className="min-h-screen bg-background">
@@ -87,6 +90,7 @@ export default function Portfolio() {
             </p>
           </div>
 
+          {/* This is the main component that handles template selection and rendering */}
           <ResumeTemplateSelector
             basicInfo={basic || null}
             projects={projects || []}
