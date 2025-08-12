@@ -45,9 +45,15 @@ exports.logout = (req, res) => {
 exports.deleteAccount = async (req, res) => {
     try {
         const userId = req.user.userId;
-        await User.findByIdAndDelete(userId);
+        const deletedUser = await User.findByIdAndDelete(userId);
+        
+        if (!deletedUser) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+        
         res.json({ message: 'Account deleted successfully' });
     } catch (err) {
+        console.error('Delete account error:', err);
         res.status(500).json({ message: 'Server error' });
     }
 };

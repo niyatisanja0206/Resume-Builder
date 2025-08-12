@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const authController = require('../controllers/authController');
+const auth = require('../middleware/auth');
 
 // Sign Up
 router.post('/signup', authController.signup);
@@ -12,7 +13,7 @@ router.post('/login', authController.login);
 router.post('/logout', authController.logout);
 
 // Delete Account
-router.delete('/delete', authController.deleteAccount);
+router.delete('/delete', auth, authController.deleteAccount);
 
 // Reset Password
 router.post('/reset-password', authController.resetPassword);
