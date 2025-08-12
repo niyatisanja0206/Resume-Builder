@@ -7,8 +7,12 @@ import UserStats from "@/components/UserStats";
 import { Link } from "react-router-dom";
 import AuthGuard from "@/components/AuthGuard";
 import { Button } from "@/components/ui/button";
+import { makeAuthenticatedRequest } from "@/utils/auth";
+import { hasFormData, clearAllFormData, getFormSummary } from "@/utils/formValidation";
+import { useUserContext } from "@/contexts/useUserContext";
 
 export default function Dashboard() {
+    const { currentUser } = useUserContext();
     return (
         <AuthGuard>
             <div className="min-h-screen text-foreground bg-gradient-to-br from-background to-background/50">
@@ -25,38 +29,62 @@ export default function Dashboard() {
                     <h1 className="text-3xl font-bold text-foreground">Portfolio CMS</h1>
                     <p className="text-muted-foreground">Manage your professional portfolio content</p>
                     <div className="mt-3 flex gap-3">
-                        <Button 
+                        <Button className="bg-black text-primary-foreground hover:bg-primary/80" 
                             onClick={async () => {
                                 try {
-                                    // Increment resume created counter
-                                    const response = await fetch('/api/auth/increment-resume-count', {
-                                        method: 'POST',
-                                        headers: {
-                                            'Content-Type': 'application/json',
-                                            'Authorization': `Bearer ${localStorage.getItem('token')}`
-                                        }
+                                    console.log('Starting new resume creation...');
+                                    
+                                    // Check if any form data exists before creating a new resume
+                                    if (!hasFormData()) {
+                                        alert('Please fill out at least one form section before creating a resume.');
+                                        return;
+                                    }
+                                    
+                                    // Show summary of filled forms
+                                    const formSummary = getFormSummary();
+                                    const filledForms = Object.entries(formSummary)
+                                        .filter(([, filled]) => filled)
+                                        .map(([key]) => key.replace('-form', ''))
+                                        .join(', ');
+                                    
+                                    const confirmMessage = `You have filled: ${filledForms}\n\nDo you want to create a new resume? This will clear all current form data.`;
+                                    if (!confirm(confirmMessage)) {
+                                        return;
+                                    }
+                                    
+                                    // Use the authenticated request utility
+                                    const response = await makeAuthenticatedRequest('/api/auth/increment-resume-count', {
+                                        method: 'POST'
                                     });
                                     
+                                    console.log('API response status:', response.status);
+                                    
                                     if (response.ok) {
-                                        // Clear all form data from localStorage
-                                        const keysToRemove = [];
-                                        for (let i = 0; i < localStorage.length; i++) {
-                                            const key = localStorage.key(i);
-                                            if (key && (key.includes('resume') || key.includes('form') || key.includes('draft'))) {
-                                                keysToRemove.push(key);
-                                            }
-                                        }
-                                        keysToRemove.forEach(key => localStorage.removeItem(key));
+                                        const result = await response.json();
+                                        console.log('API response:', result);
+                                        
+                                        // Clear all form data using the utility function
+                                        clearAllFormData();
+                                        
+                                        // Show success message before reload
+                                        alert('New resume created successfully! All forms have been cleared for your new resume.');
                                         
                                         // Refresh the page to clear all forms
                                         window.location.reload();
                                     } else {
-                                        console.error('Failed to create new resume');
-                                        alert('Failed to create new resume. Please try again.');
+                                        const errorData = await response.json();
+                                        console.error('API error response:', errorData);
+                                        alert(`Failed to create new resume: ${errorData.message || 'Unknown error'}`);
                                     }
                                 } catch (error) {
                                     console.error('Error creating new resume:', error);
-                                    alert('Error creating new resume. Please check your connection.');
+                                    if (error instanceof Error && error.message.includes('authentication token')) {
+                                        alert('Please log in again to continue.');
+                                        // Optionally redirect to login
+                                        window.location.reload();
+                                    } else {
+                                        alert(`Error creating new resume: ${error instanceof Error ? error.message : 'Please check your connection and try again.'}`);
+                                    }
                                 }
                             }}
                             className="bg-blue-600 hover:bg-blue-700"
@@ -69,18 +97,39 @@ export default function Dashboard() {
                         <Button 
                             variant="outline"
                             onClick={() => {
-                                // Clear all form data from localStorage
-                                const keysToRemove = [];
-                                for (let i = 0; i < localStorage.length; i++) {
-                                    const key = localStorage.key(i);
-                                    if (key && (key.includes('resume') || key.includes('form') || key.includes('draft'))) {
-                                        keysToRemove.push(key);
+                                try {
+                                    console.log('Starting to clear current form...');
+                                    
+                                    // Check if any form data exists
+                                    if (!hasFormData()) {
+                                        alert('No form data to clear.');
+                                        return;
                                     }
+                                    
+                                    // Show summary of what will be cleared
+                                    const formSummary = getFormSummary();
+                                    const filledForms = Object.entries(formSummary)
+                                        .filter(([, filled]) => filled)
+                                        .map(([key]) => key.replace('-form', ''))
+                                        .join(', ');
+                                    
+                                    const confirmMessage = `This will clear data from: ${filledForms}\n\nAre you sure you want to continue?`;
+                                    if (!confirm(confirmMessage)) {
+                                        return;
+                                    }
+                                    
+                                    // Clear all form data using the utility function
+                                    clearAllFormData();
+                                    
+                                    // Show success message before reload
+                                    alert('All form data cleared successfully!');
+                                    
+                                    // Refresh the page to clear all forms
+                                    window.location.reload();
+                                } catch (error) {
+                                    console.error('Error clearing form:', error);
+                                    alert(`Error clearing form: ${error instanceof Error ? error.message : 'Please try again.'}`);
                                 }
-                                keysToRemove.forEach(key => localStorage.removeItem(key));
-                                
-                                // Refresh the page to clear all forms
-                                window.location.reload();
                             }}
                         >
                             Clear Current Form

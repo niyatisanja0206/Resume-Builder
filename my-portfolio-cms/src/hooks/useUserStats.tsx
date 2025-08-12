@@ -9,72 +9,65 @@ interface UserStats {
 }
 
 // Fetch user statistics
-const fetchUserStats = async (email: string): Promise<UserStats> => {
+const fetchUserStats = async (): Promise<UserStats> => {
+    const token = localStorage.getItem('token');
     const { data } = await axios.get(`${API_BASE_URL}/user-stats`, {
-        params: { email }
+        headers: {
+            Authorization: `Bearer ${token}`
+        }
     });
     return data;
 };
 
 // Increment resume count
-const incrementResumeCount = async (email: string) => {
-    const { data } = await axios.post(`${API_BASE_URL}/increment-resume-count`, {
-        email
+const incrementResumeCount = async () => {
+    const token = localStorage.getItem('token');
+    const { data } = await axios.post(`${API_BASE_URL}/increment-resume-count`, {}, {
+        headers: {
+            Authorization: `Bearer ${token}`
+        }
     });
     return data;
 };
 
 // Increment download count
-const incrementDownloadCount = async (email: string) => {
-    const { data } = await axios.post(`${API_BASE_URL}/increment-download-count`, {
-        email
+const incrementDownloadCount = async () => {
+    const token = localStorage.getItem('token');
+    const { data } = await axios.post(`${API_BASE_URL}/increment-download-count`, {}, {
+        headers: {
+            Authorization: `Bearer ${token}`
+        }
     });
     return data;
 };
 
-export function useUserStats(email?: string) {
+export function useUserStats() {
     const queryClient = useQueryClient();
     
-    // Get email from stored user data if not provided
-    const getUserEmail = () => {
-        if (email) return email;
-        
-        try {
-            const userString = localStorage.getItem('user');
-            if (userString) {
-                const user = JSON.parse(userString);
-                return user.email || '';
-            }
-            return localStorage.getItem('currentUserEmail') || '';
-        } catch (error) {
-            console.error('Error parsing user data:', error);
-            return '';
-        }
-    };
-    
-    const currentEmail = getUserEmail();
+    // Check if user is authenticated
+    const isAuthenticated = !!localStorage.getItem('token');
 
     // Fetch user stats
     const { data: stats, isLoading, error, refetch } = useQuery<UserStats>({
-        queryKey: ["userStats", currentEmail],
-        queryFn: () => fetchUserStats(currentEmail),
-        enabled: !!currentEmail,
+        queryKey: ["userStats"],
+        queryFn: fetchUserStats,
+        enabled: isAuthenticated,
         staleTime: 30 * 1000, // Cache for 30 seconds
     });
 
     // Increment resume count mutation
     const incrementResumeMutation = useMutation({
-        mutationFn: () => incrementResumeCount(currentEmail),
+        mutationFn: incrementResumeCount,
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ["userStats", currentEmail] });
+            queryClient.invalidateQueries({ queryKey: ["userStats"] });
         },
     });
 
     // Increment download count mutation
     const incrementDownloadMutation = useMutation({
-        mutationFn: () => incrementDownloadCount(currentEmail),
+        mutationFn: incrementDownloadCount,
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ["userStats", currentEmail] });
+            queryClient.invalidateQueries({ queryKey: ["userStats"] });
         },
     });
 

@@ -69,7 +69,7 @@ const LandingPage: React.FC = () => {
             {/* Hero Carousel */}
             <div className="flex justify-center">
               <div className="w-full max-w-xs">
-                <Carousel className="w-full" plugins={[Autoplay({delay: 3000,}),]}>
+                <Carousel className="w-full" plugins={[Autoplay({delay: 3000,}),]} opts={{ loop: true }}>
                   <CarouselContent>
                     <CarouselItem>
                       <div className="flex items-center justify-center bg-muted rounded-lg">

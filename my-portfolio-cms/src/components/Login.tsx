@@ -29,7 +29,7 @@ export default function Login() {
         setLoading(true);
 
         try {
-            const response = await fetch('http://localhost:5000/api/auth/login', {
+            const response = await fetch('/api/auth/login', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -123,6 +123,7 @@ export default function Login() {
                             disabled={loading}
                         >
                             {loading ? "Logging in..." : "Login"}
+                            
                         </Button>
                         <p className="text-sm text-center mt-4">
                             Don't have an account?{" "}

@@ -2,19 +2,7 @@ import { Button } from "@/components/ui/button";
 import { PDFDownloadLink, Document, Page, Text, View, StyleSheet, Font } from '@react-pdf/renderer';
 import type { Basic, Project, Experience, Skill, Education } from '@/types/portfolio';
 import React from 'react';
-
-// Mock hook to resolve the compilation error. In a real-world application,
-// this hook would be defined in a separate file and would handle
-// communication with a backend service.
-const useUserStats = () => {
-  return {
-    incrementDownloadCount: async () => {
-      console.log('Mock incrementDownloadCount called. Download count would be incremented here.');
-      // Simulating a successful API call
-      return Promise.resolve();
-    }
-  };
-};
+import { useUserStats } from '@/hooks/useUserStats';
 
 // Register standard fonts to ensure they are available in the PDF.
 // This is critical for the PDF to render correctly.
@@ -53,146 +41,198 @@ const classicStyles = StyleSheet.create({
   page: {
     fontFamily: 'Times-Roman',
     fontSize: 11,
-    paddingTop: 30,
-    paddingLeft: 30,
-    paddingRight: 30,
-    paddingBottom: 30,
+    paddingTop: 56, // 20mm
+    paddingLeft: 56, // 20mm  
+    paddingRight: 56, // 20mm
+    paddingBottom: 56, // 20mm
     backgroundColor: '#ffffff',
+    lineHeight: 1.3,
   },
   section: {
-    marginBottom: 10,
+    marginBottom: 11, // mb-4 equivalent
   },
   header: {
-    marginBottom: 20,
+    marginBottom: 11,
     textAlign: 'center',
+    paddingBottom: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#9ca3af', // border-gray-400
   },
   name: {
-    fontSize: 24,
+    fontSize: 18, // text-2xl equivalent
     fontFamily: 'Times-Bold',
-    marginBottom: 5,
-  },
-  contactInfo: {
-    fontSize: 10,
     marginBottom: 3,
   },
+  contactInfo: {
+    fontSize: 9, // text-xs equivalent
+    marginBottom: 0,
+    color: '#4b5563', // text-gray-600
+  },
+  contactContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 8,
+  },
+  contactSeparator: {
+    fontSize: 9,
+    color: '#4b5563',
+  },
   sectionTitle: {
-    fontSize: 14,
+    fontSize: 11, // text-base equivalent
     fontFamily: 'Times-Bold',
-    marginBottom: 8,
-    marginTop: 15,
+    marginBottom: 6,
+    marginTop: 0,
     borderBottomWidth: 1,
-    borderBottomColor: '#000',
-    paddingBottom: 2,
+    borderBottomColor: '#9ca3af', // border-gray-400
+    paddingBottom: 3,
   },
   text: {
-    fontSize: 11,
+    fontSize: 9, // text-xs equivalent
     lineHeight: 1.4,
-    marginBottom: 4,
+    marginBottom: 3,
+    color: '#374151', // text-gray-700
   },
   jobTitle: {
-    fontSize: 12,
+    fontSize: 10, // text-sm equivalent
     fontFamily: 'Times-Bold',
-    marginBottom: 2,
+    marginBottom: 1,
   },
   company: {
-    fontSize: 11,
+    fontSize: 9, // text-xs equivalent
     fontFamily: 'Times-Bold',
-    marginBottom: 2,
+    marginBottom: 1,
+    color: '#374151', // text-gray-700
   },
   date: {
-    fontSize: 10,
+    fontSize: 9, // text-xs equivalent
     fontStyle: 'italic',
-    marginBottom: 4,
+    marginBottom: 3,
+    color: '#6b7280', // text-gray-500
+  },
+  experienceItem: {
+    marginBottom: 8, // mb-3 equivalent
+  },
+  jobHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
   },
   skillsContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 5,
+    gap: 3,
   },
   skill: {
-    fontSize: 10,
-    backgroundColor: '#f0f0f0',
-    padding: '2 6',
-    marginRight: 5,
-    marginBottom: 3,
+    fontSize: 9, // text-xs equivalent
+    backgroundColor: '#e5e7eb', // bg-gray-200
+    color: '#6b7280', // text-gray-500
+    padding: '1 6',
+    marginRight: 3,
+    marginBottom: 1,
+    borderRadius: 10, // rounded-full
   },
 });
 
 const modernStyles = StyleSheet.create({
   page: {
     fontFamily: 'Helvetica',
-    fontSize: 10,
-    paddingTop: 40,
-    paddingLeft: 40,
-    paddingRight: 40,
-    paddingBottom: 40,
+    fontSize: 11,
+    paddingTop: 56, // 20mm
+    paddingLeft: 56, // 20mm
+    paddingRight: 56, // 20mm
+    paddingBottom: 56, // 20mm
     backgroundColor: '#ffffff',
+    lineHeight: 1.3,
   },
   section: {
-    marginBottom: 15,
+    marginBottom: 11, // mb-4 equivalent
   },
   header: {
-    marginBottom: 25,
-    paddingBottom: 15,
+    marginBottom: 11,
+    paddingBottom: 11,
     borderBottomWidth: 2,
-    borderBottomColor: '#2563eb',
+    borderBottomColor: '#3b82f6', // border-blue-500
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-end',
+  },
+  headerLeft: {
+    flex: 1,
+  },
+  headerRight: {
+    alignItems: 'flex-end',
   },
   name: {
-    fontSize: 28,
+    fontSize: 22, // text-3xl equivalent but smaller for PDF
     fontFamily: 'Helvetica-Bold',
-    marginBottom: 8,
-    color: '#1e40af',
+    marginBottom: 3,
+    color: '#1d4ed8', // text-blue-700
+  },
+  subtitle: {
+    fontSize: 11, // text-base equivalent
+    color: '#3b82f6', // text-blue-500
+    fontFamily: 'Helvetica-Bold',
   },
   contactInfo: {
-    fontSize: 9,
-    marginBottom: 2,
-    color: '#4b5563',
+    fontSize: 9, // text-xs equivalent
+    marginBottom: 1,
+    color: '#000000',
+  },
+  contactIcon: {
+    marginRight: 4,
   },
   sectionTitle: {
-    fontSize: 13,
+    fontSize: 11, // text-base equivalent
     fontFamily: 'Helvetica-Bold',
-    marginBottom: 10,
-    marginTop: 18,
-    color: '#1e40af',
+    marginBottom: 6,
+    marginTop: 0,
+    color: '#1d4ed8', // text-blue-700
     textTransform: 'uppercase',
-    letterSpacing: 1,
   },
   text: {
-    fontSize: 10,
-    lineHeight: 1.5,
-    marginBottom: 5,
-    color: '#374151',
+    fontSize: 9, // text-xs equivalent
+    lineHeight: 1.4,
+    marginBottom: 3,
+    color: '#000000',
   },
   jobTitle: {
-    fontSize: 11,
+    fontSize: 10, // text-sm equivalent
     fontFamily: 'Helvetica-Bold',
-    marginBottom: 3,
-    color: '#1f2937',
+    marginBottom: 1,
   },
   company: {
-    fontSize: 10,
+    fontSize: 9, // text-xs equivalent
     fontFamily: 'Helvetica-Bold',
-    marginBottom: 3,
-    color: '#4b5563',
+    marginBottom: 1,
+    color: '#2563eb', // text-blue-600
   },
   date: {
-    fontSize: 9,
+    fontSize: 9, // text-xs equivalent
     fontStyle: 'italic',
-    marginBottom: 5,
-    color: '#6b7280',
+    marginBottom: 3,
+    color: '#6b7280', // text-gray-500
+  },
+  experienceItem: {
+    marginBottom: 8, // mb-3 equivalent
+  },
+  jobHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
   },
   skillsContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 6,
+    gap: 3,
   },
   skill: {
-    fontSize: 9,
-    backgroundColor: '#dbeafe',
-    color: '#1e40af',
-    padding: '3 8',
-    marginRight: 6,
-    marginBottom: 4,
+    fontSize: 9, // text-xs equivalent
+    backgroundColor: '#dbeafe', // bg-blue-100
+    color: '#1e40af', // text-blue-800
+    padding: '2 6',
+    marginRight: 3,
+    marginBottom: 1,
     borderRadius: 3,
   },
 });
@@ -201,84 +241,115 @@ const creativeStyles = StyleSheet.create({
   page: {
     fontFamily: 'Helvetica',
     fontSize: 11,
-    paddingTop: 30,
-    paddingLeft: 30,
-    paddingRight: 30,
-    paddingBottom: 30,
+    paddingTop: 0,
+    paddingLeft: 0,
+    paddingRight: 0,
+    paddingBottom: 0,
     backgroundColor: '#ffffff',
     flexDirection: 'row',
+    lineHeight: 1.3,
   },
   leftColumn: {
     width: '35%',
-    backgroundColor: '#80baf4ff',
+    backgroundColor: '#dbeafe', // bg-blue-100
     padding: 20,
-    marginRight: 15,
+    minHeight: '100%',
   },
   rightColumn: {
     width: '65%',
     padding: 20,
   },
   section: {
-    marginBottom: 12,
+    marginBottom: 11, // mb-4 equivalent (space-y-4)
   },
   header: {
-    marginBottom: 20,
+    marginBottom: 15,
+    textAlign: 'center',
   },
   name: {
-    fontSize: 22,
+    fontSize: 18, // text-2xl equivalent but smaller for PDF
     fontFamily: 'Helvetica-Bold',
     marginBottom: 6,
-    color: '#0f172a',
+    color: '#1f2937', // text-gray-800
+    textAlign: 'center',
   },
   contactInfo: {
-    fontSize: 9,
-    marginBottom: 3,
-    color: '#011a3cff',
+    fontSize: 9, // text-xs equivalent
+    marginBottom: 1,
+    color: '#000000',
+  },
+  contactIcon: {
+    marginRight: 4,
   },
   sectionTitle: {
-    fontSize: 12,
+    fontSize: 10, // text-sm equivalent
     fontFamily: 'Helvetica-Bold',
-    marginBottom: 8,
-    marginTop: 15,
-    color: '#0f172a',
-    backgroundColor: '#e2e8f0',
-    padding: 4,
+    marginBottom: 6,
+    marginTop: 11,
+    color: '#000000',
+    borderBottomWidth: 1,
+    borderBottomColor: '#d1d5db', // border-gray-300
+    paddingBottom: 3,
+  },
+  sectionTitleRight: {
+    fontSize: 11, // text-base equivalent
+    fontFamily: 'Helvetica-Bold',
+    marginBottom: 6,
+    marginTop: 11,
+    color: '#000000',
+    borderBottomWidth: 1,
+    borderBottomColor: '#d1d5db', // border-gray-300
+    paddingBottom: 3,
   },
   text: {
-    fontSize: 10,
+    fontSize: 9, // text-xs equivalent
     lineHeight: 1.4,
-    marginBottom: 4,
-    color: '#02132dff',
+    marginBottom: 3,
+    color: '#000000',
   },
   jobTitle: {
-    fontSize: 11,
+    fontSize: 10, // text-sm equivalent
     fontFamily: 'Helvetica-Bold',
-    marginBottom: 2,
+    marginBottom: 1,
     color: '#1e293b',
   },
   company: {
-    fontSize: 10,
+    fontSize: 9, // text-xs equivalent
     fontFamily: 'Helvetica-Bold',
-    marginBottom: 2,
+    marginBottom: 1,
     color: '#475569',
   },
   date: {
-    fontSize: 9,
+    fontSize: 9, // text-xs equivalent
     fontStyle: 'italic',
-    marginBottom: 4,
+    marginBottom: 3,
     color: '#64748b',
+  },
+  experienceItem: {
+    marginBottom: 8, // mb-3 equivalent
+  },
+  jobHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
   },
   skillsContainer: {
     flexDirection: 'column',
-    gap: 3,
+    gap: 1,
   },
   skill: {
-    fontSize: 9,
-    backgroundColor: '#334155',
-    color: '#ffffff',
-    padding: '2 6',
-    marginBottom: 2,
-    textAlign: 'center',
+    fontSize: 9, // text-xs equivalent
+    backgroundColor: 'transparent',
+    color: '#000000',
+    marginBottom: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  skillIcon: {
+    marginRight: 4,
+  },
+  educationItem: {
+    marginBottom: 6,
   },
 });
 
@@ -289,34 +360,37 @@ const MyDocument = React.memo(({ basicInfo, projects, experiences, skills, educa
         {/* Header */}
         <View style={classicStyles.header}>
           <Text style={classicStyles.name}>{basicInfo?.name || 'Your Name'}</Text>
-          <Text style={classicStyles.contactInfo}>{basicInfo?.email || 'email@example.com'}</Text>
-          <Text style={classicStyles.contactInfo}>{basicInfo?.contact_no || 'Phone Number'}</Text>
-          <Text style={classicStyles.contactInfo}>{basicInfo?.location || 'Location'}</Text>
+          <View style={classicStyles.contactContainer}>
+            <Text style={classicStyles.contactInfo}>{basicInfo?.contact_no || 'Phone Number'}</Text>
+            <Text style={classicStyles.contactSeparator}>|</Text>
+            <Text style={classicStyles.contactInfo}>{basicInfo?.email || 'email@example.com'}</Text>
+            <Text style={classicStyles.contactSeparator}>|</Text>
+            <Text style={classicStyles.contactInfo}>{basicInfo?.location || 'Location'}</Text>
+          </View>
         </View>
 
-        {/* About */}
+        {/* Profile/About */}
         {basicInfo?.about && (
           <View style={classicStyles.section}>
-            <Text style={classicStyles.sectionTitle}>SUMMARY</Text>
+            <Text style={classicStyles.sectionTitle}>PROFILE</Text>
             <Text style={classicStyles.text}>{basicInfo.about}</Text>
           </View>
         )}
 
-        {/* Experience */}
+        {/* Work Experience */}
         {experiences && experiences.length > 0 && (
           <View style={classicStyles.section}>
             <Text style={classicStyles.sectionTitle}>WORK EXPERIENCE</Text>
             {experiences.map((exp, index) => (
-              <View key={exp.id || index} style={{ marginBottom: 8 }}>
-                <Text style={classicStyles.jobTitle}>{exp?.position || 'Position'}</Text>
+              <View key={exp.id || index} style={classicStyles.experienceItem}>
+                <View style={classicStyles.jobHeader}>
+                  <Text style={classicStyles.jobTitle}>{exp?.position || 'Position'}</Text>
+                  <Text style={classicStyles.date}>
+                    {formatDate(exp?.startDate)} - {formatDate(exp?.endDate) || 'Present'}
+                  </Text>
+                </View>
                 <Text style={classicStyles.company}>{exp?.company || 'Company'}</Text>
-                <Text style={classicStyles.date}>
-                  {formatDate(exp?.startDate)} - {formatDate(exp?.endDate) || 'Present'}
-                </Text>
                 {exp?.description && <Text style={classicStyles.text}>{exp.description}</Text>}
-                {exp?.skillsLearned && exp.skillsLearned.length > 0 && (
-                  <Text style={classicStyles.text}>Skills: {exp.skillsLearned.join(', ')}</Text>
-                )}
               </View>
             ))}
           </View>
@@ -327,13 +401,14 @@ const MyDocument = React.memo(({ basicInfo, projects, experiences, skills, educa
           <View style={classicStyles.section}>
             <Text style={classicStyles.sectionTitle}>EDUCATION</Text>
             {education.map((edu, index) => (
-              <View key={index} style={{ marginBottom: 8 }}>
-                <Text style={classicStyles.company}>{edu.degree}</Text>
-                <Text style={classicStyles.text}>{edu.institution}</Text>
-                <Text style={classicStyles.date}>
-                  {formatDate(edu.startDate)} - {formatDate(edu.endDate) || 'Present'}
-                </Text>
-                {edu.Grade && <Text style={classicStyles.text}>Grade: {edu.Grade}</Text>}
+              <View key={index} style={classicStyles.experienceItem}>
+                <View style={classicStyles.jobHeader}>
+                  <Text style={classicStyles.jobTitle}>{edu.degree}</Text>
+                  <Text style={classicStyles.date}>
+                    {formatDate(edu.startDate)} - {formatDate(edu.endDate) || 'Present'}
+                  </Text>
+                </View>
+                <Text style={classicStyles.company}>{edu.institution}</Text>
               </View>
             ))}
           </View>
@@ -344,13 +419,18 @@ const MyDocument = React.memo(({ basicInfo, projects, experiences, skills, educa
           <View style={classicStyles.section}>
             <Text style={classicStyles.sectionTitle}>PROJECTS</Text>
             {projects.map((project, index) => (
-              <View key={index} style={{ marginBottom: 8 }}>
+              <View key={index} style={classicStyles.experienceItem}>
                 <Text style={classicStyles.jobTitle}>{project.title}</Text>
                 <Text style={classicStyles.text}>{project.description}</Text>
                 {project.techStack && project.techStack.length > 0 && (
-                  <Text style={classicStyles.text}>Technologies: {project.techStack.join(', ')}</Text>
+                  <View style={classicStyles.skillsContainer}>
+                    {project.techStack.map((tech, techIndex) => (
+                      <Text key={techIndex} style={classicStyles.skill}>
+                        {tech}
+                      </Text>
+                    ))}
+                  </View>
                 )}
-                {project.link && <Text style={classicStyles.text}>Link: {project.link}</Text>}
               </View>
             ))}
           </View>
@@ -360,10 +440,15 @@ const MyDocument = React.memo(({ basicInfo, projects, experiences, skills, educa
         {skills && skills.length > 0 && (
           <View style={classicStyles.section}>
             <Text style={classicStyles.sectionTitle}>SKILLS</Text>
-            <View style={classicStyles.skillsContainer}>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
               {skills.map((skill, index) => (
-                <Text key={index} style={classicStyles.skill}>
-                  {skill.name} ({skill.level})
+                <Text key={index} style={{
+                  fontSize: 9,
+                  marginRight: 8,
+                  marginBottom: 2,
+                  color: '#374151'
+                }}>
+                  • {skill.name} ({skill.level})
                 </Text>
               ))}
             </View>
@@ -378,12 +463,26 @@ const MyDocument = React.memo(({ basicInfo, projects, experiences, skills, educa
       <Page size="A4" style={creativeStyles.page}>
         {/* Left Column */}
         <View style={creativeStyles.leftColumn}>
+          {/* Name in Left Column */}
+          <View style={creativeStyles.header}>
+            <Text style={creativeStyles.name}>{basicInfo?.name || 'Your Name'}</Text>
+          </View>
+
           {/* Contact Info */}
           <View style={creativeStyles.section}>
             <Text style={creativeStyles.sectionTitle}>CONTACT</Text>
-            <Text style={creativeStyles.contactInfo}>{basicInfo?.email || 'email@example.com'}</Text>
-            <Text style={creativeStyles.contactInfo}>{basicInfo?.contact_no || 'Phone Number'}</Text>
-            <Text style={creativeStyles.contactInfo}>{basicInfo?.location || 'Location'}</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 2 }}>
+              <Text style={{ fontSize: 9, marginRight: 6, color: '#6b7280' }}>@</Text>
+              <Text style={creativeStyles.contactInfo}>{basicInfo?.email || 'email@example.com'}</Text>
+            </View>
+            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 2 }}>
+              <Text style={{ fontSize: 9, marginRight: 6, color: '#6b7280' }}>📞</Text>
+              <Text style={creativeStyles.contactInfo}>{basicInfo?.contact_no || 'Phone Number'}</Text>
+            </View>
+            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 2 }}>
+              <Text style={{ fontSize: 9, marginRight: 6, color: '#6b7280' }}>📍</Text>
+              <Text style={creativeStyles.contactInfo}>{basicInfo?.location || 'Location'}</Text>
+            </View>
           </View>
 
           {/* Skills */}
@@ -392,9 +491,12 @@ const MyDocument = React.memo(({ basicInfo, projects, experiences, skills, educa
               <Text style={creativeStyles.sectionTitle}>SKILLS</Text>
               <View style={creativeStyles.skillsContainer}>
                 {skills.map((skill, index) => (
-                  <Text key={index} style={creativeStyles.skill}>
-                    {skill.name}
-                  </Text>
+                  <View key={index} style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 2 }}>
+                    <Text style={{ fontSize: 8, marginRight: 6, color: '#10b981' }}>✓</Text>
+                    <Text style={{ fontSize: 9, color: '#000000' }}>
+                      {skill.name} : <Text style={{ color: '#6b7280' }}>{skill.level || 'Unknown'}</Text>
+                    </Text>
+                  </View>
                 ))}
               </View>
             </View>
@@ -405,11 +507,11 @@ const MyDocument = React.memo(({ basicInfo, projects, experiences, skills, educa
             <View style={creativeStyles.section}>
               <Text style={creativeStyles.sectionTitle}>EDUCATION</Text>
               {education.map((edu, index) => (
-                <View key={index} style={{ marginBottom: 8 }}>
-                  <Text style={creativeStyles.company}>{edu.degree}</Text>
+                <View key={index} style={creativeStyles.educationItem}>
+                  <Text style={creativeStyles.jobTitle}>{edu.degree}</Text>
                   <Text style={creativeStyles.text}>{edu.institution}</Text>
                   <Text style={creativeStyles.date}>
-                    {edu.startDate ? new Date(edu.startDate).getFullYear() : ''} - {edu.endDate ? new Date(edu.endDate).getFullYear() : 'Present'}
+                    {formatDate(edu.startDate)} - {formatDate(edu.endDate) || 'Present'}
                   </Text>
                 </View>
               ))}
@@ -419,30 +521,27 @@ const MyDocument = React.memo(({ basicInfo, projects, experiences, skills, educa
 
         {/* Right Column */}
         <View style={creativeStyles.rightColumn}>
-          {/* Header */}
-          <View style={creativeStyles.header}>
-            <Text style={creativeStyles.name}>{basicInfo?.name || 'Your Name'}</Text>
-          </View>
-
-          {/* About */}
+          {/* Profile */}
           {basicInfo?.about && (
             <View style={creativeStyles.section}>
-              <Text style={creativeStyles.sectionTitle}>SUMMARY</Text>
+              <Text style={creativeStyles.sectionTitleRight}>PROFILE</Text>
               <Text style={creativeStyles.text}>{basicInfo.about}</Text>
             </View>
           )}
 
-          {/* Experience */}
+          {/* Work Experience */}
           {experiences && experiences.length > 0 && (
             <View style={creativeStyles.section}>
-              <Text style={creativeStyles.sectionTitle}>EXPERIENCE</Text>
+              <Text style={creativeStyles.sectionTitleRight}>WORK EXPERIENCE</Text>
               {experiences.map((exp, index) => (
-                <View key={index} style={{ marginBottom: 10 }}>
-                  <Text style={creativeStyles.jobTitle}>{exp.position}</Text>
+                <View key={index} style={creativeStyles.experienceItem}>
+                  <View style={creativeStyles.jobHeader}>
+                    <Text style={creativeStyles.jobTitle}>{exp.position}</Text>
+                    <Text style={creativeStyles.date}>
+                      {formatDate(exp.startDate)} - {formatDate(exp.endDate) || 'Present'}
+                    </Text>
+                  </View>
                   <Text style={creativeStyles.company}>{exp.company}</Text>
-                  <Text style={creativeStyles.date}>
-                    {formatDate(exp.startDate)} - {formatDate(exp.endDate) || 'Present'}
-                  </Text>
                   {exp.description && <Text style={creativeStyles.text}>{exp.description}</Text>}
                 </View>
               ))}
@@ -452,13 +551,27 @@ const MyDocument = React.memo(({ basicInfo, projects, experiences, skills, educa
           {/* Projects */}
           {projects && projects.length > 0 && (
             <View style={creativeStyles.section}>
-              <Text style={creativeStyles.sectionTitle}>PROJECTS</Text>
+              <Text style={creativeStyles.sectionTitleRight}>PROJECTS</Text>
               {projects.map((project, index) => (
-                <View key={index} style={{ marginBottom: 8 }}>
+                <View key={index} style={creativeStyles.experienceItem}>
                   <Text style={creativeStyles.jobTitle}>{project.title}</Text>
                   <Text style={creativeStyles.text}>{project.description}</Text>
                   {project.techStack && project.techStack.length > 0 && (
-                    <Text style={creativeStyles.text}>Tech: {project.techStack.join(', ')}</Text>
+                    <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginTop: 3 }}>
+                      {project.techStack.map((tech, techIndex) => (
+                        <Text key={techIndex} style={{
+                          fontSize: 8,
+                          backgroundColor: '#e5e7eb',
+                          color: '#6b7280',
+                          padding: '1 4',
+                          marginRight: 3,
+                          marginBottom: 1,
+                          borderRadius: 8,
+                        }}>
+                          {tech}
+                        </Text>
+                      ))}
+                    </View>
                   )}
                 </View>
               ))}
@@ -474,16 +587,30 @@ const MyDocument = React.memo(({ basicInfo, projects, experiences, skills, educa
       <Page size="A4" style={modernStyles.page}>
         {/* Header */}
         <View style={modernStyles.header}>
-          <Text style={modernStyles.name}>{basicInfo?.name || 'Your Name'}</Text>
-          <Text style={modernStyles.contactInfo}>{basicInfo?.email || 'email@example.com'}</Text>
-          <Text style={modernStyles.contactInfo}>{basicInfo?.contact_no || 'Phone Number'}</Text>
-          <Text style={modernStyles.contactInfo}>{basicInfo?.location || 'Location'}</Text>
+          <View style={modernStyles.headerLeft}>
+            <Text style={modernStyles.name}>{basicInfo?.name || 'Your Name'}</Text>
+            <Text style={modernStyles.subtitle}>{basicInfo?.about || 'Professional Title'}</Text>
+          </View>
+          <View style={modernStyles.headerRight}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 1 }}>
+              <Text style={modernStyles.contactInfo}>{basicInfo?.contact_no || 'Phone Number'}</Text>
+            </View>
+            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 1 }}>
+              <Text style={modernStyles.contactInfo}>{basicInfo?.email || 'email@example.com'}</Text>
+            </View>
+            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 1 }}>
+              <Text style={modernStyles.contactInfo}>{basicInfo?.email || 'email@example.com'}</Text>
+            </View>
+            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 1 }}>
+              <Text style={modernStyles.contactInfo}>{basicInfo?.location || 'Location'}</Text>
+            </View>
+          </View>
         </View>
 
-        {/* About */}
+        {/* Summary - Only show if different from subtitle */}
         {basicInfo?.about && (
           <View style={modernStyles.section}>
-            <Text style={modernStyles.sectionTitle}>PROFESSIONAL SUMMARY</Text>
+            <Text style={modernStyles.sectionTitle}>SUMMARY</Text>
             <Text style={modernStyles.text}>{basicInfo.about}</Text>
           </View>
         )}
@@ -491,17 +618,38 @@ const MyDocument = React.memo(({ basicInfo, projects, experiences, skills, educa
         {/* Experience */}
         {experiences && experiences.length > 0 && (
           <View style={modernStyles.section}>
-            <Text style={modernStyles.sectionTitle}>WORK EXPERIENCE</Text>
+            <Text style={modernStyles.sectionTitle}>EXPERIENCE</Text>
             {experiences.map((exp, index) => (
-              <View key={exp.id || index} style={{ marginBottom: 12 }}>
-                <Text style={modernStyles.jobTitle}>{exp?.position || 'Position'}</Text>
+              <View key={exp.id || index} style={modernStyles.experienceItem}>
+                <View style={modernStyles.jobHeader}>
+                  <Text style={modernStyles.jobTitle}>{exp?.position || 'Position'}</Text>
+                  <Text style={modernStyles.date}>
+                    {formatDate(exp?.startDate)} - {formatDate(exp?.endDate) || 'Present'}
+                  </Text>
+                </View>
                 <Text style={modernStyles.company}>{exp?.company || 'Company'}</Text>
-                <Text style={modernStyles.date}>
-                  {formatDate(exp?.startDate)} - {formatDate(exp?.endDate) || 'Present'}
-                </Text>
                 {exp?.description && <Text style={modernStyles.text}>{exp.description}</Text>}
-                {exp?.skillsLearned && exp.skillsLearned.length > 0 && (
-                  <Text style={modernStyles.text}>Skills: {exp.skillsLearned.join(', ')}</Text>
+              </View>
+            ))}
+          </View>
+        )}
+
+        {/* Projects */}
+        {projects && projects.length > 0 && (
+          <View style={modernStyles.section}>
+            <Text style={modernStyles.sectionTitle}>PROJECTS</Text>
+            {projects.map((project, index) => (
+              <View key={index} style={modernStyles.experienceItem}>
+                <Text style={modernStyles.jobTitle}>{project.title}</Text>
+                <Text style={modernStyles.text}>{project.description}</Text>
+                {project.techStack && project.techStack.length > 0 && (
+                  <View style={modernStyles.skillsContainer}>
+                    {project.techStack.map((tech, techIndex) => (
+                      <Text key={techIndex} style={modernStyles.skill}>
+                        {tech}
+                      </Text>
+                    ))}
+                  </View>
                 )}
               </View>
             ))}
@@ -513,30 +661,14 @@ const MyDocument = React.memo(({ basicInfo, projects, experiences, skills, educa
           <View style={modernStyles.section}>
             <Text style={modernStyles.sectionTitle}>EDUCATION</Text>
             {education.map((edu, index) => (
-              <View key={edu.id || index} style={{ marginBottom: 10 }}>
-                <Text style={modernStyles.company}>{edu?.degree || 'Degree'}</Text>
-                <Text style={modernStyles.text}>{edu?.institution || 'Institution'}</Text>
-                <Text style={modernStyles.date}>
-                  {formatDate(edu?.startDate)} - {formatDate(edu?.endDate) || 'Present'}
-                </Text>
-                {edu?.Grade && <Text style={modernStyles.text}>Grade: {edu.Grade}</Text>}
-              </View>
-            ))}
-          </View>
-        )}
-
-        {/* Projects */}
-        {projects && projects.length > 0 && (
-          <View style={modernStyles.section}>
-            <Text style={modernStyles.sectionTitle}>PROJECTS</Text>
-            {projects.map((project, index) => (
-              <View key={index} style={{ marginBottom: 10 }}>
-                <Text style={modernStyles.jobTitle}>{project.title}</Text>
-                <Text style={modernStyles.text}>{project.description}</Text>
-                {project.techStack && project.techStack.length > 0 && (
-                  <Text style={modernStyles.text}>Technologies: {project.techStack.join(', ')}</Text>
-                )}
-                {project.link && <Text style={modernStyles.text}>Link: {project.link}</Text>}
+              <View key={edu.id || index} style={modernStyles.experienceItem}>
+                <View style={modernStyles.jobHeader}>
+                  <Text style={modernStyles.jobTitle}>{edu?.degree || 'Degree'}</Text>
+                  <Text style={modernStyles.date}>
+                    {formatDate(edu?.startDate)} - {formatDate(edu?.endDate) || 'Present'}
+                  </Text>
+                </View>
+                <Text style={modernStyles.company}>{edu?.institution || 'Institution'}</Text>
               </View>
             ))}
           </View>
@@ -545,11 +677,11 @@ const MyDocument = React.memo(({ basicInfo, projects, experiences, skills, educa
         {/* Skills */}
         {skills && skills.length > 0 && (
           <View style={modernStyles.section}>
-            <Text style={modernStyles.sectionTitle}>TECHNICAL SKILLS</Text>
+            <Text style={modernStyles.sectionTitle}>SKILLS</Text>
             <View style={modernStyles.skillsContainer}>
               {skills.map((skill, index) => (
                 <Text key={index} style={modernStyles.skill}>
-                  {skill.name}
+                  {skill.name} : <Text style={{ color: '#6b7280' }}>{skill.level || 'Unknown'}</Text>
                 </Text>
               ))}
             </View>
