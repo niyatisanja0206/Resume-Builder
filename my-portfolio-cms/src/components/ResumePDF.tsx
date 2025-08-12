@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { PDFDownloadLink, Document, Page, Text, View, StyleSheet } from '@react-pdf/renderer';
+import { useUserStats } from "@/hooks/useUserStats";
 import type { Basic, Project, Experience, Skill, Education } from '@/types/portfolio';
 
 interface ResumePDFProps {
@@ -246,9 +247,20 @@ const creativeStyles = StyleSheet.create({
 });
 
 export default function ResumePDF({ basicInfo, projects, experiences, skills, education, templateType = 'classic' }: ResumePDFProps) {
+  const { incrementDownloadCount } = useUserStats();
+  
   const getFileName = () => {
     const name = basicInfo?.name?.replace(/\s+/g, '_') || 'resume';
     return `${name}_${templateType}_resume.pdf`;
+  };
+
+  const handleDownloadClick = async () => {
+    try {
+      await incrementDownloadCount();
+      console.log('Download count incremented successfully');
+    } catch (error) {
+      console.error('Failed to increment download count:', error);
+    }
   };
 
   const getStyles = () => {
@@ -489,6 +501,7 @@ export default function ResumePDF({ basicInfo, projects, experiences, skills, ed
             <Button 
               className="w-full font-medium" 
               disabled={loading}
+              onClick={handleDownloadClick}
             >
               {loading ? (
                 <div className="flex items-center">

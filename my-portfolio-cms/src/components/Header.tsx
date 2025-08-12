@@ -1,5 +1,11 @@
 import { Link } from 'react-router-dom';
+import { useAuth } from '@/hooks/useAuth';
+import Profile from './Profile';
+import { Button } from '@/components/ui/button';
+
 export default function Header() {
+    const { isAuthenticated, user, logout } = useAuth();
+
     return (
         <header className="sticky top-0 z-50 w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
             <div className="container max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -37,7 +43,7 @@ export default function Header() {
                     </Link>
 
                     <Link
-                    to="/Dashboard"
+                    to="/dashboard"
                     className="relative px-4 py-2 rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-colors group"
                     >
                     <span className="flex items-center space-x-2">
@@ -49,6 +55,30 @@ export default function Header() {
                     {/* Active indicator */}
                     <div className="absolute inset-x-0 bottom-0 h-0.5 bg-primary scale-x-0 group-hover:scale-x-100 transition-transform origin-left"></div>
                     </Link>
+
+                    {/* Authentication Section */}
+                    {isAuthenticated && user ? (
+                        <div className="ml-4">
+                            <Profile 
+                                userEmail={user.email} 
+                                onLogout={logout}
+                                onDeleteAccount={logout}
+                            />
+                        </div>
+                    ) : (
+                        <div className="ml-4 flex items-center space-x-2">
+                            <Link to="/login">
+                                <Button variant="ghost" size="sm">
+                                    Login
+                                </Button>
+                            </Link>
+                            <Link to="/signup">
+                                <Button size="sm">
+                                    Sign Up
+                                </Button>
+                            </Link>
+                        </div>
+                    )}
                 </nav>
                 </div>
             </div>

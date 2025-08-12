@@ -54,5 +54,8 @@ app.use('/api/skill', skillRoute);
 const authRoute = require('./routes/authRoute');
 app.use('/api/auth', authRoute);
 
+const resumeRoute = require('./routes/resumeRoute');
+app.use('/api/resume', resumeRoute);
+
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));

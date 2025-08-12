@@ -1,93 +1,20 @@
 // LandingPage.tsx
-import React, { useState } from 'react';
+import React from 'react';
 import { Eye, Edit, Download, Award, Users, Zap, Star } from 'lucide-react';
 import resume1 from '@/assets/resume1.png';
 import resume2 from '@/assets/resume2.png';
 import resume3 from '@/assets/resume3.png';
 import resume4 from '@/assets/resume4.png';
-
-const Button: React.FC<{
-  children: React.ReactNode;
-  className?: string;
-  variant?: 'default' | 'secondary' | 'ghost' | 'outline';
-  size?: 'default' | 'sm' | 'lg' | 'icon';
-}> = ({ children, className = '', variant = 'default', size = 'default', ...props }) => {
-  const baseStyles = 'inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50';
-  
-  const variants = {
-    default: 'bg-primary text-primary-foreground hover:bg-primary/90',
-    secondary: 'bg-secondary text-secondary-foreground hover:bg-secondary/80',
-    ghost: 'hover:bg-accent hover:text-accent-foreground',
-    outline: 'border border-input bg-background hover:bg-accent hover:text-accent-foreground',
-  };
-  
-  const sizes = {
-    default: 'h-10 px-4 py-2',
-    sm: 'h-9 rounded-md px-3',
-    lg: 'h-11 rounded-md px-8',
-    icon: 'h-10 w-10',
-  };
-  
-  return (
-    <button
-      className={`${baseStyles} ${variants[variant]} ${sizes[size]} ${className}`}
-      {...props}
-    >
-      {children}
-    </button>
-  );
-};
-
-// Card Components
-const Card: React.FC<{ children: React.ReactNode; className?: string }> = ({ children, className = '', ...props }) => (
-  <div className={`rounded-lg border bg-card text-card-foreground shadow-sm ${className}`} {...props}>
-    {children}
-  </div>
-);
-
-const CardContent: React.FC<{ children: React.ReactNode; className?: string }> = ({ children, className = '', ...props }) => (
-  <div className={`p-6 pt-0 ${className}`} {...props}>
-    {children}
-  </div>
-);
-
-// Carousel Components
-const LocalCarousel: React.FC<{ children: React.ReactNode; className?: string }> = ({ children, className = '' }) => (
-  <div className={`relative ${className}`}>
-    {children}
-  </div>
-);
-
-const CarouselContent: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const items = React.Children.toArray(children);
-  
-  return (
-    <div className="overflow-hidden rounded-lg">
-      <div 
-        className="flex transition-transform duration-300 ease-in-out"
-        style={{ transform: `translateX(-${currentIndex * 100}%)` }}
-      >
-        {items.map((item, index) => (
-          <div key={index} className="w-full flex-shrink-0">
-            {item}
-          </div>
-        ))}
-      </div>
-      <div className="flex justify-center mt-4 space-x-2">
-        {items.map((_, index) => (
-          <button
-            key={index}
-            className={`w-2 h-2 rounded-full transition-colors ${
-              index === currentIndex ? 'bg-primary' : 'bg-muted'
-            }`}
-            onClick={() => setCurrentIndex(index)}
-          />
-        ))}
-      </div>
-    </div>
-  );
-};
+import { Link } from 'react-router-dom';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+} from '@/components/ui/carousel';
+import Autoplay from 'embla-carousel-autoplay';
 
 // Main Landing Page Component
 const LandingPage: React.FC = () => {
@@ -108,6 +35,7 @@ const LandingPage: React.FC = () => {
     { name: 'Sarah Wilson', text: 'I was able to create a professional resume that stands out.', rating: 5 },
   ];
 
+
   return (
     <div className="min-h-screen bg-background text-foreground">
       {/* Hero Section */}
@@ -116,6 +44,11 @@ const LandingPage: React.FC = () => {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
             {/* Hero Text */}
             <div className="text-center lg:text-left">
+              <div className="mb-4">
+                <Badge variant="secondary" className="bg-gradient-to-r from-blue-100 to-purple-100 text-blue-700">
+                  100% Free • No Credit Card Required
+                </Badge>
+              </div>
               <h1 className="text-4xl lg:text-6xl font-bold mb-6 bg-gradient-to-r from-primary via-purple-500 to-pink-500 bg-clip-text text-transparent">
                 Build a job winning resume
               </h1>
@@ -125,11 +58,11 @@ const LandingPage: React.FC = () => {
               <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
                 <Button size="lg" className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white">
                   <Zap className="w-5 h-5 mr-2" />
-                  Get Started Free
+                  <Link to="/dashboard">Get Started Free</Link>
                 </Button>
                 <Button variant="outline" size="lg">
                   <Eye className="w-5 h-5 mr-2" />
-                  View Templates
+                  <Link to="/portfolio">View Templates</Link>
                 </Button>
               </div>
             </div>
@@ -137,22 +70,30 @@ const LandingPage: React.FC = () => {
             {/* Hero Carousel */}
             <div className="flex justify-center">
               <div className="w-full max-w-xs">
-                <LocalCarousel>
+                <Carousel className="w-full" plugins={[Autoplay({delay: 5000,}),]}>
                   <CarouselContent>
-                    <div className="flex items-center justify-center bg-muted rounded-lg">
-                      <img src={resume3} alt="Resume template 3" className="w-full h-auto object-contain rounded-lg" />
-                    </div>
-                    <div className="flex items-center justify-center bg-muted rounded-lg">
-                      <img src={resume1} alt="Resume template 1" className="w-full h-auto object-contain rounded-lg" />
-                    </div>
-                    <div className="flex items-center justify-center bg-muted rounded-lg">
-                      <img src={resume2} alt="Resume template 2" className="w-full h-auto object-contain rounded-lg" />
-                    </div>
-                    <div className="flex items-center justify-center bg-muted rounded-lg">
-                      <img src={resume4} alt="Resume template 4" className="w-full h-auto object-contain rounded-lg" />
-                    </div>
+                    <CarouselItem>
+                      <div className="flex items-center justify-center bg-muted rounded-lg">
+                        <img src={resume3} alt="Resume template 3" className="w-full h-auto object-contain rounded-lg" />
+                      </div>
+                    </CarouselItem>
+                    <CarouselItem>
+                      <div className="flex items-center justify-center bg-muted rounded-lg">
+                        <img src={resume1} alt="Resume template 1" className="w-full h-auto object-contain rounded-lg" />
+                      </div>
+                    </CarouselItem>
+                    <CarouselItem>
+                      <div className="flex items-center justify-center bg-muted rounded-lg">
+                        <img src={resume2} alt="Resume template 2" className="w-full h-auto object-contain rounded-lg" />
+                      </div>
+                    </CarouselItem>
+                    <CarouselItem>
+                      <div className="flex items-center justify-center bg-muted rounded-lg">
+                        <img src={resume4} alt="Resume template 4" className="w-full h-auto object-contain rounded-lg" />
+                      </div>
+                    </CarouselItem>
                   </CarouselContent>
-                </LocalCarousel>
+                </Carousel>
               </div>
             </div>
           </div>
@@ -211,7 +152,7 @@ const LandingPage: React.FC = () => {
 
           <div className="mt-12">
             <Button size="lg" className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white">
-              Start Building Now
+              <Link to="/dashboard">Start Building Now</Link>
             </Button>
           </div>
         </div>
@@ -268,13 +209,13 @@ const LandingPage: React.FC = () => {
             Join thousands of professionals who have successfully landed their dream jobs
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button size="lg" className="bg-black dark:bg-gray-800 text-blue-600 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700">
+            <Button size="lg" variant="secondary" className="bg-white text-primary hover:bg-white/90">
               <Zap className="w-5 h-5 mr-2" />
-              Get Started Free
+              <Link to="/dashboard">Get Started for Free</Link>
             </Button>
-            <Button size="lg" className="bg-black dark:bg-gray-800 text-blue-600 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700">
+            <Button size="lg" variant="outline" className="border-white text-white hover:bg-white hover:text-primary">
               <Eye className="w-5 h-5 mr-2" />
-              Preview Portfolio
+              <Link to="/portfolio">Preview Portfolio</Link>
             </Button>
           </div>
         </div>

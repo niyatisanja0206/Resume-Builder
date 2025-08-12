@@ -1,5 +1,6 @@
 import ResumePreview from "@/components/ResumePreview";
 import ResumeTemplateSelector from "@/components/ResumeTemplateSelector";
+import AuthGuard from "@/components/AuthGuard";
 import { useBasic } from "@/hooks/useBasic";
 import { useProject } from "@/hooks/useProject";
 import { useExperience } from "@/hooks/useExperience";
@@ -7,17 +8,32 @@ import { useSkill } from "@/hooks/useSkills";
 import { useEducation } from "@/hooks/useEducation";
 
 export default function Portfolio() {
-  // Fetch data using hooks
-  const { basic } = useBasic();
-  const userEmail = basic?.email || '';
+  // Get email from stored user data  
+  const getUserEmail = () => {
+    try {
+      const userString = localStorage.getItem('user');
+      if (userString) {
+        const user = JSON.parse(userString);
+        return user.email || '';
+      }
+      return '';
+    } catch (error) {
+      console.error('Error parsing user data:', error);
+      return '';
+    }
+  };
   
-  const { projects } = useProject(userEmail);
-  const { experiences } = useExperience(userEmail);
-  const { skills } = useSkill(userEmail);
-  const { education } = useEducation(userEmail);
+  const currentEmail = getUserEmail();
+  
+  // Fetch data using hooks with the email
+  const { basic } = useBasic();
+  const { projects } = useProject(currentEmail);
+  const { experiences } = useExperience(currentEmail);
+  const { skills } = useSkill(currentEmail);
+  const { education } = useEducation(currentEmail);
 
   return (
-    <>
+    <AuthGuard>
       {/* Main Resume Templates Preview Section */}
       <section className="min-h-screen bg-background">
         <div className="container max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">
@@ -88,6 +104,6 @@ export default function Portfolio() {
           </div>
         </div>
       </section>
-    </>
+    </AuthGuard>
   );
 }

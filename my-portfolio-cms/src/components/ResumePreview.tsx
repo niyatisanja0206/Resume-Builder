@@ -643,7 +643,7 @@ export default function ResumePreview({ basicInfo, projects, experiences, skills
   return (
     <div className="relative">
       {/* Navigation Controls */}
-      <div className="flex items-center justify-between mb-6 bg-gray-50 p-4 rounded-lg">
+      <div className="flex items-center justify-between mb-6 bg-muted p-4 rounded-lg">
         <Button
           onClick={prevTemplate}
           variant="outline"
@@ -657,7 +657,7 @@ export default function ResumePreview({ basicInfo, projects, experiences, skills
         </Button>
 
         <div className="text-center">
-          <h3 className="text-lg font-semibold text-gray-900">
+          <h3 className="text-lg font-semibold text-foreground">
             {templates[currentTemplate].name} Template
           </h3>
           <div className="flex justify-center gap-2 mt-2">
@@ -665,7 +665,7 @@ export default function ResumePreview({ basicInfo, projects, experiences, skills
               <div
                 key={index}
                 className={`w-2 h-2 rounded-full transition-colors ${
-                  index === currentTemplate ? 'bg-blue-500' : 'bg-gray-300'
+                  index === currentTemplate ? 'bg-primary' : 'bg-muted-foreground/30'
                 }`}
               />
             ))}

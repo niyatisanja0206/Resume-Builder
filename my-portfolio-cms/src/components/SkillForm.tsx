@@ -5,6 +5,7 @@ import { skillSchema, type SkillFormSchema as BaseSkillFormSchema } from '../lib
 type SkillFormSchema = BaseSkillFormSchema;
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import {
   Form,
   FormControl,
@@ -300,15 +301,15 @@ export default function SkillForm() {
                     <div className="flex-1">
                         <div className="flex items-center space-x-3">
                         <div className="font-medium text-foreground">{skill.name}</div>
-                        <span className={`px-2 py-1 text-xs rounded-full font-medium ${
+                        <Badge variant={
                             skill.level === 'beginner' 
-                            ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300'
+                            ? 'secondary'
                             : skill.level === 'intermediate'
-                            ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300'
-                            : 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'
-                        }`}>
+                            ? 'outline'
+                            : 'default'
+                        }>
                             {skill.level.charAt(0).toUpperCase() + skill.level.slice(1)}
-                        </span>
+                        </Badge>
                         </div>
                     </div>
                     
@@ -318,7 +319,7 @@ export default function SkillForm() {
                             type="button"
                             size="sm"
                             variant="ghost"
-                            className="opacity-0 group-hover:opacity-100 transition-opacity text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:text-blue-400 dark:hover:text-blue-300 dark:hover:bg-blue-900/20"
+                            className="opacity-0 group-hover:opacity-100 transition-opacity"
                             onClick={() => handleEditSkill(skill)}
                         >
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

@@ -5,12 +5,25 @@ import { UserContext } from './UserContextObject';
 export function UserProvider({ children }: { children: React.ReactNode }) {
     const [currentUser, setCurrentUser] = useState<Basic | null>(null);
 
-    // Load user from localStorage on mount
+    // Load user from auth context and localStorage on mount
     useEffect(() => {
-        const storedEmail = localStorage.getItem('currentUserEmail');
-        if (storedEmail) {
-            // We'll fetch the user data when needed
-            console.log('UserContext - Found stored email:', storedEmail);
+        const authData = localStorage.getItem('user');
+        if (authData) {
+            try {
+                const parsedAuthUser = JSON.parse(authData);
+                // Create a Basic user object from auth data
+                const basicUser: Basic = {
+                    email: parsedAuthUser.email,
+                    name: '',
+                    contact_no: '',
+                    about: '',
+                    location: ''
+                };
+                setCurrentUser(basicUser);
+                console.log('UserContext - Synced with auth data:', parsedAuthUser.email);
+            } catch (error) {
+                console.error('UserContext - Error parsing auth data:', error);
+            }
         }
     }, []);
 

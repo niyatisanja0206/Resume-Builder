@@ -3,11 +3,14 @@ import ProjectForm from "@/components/ProjectForm";
 import SkillForm from "@/components/SkillForm";
 import BasicForm from "@/components/BasicForm";
 import EducationForm from "@/components/EducationForm";
+import UserStats from "@/components/UserStats";
 import { Link } from "react-router-dom";
+import AuthGuard from "@/components/AuthGuard";
 
 export default function Dashboard() {
     return (
-        <div className="min-h-screen bg-background">
+        <AuthGuard>
+            <div className="min-h-screen text-foreground bg-gradient-to-br from-background to-background/50">
             <div className="container max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">
                 {/* Dashboard Header */}
                 <div className="mb-8">
@@ -22,6 +25,11 @@ export default function Dashboard() {
                     <p className="text-muted-foreground">Manage your professional portfolio content</p>
                     </div>
                 </div>
+                </div>
+                
+                {/* User Statistics Section */}
+                <div className="mb-8">
+                    <UserStats />
                 </div>
                 
                 {/* Main Content Sections */}
@@ -147,6 +155,7 @@ export default function Dashboard() {
                 </div>
 
             </div>
-        </div>
+            </div>
+        </AuthGuard>
     );
 }

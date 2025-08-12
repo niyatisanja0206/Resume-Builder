@@ -48,4 +48,6 @@ export type user = {
   id?: string;
   email: string;
   password: string;
+  no_of_resumes?: number;
+  resume_downloaded?: number;
 }

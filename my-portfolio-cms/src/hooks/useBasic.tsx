@@ -56,25 +56,23 @@ const removeBasic = async (email: string) => {
 
 // Hook for other forms that need basic info
 export function useBasic(email?: string) {
-    const queryClient = useQueryClient();
+    // Get email with same logic as useBasicForm
+    const getUserEmail = () => {
+        try {
+            const userString = localStorage.getItem('user');
+            if (userString) {
+                const user = JSON.parse(userString);
+                return user.email || '';
+            }
+            return localStorage.getItem('currentUserEmail') || '';
+        } catch (error) {
+            console.error('Error parsing user data:', error);
+            return '';
+        }
+    };
     
     // If no email provided, try to get it from localStorage or cache
-    let targetEmail = email;
-    
-    if (!targetEmail) {
-        // First try localStorage
-        targetEmail = localStorage.getItem('currentUserEmail') || undefined;
-        console.log('useBasic - Got email from localStorage:', targetEmail);
-        
-        // If still no email, check cache
-        if (!targetEmail) {
-            const cachedBasicForm = queryClient.getQueryData<Basic>(['basic-form']);
-            if (cachedBasicForm) {
-                targetEmail = cachedBasicForm.email;
-                console.log('useBasic - Got email from cache:', targetEmail);
-            }
-        }
-    }
+    const targetEmail = email || getUserEmail();
     
     console.log('useBasic - Final targetEmail:', targetEmail);
     
@@ -98,12 +96,33 @@ export function useBasic(email?: string) {
 export function useBasicForm() {
     const queryClient = useQueryClient();
 
-    // For BasicForm, we'll manage the data differently since it creates the email
+    // Get current user email from localStorage or auth context
+    const getUserEmail = () => {
+        try {
+            const userString = localStorage.getItem('user');
+            if (userString) {
+                const user = JSON.parse(userString);
+                return user.email || '';
+            }
+            return localStorage.getItem('currentUserEmail') || '';
+        } catch (error) {
+            console.error('Error parsing user data:', error);
+            return '';
+        }
+    };
+    
+    const currentEmail = getUserEmail();
+
+    console.log('useBasicForm - Current email:', currentEmail);
+
+    // Fetch existing basic data if user exists
     const { data: basic, isLoading, error, refetch } = useQuery<Basic | null>({
-        queryKey: ['basic-form'],
-        queryFn: () => null, // Start with no data
-        enabled: false, // Don't auto-fetch
+        queryKey: ['basic-form', currentEmail || 'no-email'],
+        queryFn: () => fetchBasic(currentEmail),
+        enabled: !!currentEmail, // Only fetch if we have an email
     });
+
+    console.log('useBasicForm - Fetched basic data:', basic);
 
     // Mutation for updating basic info
     const updateBasic = useMutation({
@@ -111,7 +130,7 @@ export function useBasicForm() {
         onSuccess: (data) => {
             console.log('BasicForm - Save successful, data:', data);
             // Update the cache with the new data
-            queryClient.setQueryData(['basic-form'], data);
+            queryClient.setQueryData(['basic-form', data.email], data);
             // Also set the cache for the specific email key that other forms will use
             queryClient.setQueryData(['basic', data.email], data);
             // Store the current user email in localStorage for other forms to use
@@ -126,7 +145,7 @@ export function useBasicForm() {
     const removeBasicMutation = useMutation({
         mutationFn: (email: string) => removeBasic(email),
         onSuccess: () => {
-            queryClient.setQueryData(['basic-form'], null);
+            queryClient.setQueryData(['basic-form', currentEmail], null);
             // Clear the current user email from localStorage
             localStorage.removeItem('currentUserEmail');
             queryClient.invalidateQueries({ queryKey: ['basic'] });
