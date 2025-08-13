@@ -3,6 +3,9 @@ import { Card, CardContent } from "@/components/ui/card";
 //import { Badge } from "@/components/ui/badge";
 import AuthGuard from "@/components/AuthGuard";
 //import { Check } from "lucide-react";
+import resume4 from "@/assets/resume4.png";
+import resume5 from "@/assets/resume5.png";
+import resume6 from "@/assets/resume6.png";
 
 // Define the available templates
 const templates = [
@@ -10,19 +13,19 @@ const templates = [
     id: 'classic',
     name: 'Classic',
     description: 'A timeless, professional format with clean typography.',
-    image: 'https://placehold.co/600x800/F3F4F6/374151?text=Classic+Template',
+    image: resume6,
   },
   {
     id: 'modern',
     name: 'Modern',
     description: 'Contemporary design with stylish accents and a fresh layout.',
-    image: 'https://placehold.co/600x800/DBEAFE/1D4ED8?text=Modern+Template',
+    image: resume4,
   },
   {
     id: 'creative',
     name: 'Creative',
     description: 'A unique two-column layout to make your profile stand out.',
-    image: 'https://placehold.co/600x800/E0F2FE/075985?text=Creative+Template',
+    image: resume5,
   }
 ] as const;
 
@@ -58,7 +61,7 @@ export default function Portfolio() {
             {templates.map((template) => (
               <Card
                 key={template.id}
-                className="cursor-pointer transition-all duration-300 ease-in-out hover:shadow-xl hover:scale-105 group border-2 border-transparent hover:border-primary"
+                className="cursor-pointer bg-gradient-to-r from-blue-100 to-purple-100 transition-all duration-300 ease-in-out hover:shadow-xl hover:scale-105 group border-2 border-transparent hover:border-primary"
                 onClick={() => handleTemplateSelect(template.id)}
               >
                 <CardContent className="p-4 flex flex-col h-full">
@@ -66,7 +69,7 @@ export default function Portfolio() {
                     <img 
                       src={template.image} 
                       alt={`${template.name} resume template preview`}
-                      className="w-full h-auto object-cover aspect-[3/4] transition-transform duration-300 group-hover:scale-105"
+                      className="w-full h-auto object-cover transition-transform duration-300 group-hover:scale-105"
                     />
                   </div>
                   <div className="flex-grow">
