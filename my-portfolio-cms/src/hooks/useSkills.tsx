@@ -2,7 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { type Skill } from "@/types/portfolio";
 import axios from 'axios';
 
-const API_BASE_URL = "http://localhost:5000/api/skill";
+const API_BASE_URL = "/api/skill";
 
 // Function to fetch skills data from the backend
 const fetchSkills = async (email: string): Promise<Skill[] | null> => {
@@ -32,16 +32,32 @@ const addSkill = async (skillData: { email: string; skill: Skill }): Promise<Ski
 
 // Function to remove a specific skill
 const removeSkill = async (data: { email: string; id: string }) => {
-    await axios.delete(`${API_BASE_URL}/delete`, {
-        params: { email: data.email, id: data.id }
-    });
+    console.log('removeSkill called with:', data);
+    try {
+        const response = await axios.delete(`${API_BASE_URL}/delete`, {
+            params: { email: data.email, id: data.id }
+        });
+        console.log('removeSkill response:', response.data);
+        return response.data;
+    } catch (error) {
+        console.error('removeSkill error:', error);
+        throw error;
+    }
 };
 
 // Function to remove all skills
 const removeAllSkills = async (email: string) => {
-    await axios.delete(`${API_BASE_URL}/deleteAll`, {
-        params: { email }
-    });
+    console.log('removeAllSkills called with email:', email);
+    try {
+        const response = await axios.delete(`${API_BASE_URL}/deleteAll`, {
+            params: { email }
+        });
+        console.log('removeAllSkills response:', response.data);
+        return response.data;
+    } catch (error) {
+        console.error('removeAllSkills error:', error);
+        throw error;
+    }
 };
 
 // Function to update a skill

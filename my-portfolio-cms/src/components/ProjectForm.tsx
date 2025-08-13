@@ -108,12 +108,18 @@ export default function ProjectForm() {
   const handleDeleteProject = async (projectId: string) => {
     if (window.confirm('Are you sure you want to delete this project?')) {
       try {
+        console.log('Deleting project with ID:', projectId, 'for user:', userEmail);
         if (userEmail) {
           await removeProject(projectId);
           setSuccessMessage('Project deleted successfully!');
+          setTimeout(() => setSuccessMessage(''), 3000);
+        } else {
+          console.error('No user email available for project deletion');
         }
       } catch (error) {
         console.error('Failed to delete project:', error);
+        setSuccessMessage('Failed to delete project. Please try again.');
+        setTimeout(() => setSuccessMessage(''), 3000);
       }
     }
   };
@@ -121,12 +127,18 @@ export default function ProjectForm() {
   const handleDeleteAllProjects = async () => {
     if (window.confirm('Are you sure you want to delete all projects? This action cannot be undone.')) {
       try {
+        console.log('Deleting all projects for user:', userEmail);
         if (userEmail) {
           await removeAllProjects();
           setSuccessMessage('All projects deleted successfully!');
+          setTimeout(() => setSuccessMessage(''), 3000);
+        } else {
+          console.error('No user email available for deleting all projects');
         }
       } catch (error) {
         console.error('Failed to delete all projects:', error);
+        setSuccessMessage('Failed to delete all projects. Please try again.');
+        setTimeout(() => setSuccessMessage(''), 3000);
       }
     }
   };

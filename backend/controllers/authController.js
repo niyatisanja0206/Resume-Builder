@@ -1,4 +1,5 @@
 const User = require('../models/users'); 
+const Resume = require('../models/resumes');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 
@@ -78,7 +79,6 @@ exports.deleteAccount = async (req, res) => {
         }
         
         // Delete all resumes associated with this user
-        const Resume = require('../models/resumes');
         await Resume.deleteMany({ userEmail: user.email });
         
         // Delete the user

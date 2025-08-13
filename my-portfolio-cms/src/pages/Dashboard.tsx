@@ -29,13 +29,20 @@ export default function Dashboard() {
                     <h1 className="text-3xl font-bold text-foreground">Portfolio CMS</h1>
                     <p className="text-muted-foreground">Manage your professional portfolio content</p>
                     <div className="mt-3 flex gap-3">
-                        <Button className="bg-black text-primary-foreground hover:bg-primary/80" 
+                        <Button 
                             onClick={async () => {
                                 try {
                                     console.log('Starting new resume creation...');
                                     
+                                    const userEmail = currentUser?.email;
+                                    if (!userEmail) {
+                                        alert('Please log in to create a resume.');
+                                        return;
+                                    }
+                                    
                                     // Check if any form data exists before creating a new resume
-                                    if (!hasFormData()) {
+                                    const hasData = await hasFormData(userEmail);
+                                    if (!hasData) {
                                         alert('Please fill out at least one form section before creating a resume.');
                                         return;
                                     }
@@ -47,7 +54,7 @@ export default function Dashboard() {
                                         .map(([key]) => key.replace('-form', ''))
                                         .join(', ');
                                     
-                                    const confirmMessage = `You have filled: ${filledForms}\n\nDo you want to create a new resume? This will clear all current form data.`;
+                                    const confirmMessage = `You have filled: ${filledForms}\n\nDo you want to create a new resume? This will clear education, experience, projects, and skills data (basic information will be preserved).`;
                                     if (!confirm(confirmMessage)) {
                                         return;
                                     }
@@ -64,10 +71,10 @@ export default function Dashboard() {
                                         console.log('API response:', result);
                                         
                                         // Clear all form data using the utility function
-                                        clearAllFormData();
+                                        await clearAllFormData(userEmail);
                                         
                                         // Show success message before reload
-                                        alert('New resume created successfully! All forms have been cleared for your new resume.');
+                                        alert('New resume created successfully! Education, experience, projects, and skills have been cleared (basic information preserved).');
                                         
                                         // Refresh the page to clear all forms
                                         window.location.reload();
@@ -96,12 +103,19 @@ export default function Dashboard() {
                         </Button>
                         <Button 
                             variant="outline"
-                            onClick={() => {
+                            onClick={async () => {
                                 try {
                                     console.log('Starting to clear current form...');
                                     
+                                    const userEmail = currentUser?.email;
+                                    if (!userEmail) {
+                                        alert('Please log in to clear form data.');
+                                        return;
+                                    }
+                                    
                                     // Check if any form data exists
-                                    if (!hasFormData()) {
+                                    const hasData = await hasFormData(userEmail);
+                                    if (!hasData) {
                                         alert('No form data to clear.');
                                         return;
                                     }
@@ -113,16 +127,16 @@ export default function Dashboard() {
                                         .map(([key]) => key.replace('-form', ''))
                                         .join(', ');
                                     
-                                    const confirmMessage = `This will clear data from: ${filledForms}\n\nAre you sure you want to continue?`;
+                                    const confirmMessage = `This will clear data from: ${filledForms} (basic information will be preserved)\n\nAre you sure you want to continue?`;
                                     if (!confirm(confirmMessage)) {
                                         return;
                                     }
                                     
                                     // Clear all form data using the utility function
-                                    clearAllFormData();
+                                    await clearAllFormData(userEmail);
                                     
                                     // Show success message before reload
-                                    alert('All form data cleared successfully!');
+                                    alert('Form data cleared successfully! (Basic information preserved)');
                                     
                                     // Refresh the page to clear all forms
                                     window.location.reload();
@@ -132,7 +146,7 @@ export default function Dashboard() {
                                 }
                             }}
                         >
-                            Clear Current Form
+                            Clear Resume Data
                         </Button>
                     </div>
                     </div>

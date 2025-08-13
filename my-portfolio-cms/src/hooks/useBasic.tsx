@@ -4,7 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import axios from 'axios';
 import { type Basic } from '@/types/portfolio';
 
-const API_BASE_URL = 'http://localhost:5000/api/basic';
+const API_BASE_URL = '/api/basic';
 
 // Function to fetch basic data from the backend
 const fetchBasic = async (email?: string): Promise<Basic | null> => {

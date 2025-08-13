@@ -207,7 +207,7 @@ const LandingPage: React.FC = () => {
               <Zap className="w-5 h-5 mr-2" />
               <Link to="/dashboard">Get Started for Free</Link>
             </Button>
-            <Button size="lg" variant="outline" className="border-white text-white hover:bg-white hover:text-primary">
+            <Button size="lg" variant="outline" className="border-white text-black hover:bg-white hover:text-primary">
               <Eye className="w-5 h-5 mr-2" />
               <Link to="/portfolio">Preview Portfolio</Link>
             </Button>

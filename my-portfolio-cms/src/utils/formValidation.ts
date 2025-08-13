@@ -6,7 +6,7 @@
  * Check if any form data exists in localStorage
  */
 export const hasLocalStorageData = (): boolean => {
-  const formKeys = ['basic-form', 'education-form', 'experience-form', 'project-form', 'skill-form'];
+  const formKeys = ['education-form', 'experience-form', 'project-form', 'skill-form']; // Removed basic-form
   
   for (const key of formKeys) {
     const data = localStorage.getItem(key);
@@ -46,9 +46,9 @@ export const hasFormData = async (userEmail: string): Promise<boolean> => {
       return true;
     }
     
-    // Check backend data for each form type
+    // Check backend data for each form type (excluding basic)
     const checks = await Promise.allSettled([
-      fetch(`/api/basic/get?email=${encodeURIComponent(userEmail)}`),
+      // Removed basic endpoint - we don't check basic data
       fetch(`/api/edu/get?email=${encodeURIComponent(userEmail)}`),
       fetch(`/api/exp/get?email=${encodeURIComponent(userEmail)}`),
       fetch(`/api/pro/get?email=${encodeURIComponent(userEmail)}`),
@@ -78,7 +78,7 @@ export const hasFormData = async (userEmail: string): Promise<boolean> => {
  * Get a summary of filled forms
  */
 export const getFormSummary = (): { [key: string]: boolean } => {
-  const formKeys = ['basic-form', 'education-form', 'experience-form', 'project-form', 'skill-form'];
+  const formKeys = ['education-form', 'experience-form', 'project-form', 'skill-form']; // Removed basic-form
   const summary: { [key: string]: boolean } = {};
   
   formKeys.forEach(key => {
@@ -120,15 +120,14 @@ export const clearLocalStorageData = (): void => {
       key.includes('education') ||
       key.includes('experience') ||
       key.includes('project') ||
-      key.includes('skill') ||
-      key.includes('basic')
-    )) {
+      key.includes('skill')
+    ) && !key.includes('basic')) { // Exclude basic information
       keysToRemove.push(key);
     }
   }
   
   keysToRemove.forEach(key => localStorage.removeItem(key));
-  console.log('Cleared localStorage keys:', keysToRemove);
+  console.log('Cleared localStorage keys (excluding basic):', keysToRemove);
 };
 
 /**
@@ -140,32 +139,38 @@ export const clearAllFormData = async (userEmail: string): Promise<void> => {
   }
   
   try {
+    console.log('Starting to clear all form data for user:', userEmail);
+    
     // Clear localStorage data
     clearLocalStorageData();
     
-    // Clear backend data for all form types
+    // Clear backend data for all form types EXCEPT basic
     const clearPromises = [
-      fetch(`/api/basic/deleteAll?email=${encodeURIComponent(userEmail)}`, { method: 'DELETE' }),
+      // Removed basic endpoint - we don't want to clear basic info
       fetch(`/api/edu/deleteAll?email=${encodeURIComponent(userEmail)}`, { method: 'DELETE' }),
       fetch(`/api/exp/deleteAll?email=${encodeURIComponent(userEmail)}`, { method: 'DELETE' }),
       fetch(`/api/pro/deleteAll?email=${encodeURIComponent(userEmail)}`, { method: 'DELETE' }),
       fetch(`/api/skill/deleteAll?email=${encodeURIComponent(userEmail)}`, { method: 'DELETE' })
     ];
     
+    console.log('Making delete requests to backend...');
+    
     // Execute all delete operations
     const results = await Promise.allSettled(clearPromises);
     
-    // Log any failures but don't throw - we want to clear as much as possible
+    // Log results for debugging
     results.forEach((result, index) => {
-      const endpoints = ['basic', 'education', 'experience', 'projects', 'skills'];
+      const endpoints = ['education', 'experience', 'projects', 'skills'];
       if (result.status === 'rejected') {
-        console.warn(`Failed to clear ${endpoints[index]} data:`, result.reason);
+        console.error(`Failed to clear ${endpoints[index]} data:`, result.reason);
       } else if (!result.value.ok) {
-        console.warn(`Failed to clear ${endpoints[index]} data: ${result.value.status}`);
+        console.error(`Failed to clear ${endpoints[index]} data:`, result.value.status, result.value.statusText);
       } else {
         console.log(`Successfully cleared ${endpoints[index]} data`);
       }
     });
+    
+    console.log('Form data clearing completed');
     
   } catch (error) {
     console.error('Error clearing form data:', error);

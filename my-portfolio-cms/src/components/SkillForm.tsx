@@ -91,27 +91,39 @@ export default function SkillForm() {
     };
 
     const handleDeleteSkill = async (skillId: string) => {
-        try {
-            if (userEmail) {
-                await removeSkill(skillId);
-                setSuccessMessage("Skill deleted successfully!");
-                setTimeout(() => setSuccessMessage(""), 3000);
+        if (window.confirm('Are you sure you want to delete this skill?')) {
+            try {
+                console.log('Deleting skill with ID:', skillId, 'for user:', userEmail);
+                if (userEmail) {
+                    await removeSkill(skillId);
+                    setSuccessMessage("Skill deleted successfully!");
+                    setTimeout(() => setSuccessMessage(""), 3000);
+                } else {
+                    console.error('No user email available for skill deletion');
+                }
+            } catch (error) {
+                console.error('Error deleting skill:', error);
+                setSuccessMessage('Failed to delete skill. Please try again.');
+                setTimeout(() => setSuccessMessage(''), 3000);
             }
-        } catch (error) {
-            console.error('Error deleting skill:', error);
         }
     };
 
     const handleDeleteAllSkills = async () => {
         if (window.confirm('Are you sure you want to delete all skills? This action cannot be undone.')) {
             try {
+                console.log('Deleting all skills for user:', userEmail);
                 if (userEmail) {
                     await removeAllSkills();
                     setSuccessMessage("All skills deleted successfully!");
                     setTimeout(() => setSuccessMessage(""), 3000);
+                } else {
+                    console.error('No user email available for deleting all skills');
                 }
             } catch (error) {
                 console.error('Error deleting all skills:', error);
+                setSuccessMessage('Failed to delete all skills. Please try again.');
+                setTimeout(() => setSuccessMessage(''), 3000);
             }
         }
     };

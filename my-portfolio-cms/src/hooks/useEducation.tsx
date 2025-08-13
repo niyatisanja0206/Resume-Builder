@@ -2,7 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
 import { type Education } from "@/types/portfolio";
 
-const API_BASE_URL = "http://localhost:5000/api/edu";
+const API_BASE_URL = "/api/edu";
 
 // Function to fetch education data for a specific user from the backend
 const fetchEducation = async (email: string): Promise<Education[] | null> => {

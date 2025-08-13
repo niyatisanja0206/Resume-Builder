@@ -2,7 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
 import { type Experience } from "@/types/portfolio";
 
-const API_BASE_URL = "http://localhost:5000/api/exp";
+const API_BASE_URL = "/api/exp";
 
 // Function to fetch experience data from the backend
 const fetchExperiences = async (email: string): Promise<Experience[] | null> => {

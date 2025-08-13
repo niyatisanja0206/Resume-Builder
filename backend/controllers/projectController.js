@@ -57,13 +57,13 @@ exports.deleteProject = async (req, res) => {
       return res.status(400).json({ message: 'Email and Project ID are required' });
     }
 
-    const updated = await User.findOneAndUpdate(
-      { "basic.email": email },
-      { $pull: { projects: { _id: id } } }, // Changed 'project' to 'projects'
+    const updated = await Resume.findOneAndUpdate(
+      { userEmail: email, isDownloaded: false },
+      { $pull: { projects: { _id: id } } },
       { new: true }
     );
 
-    if (!updated) return res.status(404).json({ message: 'User not found' });
+    if (!updated) return res.status(404).json({ message: 'Resume not found' });
 
     res.status(200).json({ message: 'Project entry deleted successfully' });
   } catch (error) {
@@ -78,13 +78,13 @@ exports.updateProject = async (req, res) => {
       return res.status(400).json({ message: 'Email, Project ID, and Project data are required' });
     }
 
-    const updated = await User.findOneAndUpdate(
-      { "basic.email": email, "projects._id": id },
+    const updated = await Resume.findOneAndUpdate(
+      { userEmail: email, isDownloaded: false, "projects._id": id },
       { $set: { "projects.$": project } },
       { new: true, runValidators: true }
     );
 
-    if (!updated) return res.status(404).json({ message: 'User or Project not found' });
+    if (!updated) return res.status(404).json({ message: 'Resume or Project not found' });
 
     res.status(200).json({ message: 'Project updated successfully', data: updated.projects });
   } catch (error) {
@@ -99,13 +99,13 @@ exports.deleteAllProjects = async (req, res) => {
       return res.status(400).json({ message: 'Email is required as a query parameter.' });
     }
 
-    const updated = await User.findOneAndUpdate(
-      { "basic.email": email },
+    const updated = await Resume.findOneAndUpdate(
+      { userEmail: email, isDownloaded: false },
       { $set: { projects: [] } },
       { new: true }
     );
 
-    if (!updated) return res.status(404).json({ message: 'User not found' });
+    if (!updated) return res.status(404).json({ message: 'Resume not found' });
 
     res.status(200).json({ message: 'All projects deleted successfully' });
   } catch (error) {

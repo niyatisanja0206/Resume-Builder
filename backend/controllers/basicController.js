@@ -87,6 +87,32 @@ exports.deleteBasic = async (req, res) => {
     }
 };
 
+exports.deleteAllBasic = async (req, res) => {
+    try {
+        // Get the email from the query parameters
+        const { email } = req.query;
+
+        if (!email) {
+            return res.status(400).json({ message: 'Email is required as a query parameter.' });
+        }
+
+        // Find the resume and clear just the basic section
+        const result = await Resume.findOneAndUpdate(
+            { userEmail: email, isDownloaded: false },
+            { $unset: { basic: 1 } },
+            { new: true }
+        );
+
+        if (!result) {
+            return res.status(404).json({ message: 'Resume not found' });
+        }
+
+        res.status(200).json({ message: 'Basic information cleared successfully' });
+    } catch (error) {
+        res.status(500).json({ message: 'Server error', error: error.message });
+    }
+};
+
 exports.updateBasic = async (req, res) => {
     try {
         console.log('Basic Controller - Update Basic Request:', req.body);

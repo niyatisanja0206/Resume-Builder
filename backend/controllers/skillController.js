@@ -63,14 +63,14 @@ exports.deleteSkill = async (req, res) => {
             return res.status(400).json({ message: 'Email and skill ID are required.' });
         }
 
-        const updatedUser = await User.findOneAndUpdate( // Correct: Use 'User'
-            { "basic.email": email },
+        const updatedResume = await Resume.findOneAndUpdate(
+            { userEmail: email, isDownloaded: false },
             { $pull: { skills: { _id: id } } },
             { new: true }
         );
 
-        if (!updatedUser) {
-            return res.status(404).json({ message: 'User not found' });
+        if (!updatedResume) {
+            return res.status(404).json({ message: 'Resume not found' });
         }
 
         res.status(200).json({ message: 'Skill deleted successfully' });
@@ -87,14 +87,14 @@ exports.deleteAllSkills = async (req, res) => {
             return res.status(400).json({ message: 'Email is required as a query parameter.' });
         }
 
-        const updatedUser = await User.findOneAndUpdate(
-            { "basic.email": email },
+        const updatedResume = await Resume.findOneAndUpdate(
+            { userEmail: email, isDownloaded: false },
             { $set: { skills: [] } },
             { new: true }
         );
 
-        if (!updatedUser) {
-            return res.status(404).json({ message: 'User not found' });
+        if (!updatedResume) {
+            return res.status(404).json({ message: 'Resume not found' });
         }
 
         res.status(200).json({ message: 'All skills deleted successfully' });
@@ -111,17 +111,17 @@ exports.updateSkill = async (req, res) => {
             return res.status(400).json({ message: 'Email, skill ID, and skill data are required.' });
         }
 
-        const updatedUser = await User.findOneAndUpdate(
-            { "basic.email": email, "skills._id": id },
+        const updatedResume = await Resume.findOneAndUpdate(
+            { userEmail: email, isDownloaded: false, "skills._id": id },
             { $set: { "skills.$": skill } },
             { new: true, runValidators: true }
         );
 
-        if (!updatedUser) {
-            return res.status(404).json({ message: 'User or skill not found' });
+        if (!updatedResume) {
+            return res.status(404).json({ message: 'Resume or skill not found' });
         }
 
-        res.status(200).json({ message: 'Skill updated successfully', data: updatedUser.skills });
+        res.status(200).json({ message: 'Skill updated successfully', data: updatedResume.skills });
     } catch (error) {
         res.status(500).json({ message: 'Server error', error: error.message });
     }

@@ -69,7 +69,7 @@ export default function Profile({ userEmail, onLogout, onDeleteAccount }: Profil
       try {
         const token = localStorage.getItem('token');
         if (token) {
-          const response = await fetch('/api/auth/delete-account', {
+          const response = await fetch('/api/auth/delete', {
             method: 'DELETE',
             headers: {
               'Authorization': `Bearer ${token}`,

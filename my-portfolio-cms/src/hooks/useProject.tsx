@@ -2,7 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { type Project } from "../types/portfolio";
 import axios from 'axios';
 
-const API_BASE_URL = "http://localhost:5000/api/pro";
+const API_BASE_URL = "/api/pro";
 
 const fetchProject = async (email: string): Promise<Project[] | null> => {
     try {
@@ -27,15 +27,31 @@ const addProject = async (projectData: { email: string; project: Project }): Pro
 };
 
 const removeProject = async (data: { email: string; id: string }) => {
-    await axios.delete(`${API_BASE_URL}/delete`, {
-        params: { email: data.email, id: data.id }
-    });
+    console.log('removeProject called with:', data);
+    try {
+        const response = await axios.delete(`${API_BASE_URL}/delete`, {
+            params: { email: data.email, id: data.id }
+        });
+        console.log('removeProject response:', response.data);
+        return response.data;
+    } catch (error) {
+        console.error('removeProject error:', error);
+        throw error;
+    }
 };
 
 const removeAllProjects = async (email: string) => {
-    await axios.delete(`${API_BASE_URL}/deleteAll`, {
-        params: { email }
-    });
+    console.log('removeAllProjects called with email:', email);
+    try {
+        const response = await axios.delete(`${API_BASE_URL}/deleteAll`, {
+            params: { email }
+        });
+        console.log('removeAllProjects response:', response.data);
+        return response.data;
+    } catch (error) {
+        console.error('removeAllProjects error:', error);
+        throw error;
+    }
 };
 
 const updateProject = async (data: { email: string; id: string; project: Project }): Promise<Project> => {
