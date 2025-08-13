@@ -398,7 +398,7 @@ export default function ResumePDF({ basicInfo, projects, experiences, skills, ed
       >
         {({ loading, error }) => (
           <Button 
-            className="w-full font-medium text-white bg-blue-600 hover:bg-blue-700 py-2 flex items-center justify-center gap-2" 
+            className="w-full font-medium text-white bg-black hover:bg-gray-800 py-2 flex items-center justify-center gap-2" 
             disabled={loading || !basicInfo || !!error} 
             onClick={incrementDownloadCount}
           >
