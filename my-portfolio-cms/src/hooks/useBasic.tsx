@@ -25,20 +25,36 @@ const fetchBasic = async (email?: string): Promise<Basic | null> => {
 
 // Function to save/update basic data
 const saveBasic = async (basicData: Basic): Promise<Basic> => {
+    console.log('saveBasic called with data:', basicData);
     const email = basicData.email;
+    
+    // Ensure all fields are valid strings
+    const sanitizedData: Basic = {
+        name: basicData.name || '',
+        contact_no: basicData.contact_no || '',
+        email: basicData.email || '',
+        location: basicData.location || '',
+        about: basicData.about || '',
+    };
+    
+    if (basicData.id) {
+        sanitizedData.id = basicData.id;
+    }
+    
+    console.log('Sanitized data for API:', sanitizedData);
     
     try {
         // First try to update if user exists
         const { data } = await axios.put(`${API_BASE_URL}/update`, {
             email: email,
-            basicInfo: basicData
+            basicInfo: sanitizedData
         });
         return data.data;
     } catch (error) {
         if (axios.isAxiosError(error) && error.response?.status === 404) {
             // If user doesn't exist, create new one
             const { data } = await axios.post(`${API_BASE_URL}/post`, {
-                ...basicData,
+                ...sanitizedData,
                 email: email
             });
             return data.data;

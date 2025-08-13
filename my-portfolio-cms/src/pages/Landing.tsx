@@ -1,9 +1,10 @@
 // LandingPage.tsx
 import React from 'react';
 import { Eye, Edit, Download, Award, Users, Zap, Star } from 'lucide-react';
-import resume1 from '@/assets/resume1.png';
-import resume2 from '@/assets/resume2.png';
 import resume3 from '@/assets/resume3.png';
+import resume4 from '@/assets/resume4.png';
+import resume5 from '@/assets/resume5.png';
+import resume6 from '@/assets/resume6.png';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -78,12 +79,17 @@ const LandingPage: React.FC = () => {
                     </CarouselItem>
                     <CarouselItem>
                       <div className="flex items-center justify-center bg-muted rounded-lg">
-                        <img src={resume1} alt="Resume template 1" className="w-full h-auto object-contain rounded-lg" />
+                        <img src={resume5} alt="Resume template 5" className="w-full h-auto object-contain rounded-lg" />
                       </div>
                     </CarouselItem>
                     <CarouselItem>
                       <div className="flex items-center justify-center bg-muted rounded-lg">
-                        <img src={resume2} alt="Resume template 2" className="w-full h-auto object-contain rounded-lg" />
+                        <img src={resume6} alt="Resume template 6" className="w-full h-auto object-contain rounded-lg" />
+                      </div>
+                    </CarouselItem>
+                    <CarouselItem>
+                      <div className="flex items-center justify-center bg-muted rounded-lg">
+                        <img src={resume4} alt="Resume template 7" className="w-full h-auto object-contain rounded-lg" />
                       </div>
                     </CarouselItem>
                   </CarouselContent>

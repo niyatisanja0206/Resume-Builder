@@ -9,7 +9,7 @@ export const basicSchema = z.object({
   name: z.string().min(1, "Name is required"),
   contact_no: z.string().regex(phoneRegex, "Invalid phone number"),
   email: z.string().email("Invalid email address"),
-  location: z.string().min(1, "Location is required"),
+  location: z.string().optional(), // Made location optional to prevent validation errors
   about: z.string().optional(),
 });
 

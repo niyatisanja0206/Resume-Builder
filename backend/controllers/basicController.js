@@ -33,6 +33,15 @@ exports.createBasic = async (req, res) => {
             return res.status(400).json({ message: 'Email is required' });
         }
         
+        // Sanitize data to ensure no null/undefined values
+        const sanitizedData = {
+            name: name || '',
+            contact_no: contact_no || '',
+            email: email || '',
+            location: location || '', // Ensure location is a string
+            about: about || ''
+        };
+        
         console.log('Looking for resume with userEmail:', email);
         let resume = await Resume.findOne({ userEmail: email, isDownloaded: false });
 
@@ -40,7 +49,7 @@ exports.createBasic = async (req, res) => {
             console.log('Creating new resume for email:', email);
             const resumeData = {
                 userEmail: email,  // This is the key field
-                basic: { name, contact_no, email, location, about },
+                basic: sanitizedData,
                 isDownloaded: false
             };
             console.log('Resume data to create:', JSON.stringify(resumeData, null, 2));
@@ -48,7 +57,7 @@ exports.createBasic = async (req, res) => {
             resume = new Resume(resumeData);
         } else {
             console.log('Updating existing resume for email:', email);
-            resume.basic = { name, contact_no, email, location, about };
+            resume.basic = sanitizedData;
         }
 
         console.log('Resume before save:', JSON.stringify(resume.toObject(), null, 2));
@@ -123,10 +132,28 @@ exports.updateBasic = async (req, res) => {
             return res.status(400).json({ message: 'Email and Basic Information are required' });
         }
 
+        // Log every field to check what might be causing the crash
+        console.log('Basic Info Fields:', {
+            name: basicInfo.name,
+            email: basicInfo.email,
+            contact_no: basicInfo.contact_no,
+            location: basicInfo.location,
+            about: basicInfo.about
+        });
+
+        // Sanitize the data to prevent null/undefined values
+        const sanitizedBasicInfo = {
+            name: basicInfo.name || '',
+            email: basicInfo.email || '',
+            contact_no: basicInfo.contact_no || '',
+            location: basicInfo.location || '', // Ensure location is a string
+            about: basicInfo.about || ''
+        };
+
         console.log('Updating resume with userEmail:', email);
         const updated = await Resume.findOneAndUpdate(
             { userEmail: email, isDownloaded: false },
-            { $set: { basic: basicInfo } },
+            { $set: { basic: sanitizedBasicInfo } },
             { new: true, runValidators: true, upsert: true }
         );
 

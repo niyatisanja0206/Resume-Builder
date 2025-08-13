@@ -1,286 +1,260 @@
+import { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
+
+// Import all form components
 import ExperienceForm from "@/components/ExperienceForm";
 import ProjectForm from "@/components/ProjectForm";
 import SkillForm from "@/components/SkillForm";
 import BasicForm from "@/components/BasicForm";
 import EducationForm from "@/components/EducationForm";
-import UserStats from "@/components/UserStats";
-import { Link } from "react-router-dom";
+
+// Import preview and PDF components
+import ResumePreview from '@/components/ResumePreview';
+import ResumePDF from '@/components/ResumePDF';
+
+// Import utilities and context
 import AuthGuard from "@/components/AuthGuard";
-import { Button } from "@/components/ui/button";
-import { makeAuthenticatedRequest } from "@/utils/auth";
-import { hasFormData, clearAllFormData, getFormSummary } from "@/utils/formValidation";
 import { useUserContext } from "@/contexts/useUserContext";
+import axios from 'axios';
+
+// Import all data hooks
+import { useBasic } from "@/hooks/useBasic";
+import { useProject } from "@/hooks/useProject";
+import { useExperience } from "@/hooks/useExperience";
+import { useSkill } from "@/hooks/useSkills";
+import { useEducation } from "@/hooks/useEducation";
+
+// Import all data types
+import type { Basic, Project, Experience, Skill, Education } from '@/types/portfolio';
+
+// Define a single, comprehensive type for all resume data.
+// CORRECTED: Renamed 'basic' to 'basicInfo' to match child component props.
+type FullResumeData = {
+  basicInfo: Basic | null;
+  projects: Project[];
+  experiences: Experience[];
+  skills: Skill[];
+  education: Education[];
+};
+
+type TemplateId = 'classic' | 'modern' | 'creative';
+const validTemplates: TemplateId[] = ['classic', 'modern', 'creative'];
 
 export default function Dashboard() {
     const { currentUser } = useUserContext();
+    const userEmail = currentUser?.email || '';
+
+    const [searchParams] = useSearchParams();
+    const initialTemplate = searchParams.get('template');
+
+    // --- STATE MANAGEMENT ---
+    const [resumeData, setResumeData] = useState<FullResumeData>({
+        basicInfo: null, // CORRECTED: Renamed from 'basic'
+        projects: [],
+        experiences: [],
+        skills: [],
+        education: []
+    });
+
+    // Validate the template from URL before setting state
+    const templateFromUrl = initialTemplate && validTemplates.includes(initialTemplate as TemplateId) 
+        ? initialTemplate as TemplateId 
+        : 'classic';
+    
+    // Use template directly as a constant instead of state since we don't need to change it
+    const selectedTemplate: TemplateId = templateFromUrl;
+    
+    const [isPageLoading, setPageLoading] = useState(true);
+
+    // --- DATA FETCHING ---
+    const { basic, isLoading: basicLoading } = useBasic(userEmail);
+    const { projects, isLoading: projectsLoading } = useProject(userEmail);
+    const { experiences, isLoading: experiencesLoading } = useExperience(userEmail);
+    const { skills, isLoading: skillsLoading } = useSkill(userEmail);
+    const { education, isLoading: educationLoading } = useEducation(userEmail);
+
+    // --- DATA SYNCHRONIZATION ---
+    useEffect(() => {
+        const allDataLoaded = !basicLoading && !projectsLoading && !experiencesLoading && !skillsLoading && !educationLoading;
+        
+        if (allDataLoaded) {
+            setResumeData({
+                basicInfo: basic || null, // CORRECTED: Renamed from 'basic'
+                projects: projects || [],
+                experiences: experiences || [],
+                skills: skills || [],
+                education: education || []
+            });
+            setPageLoading(false);
+        }
+    }, [
+        basic, projects, experiences, skills, education,
+        basicLoading, projectsLoading, experiencesLoading, skillsLoading, educationLoading
+    ]);
+
+    // --- LIVE UPDATE HANDLER ---
+    const handleDataChange = <K extends keyof FullResumeData>(section: K, data: FullResumeData[K]) => {
+        setResumeData(prevData => ({
+            ...prevData,
+            [section]: data,
+        }));
+    };
+    
+    // --- RESUME OPERATIONS ---
+    const clearResume = async () => {
+        if (!userEmail) {
+            alert("You must be logged in to clear your resume");
+            return;
+        }
+
+        try {
+            // Show loading state
+            setPageLoading(true);
+            
+            // First set UI state to empty immediately for responsive feedback
+            const emptyResume: FullResumeData = {
+                basicInfo: { name: '', contact_no: '', email: userEmail, location: '', about: '' },
+                projects: [],
+                experiences: [],
+                skills: [],
+                education: []
+            };
+            
+            setResumeData(emptyResume);
+            
+            // Update basic info with empty fields but keep the email
+            if (emptyResume.basicInfo) {
+                await axios.put('/api/basic/update', {
+                    email: userEmail,
+                    basicInfo: emptyResume.basicInfo
+                });
+            }
+
+            // Clear all sections using the deleteAll endpoints
+            await axios.delete('/api/projects/deleteAll', { params: { email: userEmail } });
+            await axios.delete('/api/experiences/deleteAll', { params: { email: userEmail } });
+            await axios.delete('/api/skills/deleteAll', { params: { email: userEmail } });
+            await axios.delete('/api/education/deleteAll', { params: { email: userEmail } });
+            
+            // Also clear resume drafts via resume controller
+            await axios.delete('/api/resume/clear-draft', { 
+                headers: { 'x-auth-token': localStorage.getItem('token') } 
+            });
+            
+            // Reset loading state and refresh the page to reload all data
+            setPageLoading(false);
+            
+            // Force reload to get fresh data
+            window.location.reload();
+            
+            alert("Resume cleared successfully");
+        } catch (error) {
+            console.error("Failed to clear resume:", error);
+            alert("Failed to clear resume. Please try again.");
+            setPageLoading(false);
+        }
+    };
+    
+    const createNewResume = async () => {
+        if (!userEmail) {
+            alert("You must be logged in to create a new resume");
+            return;
+        }
+        
+        try {
+            setPageLoading(true);
+            
+            // First clear the current resume
+            await clearResume();
+            
+            // Create a new resume through the resume controller
+            const response = await axios.post('/api/resume/new', {}, {
+                headers: { 'x-auth-token': localStorage.getItem('token') }
+            });
+            
+            console.log("New resume created:", response.data);
+            
+            // Reset loading state
+            setPageLoading(false);
+            
+            // Force reload to get fresh data
+            window.location.reload();
+            
+            alert("New resume created successfully");
+        } catch (error) {
+            console.error("Failed to create new resume:", error);
+            alert("Failed to create new resume. Please try again.");
+            setPageLoading(false);
+        }
+    };
+    
+    // --- RENDER LOGIC ---
+    if (isPageLoading) {
+        return (
+            <div className="flex items-center justify-center min-h-screen bg-background">
+                <div className="text-center">
+                    <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+                    <p className="text-lg text-muted-foreground">Loading Your Resume Editor...</p>
+                </div>
+            </div>
+        );
+    }
+
     return (
         <AuthGuard>
-            <div className="min-h-screen text-foreground bg-gradient-to-br from-background to-background/50">
-            <div className="container max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">
-                {/* Dashboard Header */}
-                <div className="mb-8">
-                <div className="flex items-center space-x-3 mb-4">
-                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center text-primary-foreground">
-                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                    </svg>
-                    </div>
-                    <div>
-                    <h1 className="text-3xl font-bold text-foreground">Portfolio CMS</h1>
-                    <p className="text-muted-foreground">Manage your professional portfolio content</p>
-                    <div className="mt-3 flex gap-3">
-                        <Button 
-                            onClick={async () => {
-                                try {
-                                    console.log('Starting new resume creation...');
-                                    
-                                    const userEmail = currentUser?.email;
-                                    if (!userEmail) {
-                                        alert('Please log in to create a resume.');
-                                        return;
-                                    }
-                                    
-                                    // Check if any form data exists before creating a new resume
-                                    const hasData = await hasFormData(userEmail);
-                                    if (!hasData) {
-                                        alert('Please fill out at least one form section before creating a resume.');
-                                        return;
-                                    }
-                                    
-                                    // Show summary of filled forms
-                                    const formSummary = getFormSummary();
-                                    const filledForms = Object.entries(formSummary)
-                                        .filter(([, filled]) => filled)
-                                        .map(([key]) => key.replace('-form', ''))
-                                        .join(', ');
-                                    
-                                    const confirmMessage = `You have filled: ${filledForms}\n\nDo you want to create a new resume? This will clear education, experience, projects, and skills data (basic information will be preserved).`;
-                                    if (!confirm(confirmMessage)) {
-                                        return;
-                                    }
-                                    
-                                    // Use the authenticated request utility
-                                    const response = await makeAuthenticatedRequest('/api/auth/increment-resume-count', {
-                                        method: 'POST'
-                                    });
-                                    
-                                    console.log('API response status:', response.status);
-                                    
-                                    if (response.ok) {
-                                        const result = await response.json();
-                                        console.log('API response:', result);
-                                        
-                                        // Clear all form data using the utility function
-                                        await clearAllFormData(userEmail);
-                                        
-                                        // Show success message before reload
-                                        alert('New resume created successfully! Education, experience, projects, and skills have been cleared (basic information preserved).');
-                                        
-                                        // Refresh the page to clear all forms
-                                        window.location.reload();
-                                    } else {
-                                        const errorData = await response.json();
-                                        console.error('API error response:', errorData);
-                                        alert(`Failed to create new resume: ${errorData.message || 'Unknown error'}`);
-                                    }
-                                } catch (error) {
-                                    console.error('Error creating new resume:', error);
-                                    if (error instanceof Error && error.message.includes('authentication token')) {
-                                        alert('Please log in again to continue.');
-                                        // Optionally redirect to login
-                                        window.location.reload();
-                                    } else {
-                                        alert(`Error creating new resume: ${error instanceof Error ? error.message : 'Please check your connection and try again.'}`);
-                                    }
-                                }
-                            }}
-                            className="bg-blue-600 hover:bg-blue-700"
-                        >
-                            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                            </svg>
-                            New Resume
-                        </Button>
-                        <Button 
-                            variant="outline"
-                            onClick={async () => {
-                                try {
-                                    console.log('Starting to clear current form...');
-                                    
-                                    const userEmail = currentUser?.email;
-                                    if (!userEmail) {
-                                        alert('Please log in to clear form data.');
-                                        return;
-                                    }
-                                    
-                                    // Check if any form data exists
-                                    const hasData = await hasFormData(userEmail);
-                                    if (!hasData) {
-                                        alert('No form data to clear.');
-                                        return;
-                                    }
-                                    
-                                    // Show summary of what will be cleared
-                                    const formSummary = getFormSummary();
-                                    const filledForms = Object.entries(formSummary)
-                                        .filter(([, filled]) => filled)
-                                        .map(([key]) => key.replace('-form', ''))
-                                        .join(', ');
-                                    
-                                    const confirmMessage = `This will clear data from: ${filledForms} (basic information will be preserved)\n\nAre you sure you want to continue?`;
-                                    if (!confirm(confirmMessage)) {
-                                        return;
-                                    }
-                                    
-                                    // Clear all form data using the utility function
-                                    await clearAllFormData(userEmail);
-                                    
-                                    // Show success message before reload
-                                    alert('Form data cleared successfully! (Basic information preserved)');
-                                    
-                                    // Refresh the page to clear all forms
-                                    window.location.reload();
-                                } catch (error) {
-                                    console.error('Error clearing form:', error);
-                                    alert(`Error clearing form: ${error instanceof Error ? error.message : 'Please try again.'}`);
-                                }
-                            }}
-                        >
-                            Clear Resume Data
-                        </Button>
-                    </div>
-                    </div>
-                </div>
-                </div>
+            <div className="flex flex-col md:flex-row w-full min-h-screen bg-gray-100 dark:bg-gray-900">
                 
-                {/* User Statistics Section */}
-                <div className="mb-8">
-                    <UserStats />
-                </div>
-                
-                {/* Main Content Sections */}
-                <div className="space-y-8">
-                
-                {/* Basic Information Section */}
-                <section className="bg-card border border-border rounded-xl shadow-sm overflow-hidden">
-                    <div className="bg-gradient-to-r from-blue-500/10 via-blue-500/5 to-transparent p-6 border-b border-border">
-                    <div className="flex items-center space-x-3">
-                        <div className="w-10 h-10 rounded-lg bg-blue-500/10 flex items-center justify-center">
-                        <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                        </svg>
+                <aside className="w-full md:w-1/2 lg:w-2/5 h-screen overflow-y-auto bg-white dark:bg-black p-6 lg:p-8 space-y-8">
+                    <header className="mb-6">
+                        <h1 className="text-3xl font-bold text-foreground">Live Resume Editor</h1>
+                        <p className="text-muted-foreground">Your changes will appear live in the preview.</p>
+                        
+                        {/* Resume Action Buttons */}
+                        <div className="flex space-x-4 mt-4">
+                            <button 
+                                onClick={clearResume}
+                                className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-md transition-colors flex items-center justify-center"
+                                disabled={isPageLoading}
+                            >
+                                {isPageLoading ? (
+                                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                                ) : null}
+                                Clear Resume
+                            </button>
+                            <button 
+                                onClick={createNewResume}
+                                className="px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-md transition-colors flex items-center justify-center"
+                                disabled={isPageLoading}
+                            >
+                                {isPageLoading ? (
+                                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                                ) : null}
+                                New Resume
+                            </button>
                         </div>
-                        <div>
-                        <h2 className="text-xl font-semibold text-foreground">Basic Information</h2>
-                        <p className="text-sm text-muted-foreground">Add your personal details and contact information</p>
-                        </div>
+                    </header>
+                    
+                    {/* CORRECTED: Pass 'basicInfo' to the form and the handler */}
+                    <BasicForm initialData={resumeData.basicInfo} onDataChange={(newData) => handleDataChange('basicInfo', newData)} />
+                    <EducationForm initialData={resumeData.education} onDataChange={(newData) => handleDataChange('education', newData)} />
+                    <ExperienceForm initialData={resumeData.experiences} onDataChange={(newData) => handleDataChange('experiences', newData)} />
+                    <ProjectForm initialData={resumeData.projects} onDataChange={(newData) => handleDataChange('projects', newData)} />
+                    <SkillForm initialData={resumeData.skills} onDataChange={(newData) => handleDataChange('skills', newData)} />
+                    
+                    <div className="flex-shrink-0 mt-6 space-y-6">
+                        {/* CORRECTED: Use spread operator now that prop names match */}
+                        <ResumePDF {...resumeData} templateType={selectedTemplate} />
                     </div>
-                    </div>
-                    <div className="p-6">
-                    <BasicForm />
-                    </div>
-                </section>
+                </aside>
 
-                {/* Education Section */}
-                <section className="bg-card border border-border rounded-xl shadow-sm overflow-hidden">
-                    <div className="bg-gradient-to-r from-yellow-500/10 via-yellow-500/5 to-transparent p-6 border-b border-border">
-                    <div className="flex items-center space-x-3">
-                        <div className="w-10 h-10 rounded-lg bg-yellow-500/10 flex items-center justify-center">
-                        <svg className="w-5 h-5 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                        </div>
-                        <div>
-                        <h2 className="text-xl font-semibold text-foreground">Education</h2>
-                        <p className="text-sm text-muted-foreground">Add your educational background to showcase your qualifications</p>
+                <main className="w-full md:w-1/2 lg:w-3/5 h-screen flex flex-col p-6 lg:p-8">
+                    <div className="flex-grow flex items-center justify-center overflow-auto">
+                        <div className="transform scale-[0.8] origin-top">
+                             {/* CORRECTED: Use spread operator now that prop names match */}
+                             <ResumePreview {...resumeData} templateType={selectedTemplate} />
                         </div>
                     </div>
-                    </div>
-                    <div className="p-6">
-                        <EducationForm />
-                    </div>
-                </section>
-
-                {/* Projects Section */}
-                <section className="bg-card border border-border rounded-xl shadow-sm overflow-hidden">
-                    <div className="bg-gradient-to-r from-green-500/10 via-green-500/5 to-transparent p-6 border-b border-border">
-                    <div className="flex items-center space-x-3">
-                        <div className="w-10 h-10 rounded-lg bg-green-500/10 flex items-center justify-center">
-                        <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-                        </svg>
-                        </div>
-                        <div>
-                        <h2 className="text-xl font-semibold text-foreground">Projects</h2>
-                        <p className="text-sm text-muted-foreground">Showcase your work and technical achievements</p>
-                        </div>
-                    </div>
-                    </div>
-                    <div className="p-6">
-                    <ProjectForm />
-                    </div>
-                </section>
-
-                {/* Experience Section */}
-                <section className="bg-card border border-border rounded-xl shadow-sm overflow-hidden">
-                    <div className="bg-gradient-to-r from-purple-500/10 via-purple-500/5 to-transparent p-6 border-b border-border">
-                    <div className="flex items-center space-x-3">
-                        <div className="w-10 h-10 rounded-lg bg-purple-500/10 flex items-center justify-center">
-                        <svg className="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2-2v2m8 0V6a2 2 0 012 2v6a2 2 0 01-2 2H6a2 2 0 01-2-2V8a2 2 0 012-2V6" />
-                        </svg>
-                        </div>
-                        <div>
-                        <h2 className="text-xl font-semibold text-foreground">Experience</h2>
-                        <p className="text-sm text-muted-foreground">Document your professional journey and achievements</p>
-                        </div>
-                    </div>
-                    </div>
-                    <div className="p-6">
-                    <ExperienceForm />
-                    </div>
-                </section>
-
-                {/* Skills Section */}
-                <section className="bg-card border border-border rounded-xl shadow-sm overflow-hidden">
-                    <div className="bg-gradient-to-r from-orange-500/10 via-orange-500/5 to-transparent p-6 border-b border-border">
-                    <div className="flex items-center space-x-3">
-                        <div className="w-10 h-10 rounded-lg bg-orange-500/10 flex items-center justify-center">
-                        <svg className="w-5 h-5 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-                        </svg>
-                        </div>
-                        <div>
-                        <h2 className="text-xl font-semibold text-foreground">Skills</h2>
-                        <p className="text-sm text-muted-foreground">Highlight your technical and professional expertise</p>
-                        </div>
-                    </div>
-                    </div>
-                    <div className="p-6">
-                    <SkillForm />
-                    </div>
-                </section>
-
-                </div>
-
-                {/* Footer Actions */}
-                <div className="mt-12 p-6 bg-card border border-border rounded-xl">
-                <div className="flex flex-col sm:flex-row items-center justify-between space-y-4 sm:space-y-0">
-                    <div>
-                    <h3 className="text-lg font-semibold text-foreground">Ready to showcase your work?</h3>
-                    <p className="text-sm text-muted-foreground">Preview and publish your portfolio when you're ready</p>
-                    </div>
-                    <div className="flex space-x-3">
-                    <button className="px-4 py-2 bg-primary text-primary-foreground hover:bg-primary/90 rounded-lg transition-colors text-sm font-medium">
-                        <Link to="/portfolio">
-                            Preview Portfolio
-                        </Link>
-                    </button>
-                    </div>
-                </div>
-                </div>
-
-            </div>
+                </main>
             </div>
         </AuthGuard>
     );

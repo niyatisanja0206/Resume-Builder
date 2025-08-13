@@ -1,103 +1,92 @@
-import ResumeTemplateSelector from "@/components/ResumeTemplateSelector";
+import { useNavigate } from 'react-router-dom';
+import { Card, CardContent } from "@/components/ui/card";
+//import { Badge } from "@/components/ui/badge";
 import AuthGuard from "@/components/AuthGuard";
-import { useBasic } from "../hooks/useBasic";
-import { useProject } from "../hooks/useProject";
-import { useExperience } from "../hooks/useExperience";
-import { useSkill } from "../hooks/useSkills";
-import { useEducation } from "../hooks/useEducation";
+//import { Check } from "lucide-react";
 
-// This component is the main page that fetches all data and passes it down.
-// It is the entry point to the resume builder functionality.
+// Define the available templates
+const templates = [
+  {
+    id: 'classic',
+    name: 'Classic',
+    description: 'A timeless, professional format with clean typography.',
+    image: 'https://placehold.co/600x800/F3F4F6/374151?text=Classic+Template',
+  },
+  {
+    id: 'modern',
+    name: 'Modern',
+    description: 'Contemporary design with stylish accents and a fresh layout.',
+    image: 'https://placehold.co/600x800/DBEAFE/1D4ED8?text=Modern+Template',
+  },
+  {
+    id: 'creative',
+    name: 'Creative',
+    description: 'A unique two-column layout to make your profile stand out.',
+    image: 'https://placehold.co/600x800/E0F2FE/075985?text=Creative+Template',
+  }
+] as const;
+
+type TemplateId = typeof templates[number]['id'];
+
 export default function Portfolio() {
-  // A helper function to safely get the current user's email from localStorage.
-  const getUserEmail = () => {
-    try {
-      const userString = localStorage.getItem('user');
-      if (userString) {
-        const user = JSON.parse(userString);
-        return user.email || '';
-      }
-      return localStorage.getItem('currentUserEmail') || '';
-    } catch (error) {
-      console.error('Error parsing user data:', error);
-      return '';
-    }
+  const navigate = useNavigate();
+
+  // Function to handle template selection and navigate to the dashboard
+  const handleTemplateSelect = (templateId: TemplateId) => {
+    // Navigate to the dashboard, passing the chosen template ID as a URL parameter.
+    // The Dashboard will read this to show the correct preview.
+    navigate(`/dashboard?template=${templateId}`);
   };
 
-  const currentEmail = getUserEmail();
-  console.log('Portfolio - Current email:', currentEmail);
-
-  // Fetch all the necessary data from custom hooks.
-  const { basic, isLoading: basicLoading, error: basicError } = useBasic(currentEmail);
-  const { projects, isLoading: projectsLoading, error: projectsError } = useProject(currentEmail);
-  const { experiences, isLoading: experiencesLoading, error: experiencesError } = useExperience(currentEmail);
-  const { skills, isLoading: skillsLoading, error: skillsError } = useSkill(currentEmail);
-  const { education, isLoading: educationLoading, error: educationError } = useEducation(currentEmail);
-
-  console.log('Portfolio - Data:', { basic, projects, experiences, skills, education });
-  console.log('Portfolio - Loading states:', { basicLoading, projectsLoading, experiencesLoading, skillsLoading, educationLoading });
-  console.log('Portfolio - Errors:', { basicError, projectsError, experiencesError, skillsError, educationError });
-
-  // Display a loading state while data is being fetched.
-  if (basicLoading || projectsLoading || experiencesLoading || skillsLoading || educationLoading) {
-    return (
-      <AuthGuard>
-        <div className="min-h-screen bg-background">
-          <div className="max-w-7xl mx-auto p-6">
-            <div className="flex items-center justify-center min-h-[50vh]">
-              <div className="text-lg">Loading your portfolio data...</div>
-            </div>
-          </div>
-        </div>
-      </AuthGuard>
-    );
-  }
-
-  // Display an error state if any data fetching fails.
-  const hasErrors = basicError || projectsError || experiencesError || skillsError || educationError;
-  if (hasErrors) {
-    return (
-      <AuthGuard>
-        <div className="min-h-screen bg-background">
-          <div className="max-w-7xl mx-auto p-6">
-            <div className="flex items-center justify-center min-h-[50vh]">
-              <div className="text-center">
-                <div className="text-lg text-red-600 mb-4">Error loading portfolio data</div>
-                <div className="text-sm text-gray-600">
-                  {basicError && <div>Basic info: {basicError.message}</div>}
-                  {projectsError && <div>Projects: {projectsError.message}</div>}
-                  {experiencesError && <div>Experiences: {experiencesError.message}</div>}
-                  {skillsError && <div>Skills: {skillsError.message}</div>}
-                  {educationError && <div>Education: {educationError.message}</div>}
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </AuthGuard>
-    );
-  }
-
-  // If data is loaded successfully, render the main resume builder component.
   return (
     <AuthGuard>
-      <div className="min-h-screen bg-background">
-        <div className="max-w-7xl mx-auto p-6">
-          <div className="mb-8">
-            <h1 className="text-3xl font-bold text-foreground mb-2">Resume Builder</h1>
-            <p className="text-muted-foreground">
-              Choose from different resume templates and download your professional resume as a PDF.
+      <div className="min-h-screen bg-gray-50 text-foreground">
+        <div className="container max-w-5xl mx-auto p-4 sm:p-6 lg:p-8">
+          
+          {/* Header Section */}
+          <div className="text-center mb-10">
+            <h1 className="text-4xl font-bold tracking-tight text-foreground sm:text-5xl">
+              Choose Your Template
+            </h1>
+            <p className="mt-4 text-lg text-muted-foreground">
+              Select a template to start building your professional resume. You can change it anytime.
             </p>
           </div>
 
-          {/* This is the main component that handles template selection and rendering */}
-          <ResumeTemplateSelector
-            basicInfo={basic || null}
-            projects={projects || []}
-            experiences={experiences || []}
-            skills={skills || []}
-            education={education || []}
-          />
+          {/* Template Selection Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {templates.map((template) => (
+              <Card
+                key={template.id}
+                className="cursor-pointer transition-all duration-300 ease-in-out hover:shadow-xl hover:scale-105 group border-2 border-transparent hover:border-primary"
+                onClick={() => handleTemplateSelect(template.id)}
+              >
+                <CardContent className="p-4 flex flex-col h-full">
+                  <div className="overflow-hidden rounded-md mb-4">
+                    <img 
+                      src={template.image} 
+                      alt={`${template.name} resume template preview`}
+                      className="w-full h-auto object-cover aspect-[3/4] transition-transform duration-300 group-hover:scale-105"
+                    />
+                  </div>
+                  <div className="flex-grow">
+                    <h2 className="text-lg font-semibold text-foreground">{template.name}</h2>
+                    <p className="text-sm text-muted-foreground mt-1">{template.description}</p>
+                  </div>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation(); // Prevent card click when button is clicked
+                      handleTemplateSelect(template.id);
+                    }}
+                    className="mt-4 w-full bg-primary text-primary-foreground hover:bg-primary/90 px-4 py-2 rounded-md text-sm font-medium transition-colors"
+                  >
+                    Select {template.name}
+                  </button>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+
         </div>
       </div>
     </AuthGuard>

@@ -11,6 +11,12 @@ exports.createNewResume = async (req, res) => {
             return res.status(404).json({ message: 'User not found' });
         }
 
+        // First, clear any existing draft resumes
+        await Resume.deleteMany({ 
+            userEmail: user.email, 
+            status: 'draft' 
+        });
+
         // Get count of existing resumes for title
         const existingCount = await Resume.countDocuments({ userEmail: user.email });
         
@@ -19,7 +25,18 @@ exports.createNewResume = async (req, res) => {
             userEmail: user.email,
             title: `Resume ${existingCount + 1}`,
             status: 'draft',
-            isDownloaded: false
+            isDownloaded: false,
+            basic: {
+                name: '',
+                email: user.email,
+                contact_no: '',
+                location: '',
+                about: ''
+            },
+            skills: [],
+            education: [],
+            experience: [],
+            projects: []
         });
         
         await newResume.save();
@@ -31,7 +48,7 @@ exports.createNewResume = async (req, res) => {
         });
     } catch (err) {
         console.error('Create new resume error:', err);
-        res.status(500).json({ message: 'Server error' });
+        res.status(500).json({ message: 'Server error', error: err.message });
     }
 };
 
@@ -241,14 +258,45 @@ exports.clearCurrentDraft = async (req, res) => {
         }
         
         // Delete all draft resumes for this user
-        await Resume.deleteMany({ 
+        const result = await Resume.deleteMany({ 
             userEmail: user.email, 
             status: 'draft' 
         });
         
-        res.json({ message: 'Draft resumes cleared successfully' });
+        // Create a blank draft resume if none exists after clearing
+        const existingResumes = await Resume.find({
+            userEmail: user.email,
+            status: 'draft'
+        });
+        
+        if (existingResumes.length === 0) {
+            // Create new empty resume
+            const newResume = new Resume({
+                userEmail: user.email,
+                title: `Draft Resume`,
+                status: 'draft',
+                basic: {
+                    name: '',
+                    email: user.email,
+                    contact_no: '',
+                    location: '',
+                    about: ''
+                },
+                skills: [],
+                education: [],
+                experience: [],
+                projects: []
+            });
+            
+            await newResume.save();
+        }
+        
+        res.json({ 
+            message: 'Draft resumes cleared successfully', 
+            deletedCount: result.deletedCount
+        });
     } catch (err) {
         console.error('Clear draft resume error:', err);
-        res.status(500).json({ message: 'Server error' });
+        res.status(500).json({ message: 'Server error', error: err.message });
     }
 };
