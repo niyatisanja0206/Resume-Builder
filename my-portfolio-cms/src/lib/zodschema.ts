@@ -1,16 +1,18 @@
 import { z } from "zod";
 
-const phoneRegex = new RegExp(
-  /^([+]?[\s0-9]+)?(\d{3}|[(]?[0-9]+[)])?([-]?[\s]?[0-9])+$/
-);
+// Very lenient phone regex that accepts most formats or empty strings
+const phoneRegex = /^$|^[+]?[(]?[0-9]{0,4}[)]?[-\s.]?[0-9]{0,4}[-\s.]?[0-9]{0,9}$/;
 
 export const basicSchema = z.object({
   // Removed 'id' field to use MongoDB's _id
-  name: z.string().min(1, "Name is required"),
-  contact_no: z.string().regex(phoneRegex, "Invalid phone number"),
-  email: z.string().email("Invalid email address"),
-  location: z.string().optional(), // Made location optional to prevent validation errors
-  about: z.string().optional(),
+  name: z.string().optional().default(''),
+  contact_no: z.string()
+    .regex(phoneRegex, "Invalid phone number format")
+    .optional()
+    .default(''),
+  email: z.string().email("Invalid email address").optional().default(''),
+  location: z.string().optional().default(''), 
+  about: z.string().optional().default(''),
 });
 
 export type BasicFormSchema = z.infer<typeof basicSchema>;

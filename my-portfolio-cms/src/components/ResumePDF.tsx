@@ -175,7 +175,7 @@ const MyDocument = React.memo(({ basicInfo, projects, experiences, skills, educa
                             <View style={classicStyles.bulletList}>
                                 {exp.skillsLearned.map((skill, j) => (
                                     <View key={j} style={classicStyles.bullet}>
-                                        <Text>• </Text>
+                                        <Text> • </Text>
                                         <Text style={classicStyles.bulletText}>{skill}</Text>
                                     </View>
                                 ))}
