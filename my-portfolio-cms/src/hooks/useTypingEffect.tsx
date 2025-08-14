@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 
 /**
  * A custom React hook that simulates a typing effect for a given string.
@@ -9,25 +9,47 @@ import { useState, useEffect } from 'react';
  */
 export function useTypingEffect(textToType: string, speed = 25) {
   const [displayedText, setDisplayedText] = useState('');
-
+  const intervalRef = useRef<number | null>(null);
+  const indexRef = useRef(0);
+  
+  // This effect handles both initialization and cleanup
   useEffect(() => {
-    // Only start the effect if the target text is different from the displayed text
-    if (displayedText !== textToType) {
-      let i = 0;
-      const intervalId = setInterval(() => {
-        if (i < textToType.length) {
-          setDisplayedText(textToType.substring(0, i + 1));
-          i++;
-        } else {
-          clearInterval(intervalId);
+    // Clear any existing interval
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    }
+    
+    // Reset state for new text
+    setDisplayedText('');
+    indexRef.current = 0;
+    
+    // Only proceed if we have text to type
+    if (!textToType) return;
+    
+    // Start a new typing animation
+    const animate = () => {
+      intervalRef.current = window.setInterval(() => {
+        if (indexRef.current < textToType.length) {
+          setDisplayedText(textToType.substring(0, indexRef.current + 1));
+          indexRef.current++;
+        } else if (intervalRef.current) {
+          clearInterval(intervalRef.current);
+          intervalRef.current = null;
         }
       }, speed);
-
-      // Cleanup function to stop the interval when the component unmounts
-      // or when the textToType dependency changes.
-      return () => clearInterval(intervalId);
-    }
-  }, [textToType, speed, displayedText]); // Rerun effect if the target text changes
-
+    };
+    
+    animate();
+    
+    // Cleanup function
+    return () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
+    };
+  }, [textToType, speed]);
+  
   return displayedText;
 }

@@ -17,6 +17,7 @@ import { useUserContext } from '@/contexts/useUserContext';
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { type Experience } from "@/types/portfolio";
+import { useToast } from '../contexts/ToastContext';
 
 // --- NEW PROPS INTERFACE ---
 interface ExperienceFormProps {
@@ -27,6 +28,7 @@ interface ExperienceFormProps {
 export default function ExperienceForm({ initialData, onDataChange }: ExperienceFormProps) {
     const { currentUser } = useUserContext();
     const userEmail = currentUser?.email || '';
+    const { showToast } = useToast();
 
     // Hook is kept for its backend mutation functions
     const { addExperience, updateExperience, removeExperience, addExperienceLoading, updateExperienceLoading } = useExperience(userEmail);
@@ -34,7 +36,12 @@ export default function ExperienceForm({ initialData, onDataChange }: Experience
     // --- LOCAL STATE MANAGEMENT ---
     const [experienceList, setExperienceList] = useState<Experience[]>([]);
     const [editingExperience, setEditingExperience] = useState<Experience | null>(null);
-    const [successMessage, setSuccessMessage] = useState<string>("");
+
+    // --- LIVE UPDATE HANDLER ---
+    const handleExperienceListChange = (newExperienceList: Experience[]) => {
+        setExperienceList(newExperienceList);
+        onDataChange(newExperienceList);
+    };
     const [skillInput, setSkillInput] = useState("");
 
     // --- DATA SYNCHRONIZATION ---
@@ -65,23 +72,20 @@ export default function ExperienceForm({ initialData, onDataChange }: Experience
                 const updatedList = experienceList.map(exp => 
                     exp._id === updatedExperienceItem._id ? updatedExperienceItem : exp
                 );
-                setExperienceList(updatedList);
-                onDataChange(updatedList); // Notify parent
+                handleExperienceListChange(updatedList);
                 
-                setSuccessMessage("Experience updated successfully!");
+                showToast("Experience updated successfully!", "success");
                 setEditingExperience(null);
             } else {
                 // Add new experience
                 const newExperienceItem = await addExperience(data as Experience);
                 const updatedList = [...experienceList, newExperienceItem];
-                setExperienceList(updatedList);
-                onDataChange(updatedList); // Notify parent
+                handleExperienceListChange(updatedList);
                 
-                setSuccessMessage("Experience added successfully!");
+                showToast("Experience added successfully!", "success");
             }
             form.reset();
             setSkillInput("");
-            setTimeout(() => setSuccessMessage(""), 3000);
         } catch (error) {
             console.error('Error submitting experience:', error);
         }
@@ -92,10 +96,8 @@ export default function ExperienceForm({ initialData, onDataChange }: Experience
             try {
                 await removeExperience(experienceId);
                 const updatedList = experienceList.filter(exp => exp._id !== experienceId);
-                setExperienceList(updatedList);
-                onDataChange(updatedList); // Notify parent
-                setSuccessMessage("Experience deleted successfully!");
-                setTimeout(() => setSuccessMessage(""), 3000);
+                handleExperienceListChange(updatedList);
+                showToast("Experience deleted successfully!", "success");
             } catch (error) {
                 console.error('Error deleting experience:', error);
             }
@@ -140,22 +142,82 @@ export default function ExperienceForm({ initialData, onDataChange }: Experience
                 <p className="text-sm text-muted-foreground">Your professional journey and achievements.</p>
             </div>
             <div className="p-6 space-y-6">
-                {successMessage && (
-                    <div className="p-3 bg-green-50 text-green-700 border border-green-200 rounded-md text-sm">
-                        {successMessage}
-                    </div>
-                )}
-                
                 {/* Add/Edit Form */}
                 <Form {...form}>
                     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
                         <h3 className="text-lg font-medium">{editingExperience ? 'Edit Experience' : 'Add New Experience'}</h3>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <FormField control={form.control} name="company" render={({ field }) => (
-                                <FormItem><FormLabel>Company</FormLabel><FormControl><Input placeholder="Company Name" {...field} /></FormControl><FormMessage /></FormItem>
+                                <FormItem>
+                                    <FormLabel>Company</FormLabel>
+                                    <FormControl>
+                                        <Input 
+                                            placeholder="Company Name" 
+                                            {...field}
+                                            onChange={(e) => {
+                                                field.onChange(e);
+                                                // Live preview update for company
+                                                const currentFormData = form.getValues();
+                                                const updatedExperience: Experience = {
+                                                    _id: editingExperience?._id || 'temp-id',
+                                                    company: e.target.value,
+                                                    position: currentFormData.position || '',
+                                                    startDate: currentFormData.startDate,
+                                                    endDate: currentFormData.endDate,
+                                                    description: currentFormData.description || '',
+                                                    skillsLearned: currentFormData.skillsLearned || []
+                                                };
+                                                
+                                                let updatedList;
+                                                if (editingExperience) {
+                                                    updatedList = experienceList.map(exp => 
+                                                        exp._id === editingExperience._id ? updatedExperience : exp
+                                                    );
+                                                } else {
+                                                    updatedList = [...experienceList, updatedExperience];
+                                                }
+                                                handleExperienceListChange(updatedList);
+                                            }}
+                                        />
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
                             )} />
                             <FormField control={form.control} name="position" render={({ field }) => (
-                                <FormItem><FormLabel>Position</FormLabel><FormControl><Input placeholder="e.g., Software Engineer" {...field} /></FormControl><FormMessage /></FormItem>
+                                <FormItem>
+                                    <FormLabel>Position</FormLabel>
+                                    <FormControl>
+                                        <Input 
+                                            placeholder="e.g., Software Engineer" 
+                                            {...field}
+                                            onChange={(e) => {
+                                                field.onChange(e);
+                                                // Live preview update for position
+                                                const currentFormData = form.getValues();
+                                                const updatedExperience: Experience = {
+                                                    _id: editingExperience?._id || 'temp-id',
+                                                    company: currentFormData.company || '',
+                                                    position: e.target.value,
+                                                    startDate: currentFormData.startDate,
+                                                    endDate: currentFormData.endDate,
+                                                    description: currentFormData.description || '',
+                                                    skillsLearned: currentFormData.skillsLearned || []
+                                                };
+                                                
+                                                let updatedList;
+                                                if (editingExperience) {
+                                                    updatedList = experienceList.map(exp => 
+                                                        exp._id === editingExperience._id ? updatedExperience : exp
+                                                    );
+                                                } else {
+                                                    updatedList = [...experienceList, updatedExperience];
+                                                }
+                                                handleExperienceListChange(updatedList);
+                                            }}
+                                        />
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
                             )} />
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -167,7 +229,40 @@ export default function ExperienceForm({ initialData, onDataChange }: Experience
                             )} />
                         </div>
                         <FormField control={form.control} name="description" render={({ field }) => (
-                            <FormItem><FormLabel>Description</FormLabel><FormControl><Textarea placeholder="Describe your role and accomplishments..." {...field} /></FormControl><FormMessage /></FormItem>
+                            <FormItem>
+                                <FormLabel>Description</FormLabel>
+                                <FormControl>
+                                    <Textarea 
+                                        placeholder="Describe your role and accomplishments..." 
+                                        {...field}
+                                        onChange={(e) => {
+                                            field.onChange(e);
+                                            // Live preview update for description
+                                            const currentFormData = form.getValues();
+                                            const updatedExperience: Experience = {
+                                                _id: editingExperience?._id || 'temp-id',
+                                                company: currentFormData.company || '',
+                                                position: currentFormData.position || '',
+                                                startDate: currentFormData.startDate,
+                                                endDate: currentFormData.endDate,
+                                                description: e.target.value,
+                                                skillsLearned: currentFormData.skillsLearned || []
+                                            };
+                                            
+                                            let updatedList;
+                                            if (editingExperience) {
+                                                updatedList = experienceList.map(exp => 
+                                                    exp._id === editingExperience._id ? updatedExperience : exp
+                                                );
+                                            } else {
+                                                updatedList = [...experienceList, updatedExperience];
+                                            }
+                                            handleExperienceListChange(updatedList);
+                                        }}
+                                    />
+                                </FormControl>
+                                <FormMessage />
+                            </FormItem>
                         )} />
                         <div>
                             <FormLabel>Skills Learned</FormLabel>

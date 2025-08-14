@@ -15,6 +15,7 @@ import {
 import { useEducation } from '../hooks/useEducation';
 import { useUserContext } from '@/contexts/useUserContext';
 import { type Education } from '@/types/portfolio';
+import { useToast } from '../contexts/ToastContext';
 
 // --- NEW PROPS INTERFACE ---
 interface EducationFormProps {
@@ -25,6 +26,7 @@ interface EducationFormProps {
 export default function EducationForm({ initialData, onDataChange }: EducationFormProps) {
     const { currentUser } = useUserContext();
     const userEmail = currentUser?.email || '';
+    const { showToast } = useToast();
     
     // The useEducation hook is kept for its mutation functions (add, update, delete)
     const { addEducation, updateEducation, removeEducation, addEducationLoading, updateEducationLoading } = useEducation(userEmail);
@@ -33,13 +35,18 @@ export default function EducationForm({ initialData, onDataChange }: EducationFo
     // This local state holds the list of education items for this form.
     const [educationList, setEducationList] = useState<Education[]>([]);
     const [editingEducation, setEditingEducation] = useState<Education | null>(null);
-    const [successMessage, setSuccessMessage] = useState<string>('');
 
     // --- DATA SYNCHRONIZATION ---
     // Sync local state with the initial data passed from the Dashboard.
     useEffect(() => {
         setEducationList(initialData || []);
     }, [initialData]);
+
+    // --- LIVE UPDATE HANDLER ---
+    const handleEducationListChange = (newEducationList: Education[]) => {
+        setEducationList(newEducationList);
+        onDataChange(newEducationList);
+    };
 
     const form = useForm<EducationFormSchema>({
         resolver: zodResolver(educationSchema),
@@ -63,23 +70,20 @@ export default function EducationForm({ initialData, onDataChange }: EducationFo
                 const updatedList = educationList.map(edu => 
                     edu._id === updatedEducationItem._id ? updatedEducationItem : edu
                 );
-                setEducationList(updatedList);
-                onDataChange(updatedList); // Notify parent
+                handleEducationListChange(updatedList);
                 
-                setSuccessMessage('Education updated successfully!');
+                showToast('Education updated successfully!', 'success');
                 setEditingEducation(null);
             } else {
                 // Add new education
                 const newEducationItem = await addEducation(data as Education);
                 
                 const updatedList = [...educationList, newEducationItem];
-                setEducationList(updatedList);
-                onDataChange(updatedList); // Notify parent
+                handleEducationListChange(updatedList);
                 
-                setSuccessMessage('Education added successfully!');
+                showToast('Education added successfully!', 'success');
             }
             form.reset();
-            setTimeout(() => setSuccessMessage(''), 3000);
         } catch (error) {
             console.error('Failed to submit education:', error);
         }
@@ -90,10 +94,8 @@ export default function EducationForm({ initialData, onDataChange }: EducationFo
             try {
                 await removeEducation(educationId);
                 const updatedList = educationList.filter(edu => edu._id !== educationId);
-                setEducationList(updatedList);
-                onDataChange(updatedList); // Notify parent
-                setSuccessMessage('Education deleted successfully!');
-                setTimeout(() => setSuccessMessage(''), 3000);
+                handleEducationListChange(updatedList);
+                showToast('Education deleted successfully!', 'success');
             } catch (error) {
                 console.error('Failed to delete education:', error);
             }
@@ -123,21 +125,79 @@ export default function EducationForm({ initialData, onDataChange }: EducationFo
                 <p className="text-sm text-muted-foreground">Your educational background and qualifications.</p>
             </div>
             <div className="p-6 space-y-6">
-                {successMessage && (
-                    <div className="p-3 bg-green-50 text-green-700 border border-green-200 rounded-md text-sm">
-                        {successMessage}
-                    </div>
-                )}
-                
                 {/* Form for adding/editing */}
                 <Form {...form}>
                     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
                         <h3 className="text-lg font-medium">{editingEducation ? 'Edit Education' : 'Add New Education'}</h3>
                         <FormField control={form.control} name="institution" render={({ field }) => (
-                            <FormItem><FormLabel>Institution</FormLabel><FormControl><Input placeholder="University Name" {...field} /></FormControl><FormMessage /></FormItem>
+                            <FormItem>
+                                <FormLabel>Institution</FormLabel>
+                                <FormControl>
+                                    <Input 
+                                        placeholder="University Name" 
+                                        {...field}
+                                        onChange={(e) => {
+                                            field.onChange(e);
+                                            // Live preview update for institution
+                                            const currentFormData = form.getValues();
+                                            const updatedEducation: Education = {
+                                                _id: editingEducation?._id || 'temp-id',
+                                                institution: e.target.value,
+                                                degree: currentFormData.degree || '',
+                                                startDate: currentFormData.startDate,
+                                                endDate: currentFormData.endDate,
+                                                Grade: currentFormData.Grade || ''
+                                            };
+                                            
+                                            let updatedList;
+                                            if (editingEducation) {
+                                                updatedList = educationList.map(edu => 
+                                                    edu._id === editingEducation._id ? updatedEducation : edu
+                                                );
+                                            } else {
+                                                updatedList = [...educationList, updatedEducation];
+                                            }
+                                            handleEducationListChange(updatedList);
+                                        }}
+                                    />
+                                </FormControl>
+                                <FormMessage />
+                            </FormItem>
                         )} />
                         <FormField control={form.control} name="degree" render={({ field }) => (
-                            <FormItem><FormLabel>Degree</FormLabel><FormControl><Input placeholder="e.g., Bachelor of Science" {...field} /></FormControl><FormMessage /></FormItem>
+                            <FormItem>
+                                <FormLabel>Degree</FormLabel>
+                                <FormControl>
+                                    <Input 
+                                        placeholder="e.g., Bachelor of Science" 
+                                        {...field}
+                                        onChange={(e) => {
+                                            field.onChange(e);
+                                            // Live preview update for degree
+                                            const currentFormData = form.getValues();
+                                            const updatedEducation: Education = {
+                                                _id: editingEducation?._id || 'temp-id',
+                                                institution: currentFormData.institution || '',
+                                                degree: e.target.value,
+                                                startDate: currentFormData.startDate,
+                                                endDate: currentFormData.endDate,
+                                                Grade: currentFormData.Grade || ''
+                                            };
+                                            
+                                            let updatedList;
+                                            if (editingEducation) {
+                                                updatedList = educationList.map(edu => 
+                                                    edu._id === editingEducation._id ? updatedEducation : edu
+                                                );
+                                            } else {
+                                                updatedList = [...educationList, updatedEducation];
+                                            }
+                                            handleEducationListChange(updatedList);
+                                        }}
+                                    />
+                                </FormControl>
+                                <FormMessage />
+                            </FormItem>
                         )} />
                         <div className="grid grid-cols-2 gap-4">
                             <FormField control={form.control} name="startDate" render={({ field }) => (

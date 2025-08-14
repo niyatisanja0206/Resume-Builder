@@ -1,4 +1,5 @@
 // App.tsx
+import { ToastProvider } from './components/ToastComponents';
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
@@ -18,33 +19,35 @@ export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <UserProvider>
-        <Router>
-          <Header/>
-          <Routes>
-            <Route path="/" element={<Landing />} />
-            <Route
-              path="/portfolio"
-              element={<Portfolio />}
-            />
-            <Route
-              path="/signup"
-              element={<Signup />}
-            />
-            <Route
-              path="/dashboard"
-              element={<Dashboard />}
-            />
-            <Route
-              path="/login"
-              element={<Login />}
-            />
-            <Route
-              path="/forget-password"
-              element={<ForgetPass />}
-            />
-          </Routes>
-          <Footer/>
-        </Router>
+        <ToastProvider>
+          <Router>
+            <Header/>
+            <Routes>
+              <Route path="/" element={<Landing />} />
+              <Route
+                path="/portfolio"
+                element={<Portfolio />}
+              />
+              <Route
+                path="/signup"
+                element={<Signup />}
+              />
+              <Route
+                path="/dashboard"
+                element={<Dashboard />}
+              />
+              <Route
+                path="/login"
+                element={<Login />}
+              />
+              <Route
+                path="/forget-password"
+                element={<ForgetPass />}
+              />
+            </Routes>
+            <Footer/>
+          </Router>
+        </ToastProvider>
       </UserProvider>
     </QueryClientProvider>
   );

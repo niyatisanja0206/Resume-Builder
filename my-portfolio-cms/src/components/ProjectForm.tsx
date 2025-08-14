@@ -17,6 +17,7 @@ import { useUserContext } from "@/contexts/useUserContext";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { type Project } from "@/types/portfolio";
+import { useToast } from '../contexts/ToastContext';
 
 // --- NEW PROPS INTERFACE ---
 interface ProjectFormProps {
@@ -27,6 +28,7 @@ interface ProjectFormProps {
 export default function ProjectForm({ initialData, onDataChange }: ProjectFormProps) {
     const { currentUser } = useUserContext();
     const userEmail = currentUser?.email || '';
+    const { showToast } = useToast();
 
     // Hook is kept for its backend mutation functions
     const { addProject, updateProject, removeProject, addProjectLoading, updateProjectLoading } = useProject(userEmail);
@@ -34,13 +36,18 @@ export default function ProjectForm({ initialData, onDataChange }: ProjectFormPr
     // --- LOCAL STATE MANAGEMENT ---
     const [projectList, setProjectList] = useState<Project[]>([]);
     const [editingProject, setEditingProject] = useState<Project | null>(null);
-    const [successMessage, setSuccessMessage] = useState<string>("");
     const [techInput, setTechInput] = useState("");
 
     // --- DATA SYNCHRONIZATION ---
     useEffect(() => {
         setProjectList(initialData || []);
     }, [initialData]);
+
+    // --- LIVE UPDATE HANDLER ---
+    const handleProjectListChange = (newProjectList: Project[]) => {
+        setProjectList(newProjectList);
+        onDataChange(newProjectList);
+    };
 
     const form = useForm<ProjectFormSchema>({
         resolver: zodResolver(projectSchema),
@@ -63,23 +70,20 @@ export default function ProjectForm({ initialData, onDataChange }: ProjectFormPr
                 const updatedList = projectList.map(proj => 
                     proj._id === updatedProjectItem._id ? updatedProjectItem : proj
                 );
-                setProjectList(updatedList);
-                onDataChange(updatedList); // Notify parent
+                handleProjectListChange(updatedList);
                 
-                setSuccessMessage("Project updated successfully!");
+                showToast("Project updated successfully!", "success");
                 setEditingProject(null);
             } else {
                 // Add new project
                 const newProjectItem = await addProject(data as Project);
                 const updatedList = [...projectList, newProjectItem];
-                setProjectList(updatedList);
-                onDataChange(updatedList); // Notify parent
+                handleProjectListChange(updatedList);
                 
-                setSuccessMessage("Project added successfully!");
+                showToast("Project added successfully!", "success");
             }
             form.reset();
             setTechInput("");
-            setTimeout(() => setSuccessMessage(""), 3000);
         } catch (error) {
             console.error('Error submitting project:', error);
         }
@@ -90,10 +94,8 @@ export default function ProjectForm({ initialData, onDataChange }: ProjectFormPr
             try {
                 await removeProject(projectId);
                 const updatedList = projectList.filter(proj => proj._id !== projectId);
-                setProjectList(updatedList);
-                onDataChange(updatedList); // Notify parent
-                setSuccessMessage("Project deleted successfully!");
-                setTimeout(() => setSuccessMessage(""), 3000);
+                handleProjectListChange(updatedList);
+                showToast("Project deleted successfully!", "success");
             } catch (error) {
                 console.error('Error deleting project:', error);
             }
@@ -136,21 +138,77 @@ export default function ProjectForm({ initialData, onDataChange }: ProjectFormPr
                 <p className="text-sm text-muted-foreground">Showcase your work and technical achievements.</p>
             </div>
             <div className="p-6 space-y-6">
-                {successMessage && (
-                    <div className="p-3 bg-green-50 text-green-700 border border-green-200 rounded-md text-sm">
-                        {successMessage}
-                    </div>
-                )}
-                
                 {/* Add/Edit Form */}
                 <Form {...form}>
                     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
                         <h3 className="text-lg font-medium">{editingProject ? 'Edit Project' : 'Add New Project'}</h3>
                         <FormField control={form.control} name="title" render={({ field }) => (
-                            <FormItem><FormLabel>Project Title</FormLabel><FormControl><Input placeholder="Project Name" {...field} /></FormControl><FormMessage /></FormItem>
+                            <FormItem>
+                                <FormLabel>Project Title</FormLabel>
+                                <FormControl>
+                                    <Input 
+                                        placeholder="Project Name" 
+                                        {...field}
+                                        onChange={(e) => {
+                                            field.onChange(e);
+                                            // Live preview update for project title
+                                            const currentFormData = form.getValues();
+                                            const updatedProject: Project = {
+                                                _id: editingProject?._id || 'temp-id',
+                                                title: e.target.value,
+                                                description: currentFormData.description || '',
+                                                techStack: currentFormData.techStack || [],
+                                                link: currentFormData.link || ''
+                                            };
+                                            
+                                            let updatedList;
+                                            if (editingProject) {
+                                                updatedList = projectList.map(proj => 
+                                                    proj._id === editingProject._id ? updatedProject : proj
+                                                );
+                                            } else {
+                                                updatedList = [...projectList, updatedProject];
+                                            }
+                                            handleProjectListChange(updatedList);
+                                        }}
+                                    />
+                                </FormControl>
+                                <FormMessage />
+                            </FormItem>
                         )} />
                         <FormField control={form.control} name="description" render={({ field }) => (
-                            <FormItem><FormLabel>Description</FormLabel><FormControl><Textarea placeholder="Describe your project..." {...field} /></FormControl><FormMessage /></FormItem>
+                            <FormItem>
+                                <FormLabel>Description</FormLabel>
+                                <FormControl>
+                                    <Textarea 
+                                        placeholder="Describe your project..." 
+                                        {...field}
+                                        onChange={(e) => {
+                                            field.onChange(e);
+                                            // Live preview update for project description
+                                            const currentFormData = form.getValues();
+                                            const updatedProject: Project = {
+                                                _id: editingProject?._id || 'temp-id',
+                                                title: currentFormData.title || '',
+                                                description: e.target.value,
+                                                techStack: currentFormData.techStack || [],
+                                                link: currentFormData.link || ''
+                                            };
+                                            
+                                            let updatedList;
+                                            if (editingProject) {
+                                                updatedList = projectList.map(proj => 
+                                                    proj._id === editingProject._id ? updatedProject : proj
+                                                );
+                                            } else {
+                                                updatedList = [...projectList, updatedProject];
+                                            }
+                                            handleProjectListChange(updatedList);
+                                        }}
+                                    />
+                                </FormControl>
+                                <FormMessage />
+                            </FormItem>
                         )} />
                         <FormField control={form.control} name="link" render={({ field }) => (
                             <FormItem><FormLabel>Link (Live or Repo)</FormLabel><FormControl><Input placeholder="https://github.com/user/repo" {...field} /></FormControl><FormMessage /></FormItem>

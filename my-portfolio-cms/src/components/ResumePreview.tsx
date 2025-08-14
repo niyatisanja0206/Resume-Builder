@@ -227,14 +227,14 @@ interface ResumePreviewProps {
   experiences: Experience[];
   skills: Skill[];
   education: Education[];
-  templateType: 'classic' | 'modern' | 'creative';
+  template?: 'classic' | 'modern' | 'creative';
 }
 
 
 // --- TEMPLATE COMPONENTS ---
 
 // Classic Template
-const ClassicTemplate: React.FC<Omit<ResumePreviewProps, 'templateType'>> = ({ basicInfo, projects, experiences, skills, education }) => {
+const ClassicTemplate: React.FC<Omit<ResumePreviewProps, 'template'>> = ({ basicInfo, projects, experiences, skills, education }) => {
     const Section: React.FC<{ title: string; children: React.ReactNode; className?: string }> = ({ title, children, className }) => (
       <div className={`mb-6 ${className}`}>
         <h2 className="font-bold uppercase border-b-2 border-gray-300 pb-1 mb-4 text-xl">{title}</h2>
@@ -336,7 +336,7 @@ const ClassicTemplate: React.FC<Omit<ResumePreviewProps, 'templateType'>> = ({ b
 
 
 // --- MODERN TEMPLATE ---
-const ModernTemplate: React.FC<Omit<ResumePreviewProps, 'templateType'>> = ({ basicInfo, projects, experiences, skills, education }) => {
+const ModernTemplate: React.FC<Omit<ResumePreviewProps, 'template'>> = ({ basicInfo, projects, experiences, skills, education }) => {
 
     return (
         <div className="resume-template modern-template bg-white font-opensans text-gray-700">
@@ -423,7 +423,7 @@ const ModernTemplate: React.FC<Omit<ResumePreviewProps, 'templateType'>> = ({ ba
 
 
 // --- CREATIVE TEMPLATE ---
-const CreativeTemplate: React.FC<Omit<ResumePreviewProps, 'templateType'>> = ({ basicInfo, projects, experiences, skills, education }) => (
+const CreativeTemplate: React.FC<Omit<ResumePreviewProps, 'template'>> = ({ basicInfo, projects, experiences, skills, education }) => (
     <div className="resume-template creative-template flex font-opensans h-full">
         {/* Left Section */}
         <aside className="w-1/3 bg-[#1A4331] text-white flex flex-col">
@@ -516,7 +516,14 @@ const CreativeTemplate: React.FC<Omit<ResumePreviewProps, 'templateType'>> = ({ 
 
 
 // --- MAIN COMPONENT ---
-const ResumePreview = (props: ResumePreviewProps) => {
+const ResumePreview = ({ 
+  basicInfo, 
+  projects, 
+  experiences, 
+  skills, 
+  education, 
+  template = 'classic' 
+}: ResumePreviewProps) => {
   // Inject styles and scroll to top when component mounts
   useEffect(() => {
     const styleSheetId = 'resume-preview-styles';
@@ -536,20 +543,20 @@ const ResumePreview = (props: ResumePreviewProps) => {
     if (container) {
       container.scrollTop = 0;
     }
-  }, [props.templateType]); // Rerun if template changes to scroll to top
+  }, [template]); // Rerun if template changes to scroll to top
 
   return (
     <div className="a4-container">
         <div className="resume-template-wrapper">
             {(() => {
-                switch (props.templateType) {
+                switch (template) {
                 case 'modern':
-                    return <ModernTemplate {...props} />;
+                    return <ModernTemplate basicInfo={basicInfo} projects={projects} experiences={experiences} skills={skills} education={education} />;
                 case 'creative':
-                    return <CreativeTemplate {...props} />;
+                    return <CreativeTemplate basicInfo={basicInfo} projects={projects} experiences={experiences} skills={skills} education={education} />;
                 case 'classic':
                 default:
-                    return <ClassicTemplate {...props} />;
+                    return <ClassicTemplate basicInfo={basicInfo} projects={projects} experiences={experiences} skills={skills} education={education} />;
                 }
             })()}
         </div>
