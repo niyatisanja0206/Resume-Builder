@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 
 // Import form components
@@ -43,6 +43,34 @@ const fetchAllResumeData = async (userEmail: string) => {
   };
 };
 
+// Helper function to fetch specific resume data by ID
+const fetchSpecificResumeData = async (resumeId: string) => {
+  if (!resumeId) throw new Error('No resume ID provided');
+  
+  const token = localStorage.getItem('token');
+  const response = await fetch(`/api/users/resumes/${resumeId}`, {
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    }
+  });
+
+  if (!response.ok) {
+    throw new Error('Failed to fetch resume');
+  }
+
+  const resume = await response.json();
+  
+  // Transform the resume data to match the expected format
+  return {
+    basicInfo: resume.basic || null,
+    projects: resume.projects || [],
+    experiences: resume.experience || [],
+    skills: resume.skills || [],
+    education: resume.education || []
+  };
+};
+
 
 // Comprehensive type for all resume data
 type FullResumeData = {
@@ -58,16 +86,28 @@ const validTemplates: TemplateId[] = ['classic', 'modern', 'creative'];
 
 export default function Dashboard() {
   const { currentUser } = useUserContext();
-  const [searchParams, setSearchParams] = useSearchParams();
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
   
   const userEmail = currentUser?.email || '';
   const initialTemplate = searchParams.get('template');
   
-  // Template selection state
-  const templateFromUrl = initialTemplate && validTemplates.includes(initialTemplate as TemplateId) 
+  // Check if we're loading a specific resume
+  const [selectedResumeId, setSelectedResumeId] = useState<string | null>(null);
+  
+  // Check localStorage for a selected resume ID (from profile page)
+  useEffect(() => {
+    const resumeId = localStorage.getItem('selectedResumeId');
+    if (resumeId) {
+      setSelectedResumeId(resumeId);
+      localStorage.removeItem('selectedResumeId'); // Clean up
+    }
+  }, []);
+  
+  // Get template from URL (read-only on dashboard)
+  const selectedTemplate = initialTemplate && validTemplates.includes(initialTemplate as TemplateId) 
     ? initialTemplate as TemplateId 
     : 'classic';
-  const [selectedTemplate, setSelectedTemplate] = useState<TemplateId>(templateFromUrl);
   
   // Local form state - this is what drives the live preview
   const [localFormData, setLocalFormData] = useState<FullResumeData>({
@@ -95,9 +135,13 @@ export default function Dashboard() {
     error,
     refetch 
   } = useQuery({
-    queryKey: ['resumeData', userEmail],
-    queryFn: () => fetchAllResumeData(userEmail),
-    enabled: !!userEmail,
+    queryKey: selectedResumeId 
+      ? ['specificResumeData', selectedResumeId] 
+      : ['resumeData', userEmail],
+    queryFn: selectedResumeId 
+      ? () => fetchSpecificResumeData(selectedResumeId)
+      : () => fetchAllResumeData(userEmail),
+    enabled: !!(selectedResumeId || userEmail),
     staleTime: 5 * 60 * 1000, // 5 minutes
     refetchOnWindowFocus: false,
   });
@@ -129,12 +173,6 @@ export default function Dashboard() {
       });
     }
   }, [serverData, isLoading, userEmail]);
-
-  // Handle template changes and update URL
-  const handleTemplateChange = (template: TemplateId) => {
-    setSelectedTemplate(template);
-    setSearchParams({ template });
-  };
 
   // Toggle section visibility
   const toggleSection = (section: keyof typeof openSections) => {
@@ -250,24 +288,43 @@ export default function Dashboard() {
           {/* LEFT SECTION - Forms */}
           <aside className="w-full md:w-1/2 lg:w-2/5 h-screen overflow-y-auto bg-white dark:bg-black p-6 lg:p-8 space-y-8">
             <header className="mb-6">
-              <h1 className="text-3xl font-bold text-foreground">Live Resume Editor</h1>
-              <p className="text-muted-foreground">Your changes will appear live in the preview.</p>
+              <h1 className="text-3xl font-bold text-foreground">
+                {selectedResumeId ? 'Edit Resume' : 'Live Resume Editor'}
+              </h1>
+              <p className="text-muted-foreground">
+                {selectedResumeId 
+                  ? 'Editing a specific resume from your profile.' 
+                  : 'Your changes will appear live in the preview.'
+                }
+              </p>
               
-              {/* Template Selector */}
-              <div className="mt-4 mb-4">
-                <label className="block text-sm font-medium text-foreground mb-2">
-                  Choose Template:
-                </label>
-                <select 
-                  value={selectedTemplate} 
-                  onChange={(e) => handleTemplateChange(e.target.value as TemplateId)}
-                  className="px-3 py-2 border border-gray-300 rounded-md bg-white dark:bg-gray-800 dark:border-gray-600 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+              {/* Template Information and Change Link */}
+              <div className="mt-3 flex items-center justify-between">
+                <div className="text-sm text-gray-600 dark:text-gray-400">
+                  Current template: <span className="font-medium text-gray-900 dark:text-white capitalize">{selectedTemplate}</span>
+                </div>
+                <button 
+                  onClick={() => navigate('/portfolio')}
+                  className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-500 dark:hover:text-blue-300 font-medium hover:underline"
                 >
-                  <option value="classic">Classic</option>
-                  <option value="modern">Modern</option>
-                  <option value="creative">Creative</option>
-                </select>
+                  Change Template
+                </button>
               </div>
+              
+              {selectedResumeId && (
+                <div className="mt-2 flex items-center gap-2">
+                  <button 
+                    onClick={() => {
+                      setSelectedResumeId(null);
+                      refetch();
+                    }}
+                    className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-500 dark:hover:text-blue-300 font-medium"
+                  >
+                    ← Back to Live Editor
+                  </button>
+                </div>
+              )}
+              
             </header>
             
             {/* Form Sections */}

@@ -8,6 +8,7 @@ import Footer from '@/components/Footer';
 import Dashboard from '@/pages/Dashboard';
 import Portfolio from '@/pages/Portfolio';
 import Landing from '@/pages/Landing';
+import ProfilePage from '@/pages/ProfilePage';
 import { UserProvider } from '@/contexts/UserContext';
 import Login from './components/Login';
 import Signup from './components/Signup';
@@ -35,6 +36,10 @@ export default function App() {
               <Route
                 path="/dashboard"
                 element={<Dashboard />}
+              />
+              <Route
+                path="/profile"
+                element={<ProfilePage />}
               />
               <Route
                 path="/login"

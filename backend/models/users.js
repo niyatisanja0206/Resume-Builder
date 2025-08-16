@@ -10,6 +10,22 @@ const userSchema = new mongoose.Schema({
         type: String,
         required: true
     },
+    name: {
+        type: String,
+        default: ''
+    },
+    contact_no: {
+        type: String,
+        default: ''
+    },
+    location: {
+        type: String,
+        default: ''
+    },
+    about: {
+        type: String,
+        default: ''
+    },
     no_of_resumes: {
         type: Number,
         required: true,
@@ -20,6 +36,8 @@ const userSchema = new mongoose.Schema({
         default: 0,
         required: true
     }
+}, {
+    timestamps: true
 });
 
 module.exports = mongoose.model('User', userSchema);

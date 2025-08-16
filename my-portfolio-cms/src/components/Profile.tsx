@@ -110,6 +110,16 @@ export default function Profile({ userEmail, onLogout, onDeleteAccount }: Profil
             {userEmail}
           </div>
           <button
+            onClick={() => {
+              setShowMenu(false);
+              navigate('/profile');
+            }}
+            className="w-full px-4 py-2 text-left text-sm hover:bg-accent hover:text-accent-foreground flex items-center"
+          >
+            <User className="mr-2 h-4 w-4" />
+            My Profile
+          </button>
+          <button
             onClick={handleLogout}
             className="w-full px-4 py-2 text-left text-sm hover:bg-accent hover:text-accent-foreground flex items-center"
           >
