@@ -33,12 +33,21 @@ const incrementResumeCount = async () => {
 // Increment download count
 const incrementDownloadCount = async () => {
     const token = localStorage.getItem('token');
-    const { data } = await axios.post(`${API_BASE_URL}/increment-download-count`, {}, {
-        headers: {
-            Authorization: `Bearer ${token}`
-        }
-    });
-    return data;
+    if (!token) {
+        throw new Error('No authentication token found');
+    }
+    
+    try {
+        const { data } = await axios.post(`${API_BASE_URL}/increment-download-count`, {}, {
+            headers: {
+                Authorization: `Bearer ${token}`
+            }
+        });
+        return data;
+    } catch (error) {
+        console.error('Failed to increment download count:', error);
+        throw error;
+    }
 };
 
 export function useUserStats() {
@@ -53,6 +62,7 @@ export function useUserStats() {
         queryFn: fetchUserStats,
         enabled: isAuthenticated,
         staleTime: 30 * 1000, // Cache for 30 seconds
+        retry: 1, // Only retry once to avoid infinite loops
     });
 
     // Increment resume count mutation
@@ -61,6 +71,9 @@ export function useUserStats() {
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["userStats"] });
         },
+        onError: (error) => {
+            console.error('Resume count increment failed:', error);
+        }
     });
 
     // Increment download count mutation
@@ -69,15 +82,24 @@ export function useUserStats() {
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["userStats"] });
         },
+        onError: (error) => {
+            console.error('Download count increment failed:', error);
+        }
     });
+
+    // Fallback functions for when user is not authenticated
+    const fallbackIncrement = async () => {
+        console.warn('User not authenticated, skipping stats increment');
+        return Promise.resolve({});
+    };
 
     return {
         stats: stats || { no_of_resumes: 0, resume_downloaded: 0 },
         isLoading,
         error,
         refetch,
-        incrementResumeCount: () => incrementResumeMutation.mutateAsync(),
-        incrementDownloadCount: () => incrementDownloadMutation.mutateAsync(),
+        incrementResumeCount: isAuthenticated ? () => incrementResumeMutation.mutateAsync() : fallbackIncrement,
+        incrementDownloadCount: isAuthenticated ? () => incrementDownloadMutation.mutateAsync() : fallbackIncrement,
         isIncrementingResume: incrementResumeMutation.isPending,
         isIncrementingDownload: incrementDownloadMutation.isPending,
     };

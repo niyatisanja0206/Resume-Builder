@@ -12,7 +12,7 @@ import EnhancedEducationForm from "./EnhancedEducationForm";
 
 // Import preview components
 import ResumePreview from './ResumePreview';
-import ResumePDF from './ResumePDF';
+import ResumePDF from './ResumePDFSimple';
 import ErrorBoundary from './ErrorBoundary';
 
 // Import utilities and context

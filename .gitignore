@@ -1,7 +1,60 @@
-# Ignore node_modules for both projects
+# Dependencies
 backend/node_modules/
 my-portfolio-cms/node_modules/
+node_modules/
 
-# Ignore environment files
+# Environment files
 backend/.env
+.env
+.env.local
+.env.development
+.env.production
+
+# Build artifacts
+my-portfolio-cms/dist/
+backend/dist/
+build/
+dist/
+
+# Cache files
+.cache/
+.vscode/
+.vs/
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Log files
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Temporary files
+*.tmp
+*.temp
+*~
+.#*
+#*#
+*.bak
+*.backup
+
+# Test coverage
+coverage/
+
+# Package lock files (keep only one)
+package-lock.json
 
