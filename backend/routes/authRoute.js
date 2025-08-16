@@ -27,7 +27,7 @@ router.post('/increment-resume-count', auth, authController.incrementResumeCount
 // Increment resume downloaded counter
 router.post('/increment-download-count', auth, authController.incrementDownloadCount);
 
-// Get user stats
+// ** FIX: Add the missing route for getting user stats **
 router.get('/user-stats', auth, authController.getUserStats);
 
 module.exports = router;

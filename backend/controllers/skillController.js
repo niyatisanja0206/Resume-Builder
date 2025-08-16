@@ -1,4 +1,5 @@
 const Resume = require('../models/resumes');
+const { incrementResumeCountByEmail } = require('../utils/userUtils');
 
 exports.getSkills = async (req, res) => {
     try {
@@ -38,6 +39,9 @@ exports.addSkill = async (req, res) => {
                 skills: [skill],
                 isDownloaded: false
             });
+            
+            // Increment resume count for the user since this is a new resume
+            await incrementResumeCountByEmail(email);
         } else {
             // Add the new skill entry to the array
             if (!resume.skills) {

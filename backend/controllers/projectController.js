@@ -1,4 +1,5 @@
 const Resume = require('../models/resumes');
+const { incrementResumeCountByEmail } = require('../utils/userUtils');
 
 exports.getProject = async (req, res) => {
     try {
@@ -34,6 +35,9 @@ exports.addProject = async (req, res) => {
             projects: [project],
             isDownloaded: false
         });
+        
+        // Increment resume count for the user since this is a new resume
+        await incrementResumeCountByEmail(email);
     } else {
         // Add the new project entry to the array
         if (!resume.projects) {

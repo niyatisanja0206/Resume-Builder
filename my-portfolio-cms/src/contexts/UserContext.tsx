@@ -1,46 +1,97 @@
-import React, { useState, useEffect } from 'react';
-import { type Basic } from '@/types/portfolio';
+import { useState, useEffect, useMemo, useCallback } from 'react';
+import type { ReactNode } from 'react';
+import { jwtDecode } from 'jwt-decode';
 import { UserContext } from './UserContextObject';
+import { type Basic } from '@/types/portfolio';
 
-export function UserProvider({ children }: { children: React.ReactNode }) {
-    const [currentUser, setCurrentUser] = useState<Basic | null>(null);
+// Define the shape of the decoded token (matches JWT payload)
+interface DecodedToken {
+  user: {
+    id: string;
+    email: string;
+  };
+  exp: number;
+}
 
-    // Load user from auth context and localStorage on mount
-    useEffect(() => {
-        const authData = localStorage.getItem('user');
-        if (authData) {
-            try {
-                const parsedAuthUser = JSON.parse(authData);
-                // Create a Basic user object from auth data
-                const basicUser: Basic = {
-                    email: parsedAuthUser.email,
-                    name: '',
-                    contact_no: '',
-                    about: '',
-                    location: ''
-                };
-                setCurrentUser(basicUser);
-                console.log('UserContext - Synced with auth data:', parsedAuthUser.email);
-            } catch (error) {
-                console.error('UserContext - Error parsing auth data:', error);
-            }
-        }
-    }, []);
+// Define the props for the provider component
+interface UserProviderProps {
+  children: ReactNode;
+}
 
-    // Save user email to localStorage when user changes
-    useEffect(() => {
-        if (currentUser?.email) {
-            localStorage.setItem('currentUserEmail', currentUser.email);
-            console.log('UserContext - Saved email to localStorage:', currentUser.email);
+// Create the provider component
+export function UserProvider({ children }: UserProviderProps) {
+  const [currentUser, setCurrentUser] = useState<Basic | null>(null);
+
+  // On initial load, check for an existing token in localStorage
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      try {
+        const decodedToken = jwtDecode<DecodedToken>(token);
+        const currentTime = Date.now() / 1000;
+        
+        // Check if the token is expired
+        if (decodedToken.exp < currentTime) {
+          localStorage.removeItem('token');
+          setCurrentUser(null);
         } else {
-            localStorage.removeItem('currentUserEmail');
-            console.log('UserContext - Removed email from localStorage');
+          // Convert JWT user to Basic type
+          const basicUser: Basic = {
+            id: decodedToken.user.id,
+            email: decodedToken.user.email,
+            name: '',
+            contact_no: '',
+            location: '',
+            about: ''
+          };
+          setCurrentUser(basicUser);
         }
-    }, [currentUser]);
+      } catch (error) {
+        console.error("Failed to decode token on initial load:", error);
+        localStorage.removeItem('token'); // Clear invalid token
+        setCurrentUser(null);
+      }
+    }
+  }, []);
 
-    return (
-        <UserContext.Provider value={{ currentUser, setCurrentUser }}>
-            {children}
-        </UserContext.Provider>
-    );
+  // Centralized login function
+  const login = useCallback((token: string) => {
+    try {
+      localStorage.setItem('token', token);
+      const decodedToken = jwtDecode<DecodedToken>(token);
+      // Convert JWT user to Basic type
+      const basicUser: Basic = {
+        id: decodedToken.user.id,
+        email: decodedToken.user.email,
+        name: '',
+        contact_no: '',
+        location: '',
+        about: ''
+      };
+      setCurrentUser(basicUser);
+    } catch (error) {
+      console.error("Failed to process token on login:", error);
+      setCurrentUser(null);
+    }
+  }, []);
+
+  // Centralized logout function
+  const logout = useCallback(() => {
+    localStorage.removeItem('token');
+    setCurrentUser(null);
+  }, []);
+
+  // Memoize the context value to prevent unnecessary re-renders
+  const value = useMemo(() => ({
+    currentUser,
+    setCurrentUser,
+    login,
+    logout,
+  }), [currentUser, login, logout]);
+
+  return (
+    <UserContext.Provider value={value}>
+      {children}
+    </UserContext.Provider>
+  );
 }

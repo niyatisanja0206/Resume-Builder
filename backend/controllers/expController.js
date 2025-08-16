@@ -1,4 +1,5 @@
 const Resume = require('../models/resumes');
+const { incrementResumeCountByEmail } = require('../utils/userUtils');
 
 exports.getExperience = async (req, res) => {
     try {
@@ -20,31 +21,39 @@ exports.getExperience = async (req, res) => {
 
 exports.addExperience = async (req, res) => {
     try {
-        const { email, experience } = req.body;
+        console.log('Skill Controller - Add Skill Request:', req.body);
+        const { email, skill } = req.body;
 
-        if (!email || !experience) {
-            return res.status(400).json({ message: 'Email and experience data are required' });
+        if (!email || !skill) {
+            console.log('Missing email or skill data:', { email, skill });
+            return res.status(400).json({ message: 'Email and skill data are required.' });
         }
 
+        console.log('Looking for resume with userEmail:', email);
         let resume = await Resume.findOne({ userEmail: email, isDownloaded: false });
+        
         if (!resume) {
             // Create new resume if it doesn't exist
             resume = new Resume({
                 userEmail: email,
-                experience: [experience],
+                experience: [skill],
                 isDownloaded: false
             });
+            
+            // Increment resume count for the user since this is a new resume
+            await incrementResumeCountByEmail(email);
         } else {
-            // Add the new experience entry to the array
+            // Add the new skill entry to the array
             if (!resume.experience) {
                 resume.experience = [];
             }
-            resume.experience.push(experience);
+            resume.experience.push(skill);
         }
         
         await resume.save();
 
-        res.status(201).json({ message: 'Experience added successfully', data: resume.experience });
+        console.log('Skill added successfully, returning experience:', resume.experience);
+        res.status(201).json({ message: 'Skill added successfully', data: resume.experience });
     } catch (error) {
         res.status(500).json({ message: 'Server error', error: error.message });
     }
@@ -55,24 +64,26 @@ exports.deleteExperience = async (req, res) => {
         const { email, id } = req.query;
 
         if (!email || !id) {
-            return res.status(400).json({ message: 'Email and experience ID are required' });
+            return res.status(400).json({ message: 'Email and skill ID are required.' });
         }
 
-        const resume = await Resume.findOne({ userEmail: email, isDownloaded: false });
-        if (!resume) {
+        const updatedResume = await Resume.findOneAndUpdate(
+            { userEmail: email, isDownloaded: false },
+            { $pull: { experience: { _id: id } } },
+            { new: true }
+        );
+
+        if (!updatedResume) {
             return res.status(404).json({ message: 'Resume not found' });
         }
 
-        resume.experience.pull({ _id: id });
-        await resume.save();
-
-        res.status(200).json({ message: 'Experience entry deleted successfully' });
+        res.status(200).json({ message: 'Skill deleted successfully' });
     } catch (error) {
         res.status(500).json({ message: 'Server error', error: error.message });
     }
 };
 
-exports.deleteAllExperiences = async (req, res) => {
+exports.deleteAllexperience = async (req, res) => {
     try {
         const { email } = req.query;
 
@@ -80,15 +91,17 @@ exports.deleteAllExperiences = async (req, res) => {
             return res.status(400).json({ message: 'Email is required as a query parameter.' });
         }
 
-        const updated = await Resume.findOneAndUpdate(
+        const updatedResume = await Resume.findOneAndUpdate(
             { userEmail: email, isDownloaded: false },
             { $set: { experience: [] } },
             { new: true }
         );
 
-        if (!updated) return res.status(404).json({ message: 'Resume not found' });
+        if (!updatedResume) {
+            return res.status(404).json({ message: 'Resume not found' });
+        }
 
-        res.status(200).json({ message: 'All experience entries deleted successfully' });
+        res.status(200).json({ message: 'All experience deleted successfully' });
     } catch (error) {
         res.status(500).json({ message: 'Server error', error: error.message });
     }
@@ -96,21 +109,23 @@ exports.deleteAllExperiences = async (req, res) => {
 
 exports.updateExperience = async (req, res) => {
     try {
-        const { email, id, experience } = req.body;
+        const { email, id, skill } = req.body;
 
-        if (!email || !id || !experience) {
-            return res.status(400).json({ message: 'Email, Experience ID, and Experience data are required' });
+        if (!email || !id || !skill) {
+            return res.status(400).json({ message: 'Email, skill ID, and skill data are required.' });
         }
 
-        const updated = await Resume.findOneAndUpdate(
+        const updatedResume = await Resume.findOneAndUpdate(
             { userEmail: email, isDownloaded: false, "experience._id": id },
-            { $set: { "experience.$": experience } },
+            { $set: { "experience.$": skill } },
             { new: true, runValidators: true }
         );
 
-        if (!updated) return res.status(404).json({ message: 'Resume or Experience not found' });
+        if (!updatedResume) {
+            return res.status(404).json({ message: 'Resume or skill not found' });
+        }
 
-        res.status(200).json({ message: 'Experience updated successfully', data: updated.experience });
+        res.status(200).json({ message: 'Skill updated successfully', data: updatedResume.experience });
     } catch (error) {
         res.status(500).json({ message: 'Server error', error: error.message });
     }

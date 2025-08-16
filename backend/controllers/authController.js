@@ -1,174 +1,178 @@
-const User = require('../models/users'); 
-const Resume = require('../models/resumes');
+const User = require('../models/users');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const { incrementResumeCountByEmail } = require('../utils/userUtils');
 
-// Sign Up
+// Sign Up a new user
 exports.signup = async (req, res) => {
-    try {
-        const { email, password } = req.body;
-        const existingUser = await User.findOne({ email });
-        if (existingUser) return res.status(400).json({ message: 'User already exists' });
+    const { email, password } = req.body;
 
-        const hashedPassword = await bcrypt.hash(password, 12);
-        const user = new User({ 
-            email, 
-            password: hashedPassword, 
-            no_of_resumes: 0,
-            resume_downloaded: 0 
+    try {
+        let user = await User.findOne({ email });
+        if (user) {
+            return res.status(400).json({ message: 'User already exists' });
+        }
+
+        user = new User({
+            email,
+            password,
         });
+
         await user.save();
 
-        res.status(201).json({ message: 'User created successfully' });
-    } catch (err) {
-        res.status(500).json({ message: 'Server error' });
+        // ** FIX: Add email to the JWT payload **
+        const payload = {
+            user: {
+                id: user.id,
+                email: user.email // Include the email here
+            },
+        };
+
+        jwt.sign(
+            payload,
+            process.env.JWT_SECRET,
+            { expiresIn: '5h' },
+            (err, token) => {
+                if (err) throw err;
+                res.status(201).json({ 
+                    token,
+                    user: {
+                        id: user.id,
+                        email: user.email,
+                        no_of_resumes: user.no_of_resumes || 0,
+                        resume_downloaded: user.resume_downloaded || 0
+                    }
+                });
+            }
+        );
+    } catch (error) {
+        res.status(500).json({ message: 'Server error', error: error.message });
     }
 };
 
-// Log In
+// Log In an existing user
 exports.login = async (req, res) => {
+    const { email, password } = req.body;
+
     try {
-        const { email, password } = req.body;
         const user = await User.findOne({ email });
-        if (!user) return res.status(400).json({ message: 'Invalid credentials' });
+        if (!user) {
+            return res.status(400).json({ message: 'Invalid credentials' });
+        }
 
         const isMatch = await bcrypt.compare(password, user.password);
-        if (!isMatch) return res.status(400).json({ message: 'Invalid credentials' });
-
-        const token = jwt.sign({ userId: user._id }, 'your_jwt_secret', { expiresIn: '7d' });
-        res.json({ 
-            token, 
-            user: { 
-                id: user._id, 
-                email: user.email, 
-                no_of_resumes: user.no_of_resumes,
-                resume_downloaded: user.resume_downloaded 
-            } 
-        });
-    } catch (err) {
-        res.status(500).json({ message: 'Server error' });
-    }
-};
-
-// Log Out (client should just delete token, but for demonstration)
-exports.logout = async (req, res) => {
-    try {
-        // If user is authenticated, clean up temporary resume data
-        if (req.user && req.user.userId) {
-            const user = await User.findById(req.user.userId);
-            if (user) {
-                const Resume = require('../models/resumes');
-                await Resume.deleteMany({ userEmail: user.email, isDownloaded: false });
-            }
+        if (!isMatch) {
+            return res.status(400).json({ message: 'Invalid credentials' });
         }
-        res.json({ message: 'Logged out successfully' });
-    } catch (err) {
-        console.error('Logout error:', err);
-        res.json({ message: 'Logged out successfully' }); // Still return success even if cleanup fails
+
+        // ** FIX: Add email to the JWT payload **
+        const payload = {
+            user: {
+                id: user.id,
+                email: user.email // Include the email here
+            },
+        };
+
+        jwt.sign(
+            payload,
+            process.env.JWT_SECRET,
+            { expiresIn: '5h' },
+            (err, token) => {
+                if (err) throw err;
+                res.json({ 
+                    token,
+                    user: {
+                        id: user.id,
+                        email: user.email,
+                        no_of_resumes: user.no_of_resumes || 0,
+                        resume_downloaded: user.resume_downloaded || 0
+                    }
+                });
+            }
+        );
+    } catch (error) {
+        res.status(500).json({ message: 'Server error', error: error.message });
     }
 };
 
-// Delete Account
+// Log Out a user (client-side implementation)
+exports.logout = (req, res) => {
+    // Typically, logout is handled on the client by deleting the token.
+    res.status(200).json({ message: 'Logout successful' });
+};
+
+// Delete a user account
 exports.deleteAccount = async (req, res) => {
     try {
-        const userId = req.user.userId;
-        const user = await User.findById(userId);
-        
+        // The user's ID is available from the auth middleware
+        await User.findByIdAndDelete(req.user.id);
+        res.status(200).json({ message: 'User account deleted successfully' });
+    } catch (error) {
+        res.status(500).json({ message: 'Server error', error: error.message });
+    }
+};
+
+// Check if a user exists
+exports.checkUser = async (req, res) => {
+    try {
+        const user = await User.findOne({ email: req.body.email });
+        if (user) {
+            return res.status(200).json({ exists: true });
+        }
+        res.status(200).json({ exists: false });
+    } catch (error) {
+        res.status(500).json({ message: 'Server error', error: error.message });
+    }
+};
+
+// Reset user password
+exports.resetPassword = async (req, res) => {
+    const { email, newPassword } = req.body;
+    try {
+        const user = await User.findOne({ email });
         if (!user) {
             return res.status(404).json({ message: 'User not found' });
         }
-        
-        // Delete all resumes associated with this user
-        await Resume.deleteMany({ userEmail: user.email });
-        
-        // Delete the user
-        await User.findByIdAndDelete(userId);
-        
-        res.json({ message: 'Account deleted successfully' });
-    } catch (err) {
-        console.error('Delete account error:', err);
-        res.status(500).json({ message: 'Server error' });
-    }
-};
-
-// Check if user exists
-exports.checkUser = async (req, res) => {
-    try {
-        const { email } = req.body;
-        const user = await User.findOne({ email });
-        res.json({ exists: !!user });
-    } catch (err) {
-        res.status(500).json({ message: 'Server error' });
-    }
-};
-
-// Reset Password
-exports.resetPassword = async (req, res) => {
-    try {
-        const { email, newPassword } = req.body;
-        const user = await User.findOne({ email });
-        if (!user) return res.status(404).json({ message: 'User not found' });
-
-        const hashedPassword = await bcrypt.hash(newPassword, 12);
-        user.password = hashedPassword;
+        user.password = newPassword; // The pre-save hook will hash it
         await user.save();
-
-        res.json({ message: 'Password reset successfully' });
-    } catch (err) {
-        res.status(500).json({ message: 'Server error' });
+        res.status(200).json({ message: 'Password reset successfully' });
+    } catch (error) {
+        res.status(500).json({ message: 'Server error', error: error.message });
     }
 };
 
 // Increment resume created counter
 exports.incrementResumeCount = async (req, res) => {
     try {
-        const userId = req.user.userId;
-        const user = await User.findById(userId);
-        if (!user) return res.status(404).json({ message: 'User not found' });
-
-        user.no_of_resumes += 1;
-        await user.save();
-
-        res.json({ 
-            message: 'Resume count updated successfully', 
-            no_of_resumes: user.no_of_resumes 
-        });
-    } catch (err) {
-        res.status(500).json({ message: 'Server error' });
+        await User.findByIdAndUpdate(req.user.id, { $inc: { no_of_resumes: 1 } });
+        res.status(200).send('Resume count incremented');
+    } catch (error) {
+        res.status(500).send('Server error');
     }
 };
 
 // Increment resume downloaded counter
 exports.incrementDownloadCount = async (req, res) => {
     try {
-        const userId = req.user.userId;
-        const user = await User.findById(userId);
-        if (!user) return res.status(404).json({ message: 'User not found' });
-
-        user.resume_downloaded += 1;
-        await user.save();
-
-        res.json({ 
-            message: 'Download count updated successfully', 
-            resume_downloaded: user.resume_downloaded 
-        });
-    } catch (err) {
-        res.status(500).json({ message: 'Server error' });
+        await User.findByIdAndUpdate(req.user.id, { $inc: { resume_downloaded: 1 } });
+        res.status(200).send('Download count incremented');
+    } catch (error) {
+        res.status(500).send('Server error');
     }
 };
 
 // Get user stats
 exports.getUserStats = async (req, res) => {
     try {
-        const userId = req.user.userId;
-        const user = await User.findById(userId);
-        if (!user) return res.status(404).json({ message: 'User not found' });
-
-        res.json({ 
-            no_of_resumes: user.no_of_resumes,
-            resume_downloaded: user.resume_downloaded 
+        const user = await User.findById(req.user.id).select('no_of_resumes resume_downloaded');
+        if (!user) {
+            return res.status(404).send('User not found');
+        }
+        res.json({
+            no_of_resumes: user.no_of_resumes || 0,
+            resume_downloaded: user.resume_downloaded || 0
         });
-    } catch (err) {
-        res.status(500).json({ message: 'Server error' });
+    } catch (error) {
+        res.status(500).send('Server error');
     }
 };

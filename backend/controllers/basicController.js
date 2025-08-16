@@ -2,6 +2,7 @@
 // This controller handles the logic for the basic user information.
 
 const Resume = require('../models/resumes');
+const { incrementResumeCountByEmail } = require('../utils/userUtils');
 
 exports.getBasic = async (req, res) => {
     try {
@@ -55,6 +56,9 @@ exports.createBasic = async (req, res) => {
             console.log('Resume data to create:', JSON.stringify(resumeData, null, 2));
             
             resume = new Resume(resumeData);
+            
+            // Increment resume count for the user since this is a new resume
+            await incrementResumeCountByEmail(email);
         } else {
             console.log('Updating existing resume for email:', email);
             resume.basic = sanitizedData;

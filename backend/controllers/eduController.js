@@ -1,5 +1,6 @@
 // controllers/eduController.js
 const Resume = require('../models/resumes');
+const { incrementResumeCountByEmail } = require('../utils/userUtils');
 
 // @desc    Get education data for a specific user
 // @route   GET /api/edu?email=...
@@ -42,6 +43,9 @@ exports.addEducation = async (req, res) => {
                 education: [education],
                 isDownloaded: false
             });
+            
+            // Increment resume count for the user since this is a new resume
+            await incrementResumeCountByEmail(email);
         } else {
             // Add the new education entry to the array
             if (!resume.education) {
