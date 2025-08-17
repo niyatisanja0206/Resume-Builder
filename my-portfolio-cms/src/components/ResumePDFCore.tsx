@@ -10,6 +10,7 @@ interface ResumePDFCoreProps {
   skills: Skill[];
   education: Education[];
   templateType: 'classic' | 'modern' | 'creative';
+  canDownload?: boolean;
 }
 
 // --- HELPER FUNCTIONS ---
@@ -569,10 +570,37 @@ const SimpleDocument = ({ basicInfo, projects, experiences, skills, education, t
 };
 
 // --- MAIN EXPORTED COMPONENT ---
-export default function ResumePDFCore({ basicInfo, projects, experiences, skills, education, templateType }: ResumePDFCoreProps) {
+export default function ResumePDFCore({ basicInfo, projects, experiences, skills, education, templateType, canDownload = true }: ResumePDFCoreProps) {
   const getFileName = () => {
     const name = basicInfo?.name?.replace(/\s+/g, '_') || 'resume';
     return `${name}_${templateType}_resume.pdf`;
+  };
+  
+  // Function to increment download count
+  const handleDownloadClick = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        console.warn('No authentication token found, skipping download count increment');
+        return;
+      }
+      
+      const response = await fetch('/api/auth/increment-download-count', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to increment download count');
+      }
+      
+      console.log('Download count incremented successfully');
+    } catch (error) {
+      console.error('Error incrementing download count:', error);
+    }
   };
 
   return (
@@ -586,6 +614,7 @@ export default function ResumePDFCore({ basicInfo, projects, experiences, skills
         document={<SimpleDocument basicInfo={basicInfo} projects={projects} experiences={experiences} skills={skills} education={education} templateType={templateType} />} 
         fileName={getFileName()} 
         className="w-full"
+        onClick={handleDownloadClick}
       >
         {({ loading, error }) => {
           // Handle PDF generation errors
@@ -605,8 +634,8 @@ export default function ResumePDFCore({ basicInfo, projects, experiences, skills
           
           return (
             <Button 
-              className="w-full font-medium text-white bg-black hover:bg-gray-800 py-2 flex items-center justify-center gap-2" 
-              disabled={loading || !basicInfo}
+              className={`w-full font-medium py-2 flex items-center justify-center gap-2 ${canDownload ? 'text-white bg-black hover:bg-gray-800' : 'text-gray-500 bg-gray-200 cursor-not-allowed'}`}
+              disabled={loading || !basicInfo || !canDownload}
             >
               {loading ? (
                 <>
@@ -615,6 +644,13 @@ export default function ResumePDFCore({ basicInfo, projects, experiences, skills
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                   </svg>
                   Generating PDF...
+                </>
+              ) : !canDownload ? (
+                <>
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                  Add Content to Enable Download
                 </>
               ) : (
                 <>
@@ -632,6 +668,12 @@ export default function ResumePDFCore({ basicInfo, projects, experiences, skills
       {!basicInfo && (
         <p className="text-sm text-red-500 mt-2 text-center">
           Please add your basic information before downloading your resume.
+        </p>
+      )}
+      
+      {!canDownload && basicInfo && (
+        <p className="text-sm text-amber-600 mt-2 text-center">
+          You've cleared your resume. Add some content to enable PDF download.
         </p>
       )}
     </div>

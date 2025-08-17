@@ -1,14 +1,17 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import { ChevronDown, ChevronUp } from 'lucide-react';
+import { ChevronDown, ChevronUp, Save, Trash2 } from 'lucide-react';
 
 // Import form components
 import EnhancedExperienceForm from "@/components/EnhancedExperienceForm";
-import ProjectForm from "@/components/ProjectForm";
-import SkillForm from "@/components/SkillForm";
-import BasicForm from "@/components/BasicForm";
+import EnhancedProjectForm from "@/components/EnhancedProjectForm";
+import EnhancedBasicForm from "@/components/EnhancedBasicForm";
 import EnhancedEducationForm from "@/components/EnhancedEducationForm";
+import EnhancedSkillForm from "@/components/EnhancedSkillForm";
+
+// Import Toast Context
+import { useToast } from "@/contexts/ToastContext";
 
 // Import preview components
 import ResumePreview from '@/components/ResumePreview';
@@ -43,35 +46,6 @@ const fetchAllResumeData = async (userEmail: string) => {
   };
 };
 
-// Helper function to fetch specific resume data by ID
-const fetchSpecificResumeData = async (resumeId: string) => {
-  if (!resumeId) throw new Error('No resume ID provided');
-  
-  const token = localStorage.getItem('token');
-  const response = await fetch(`/api/users/resumes/${resumeId}`, {
-    headers: {
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json'
-    }
-  });
-
-  if (!response.ok) {
-    throw new Error('Failed to fetch resume');
-  }
-
-  const resume = await response.json();
-  
-  // Transform the resume data to match the expected format
-  return {
-    basicInfo: resume.basic || null,
-    projects: resume.projects || [],
-    experiences: resume.experience || [],
-    skills: resume.skills || [],
-    education: resume.education || []
-  };
-};
-
-
 // Comprehensive type for all resume data
 type FullResumeData = {
   basicInfo: Basic | null;
@@ -85,24 +59,17 @@ type TemplateId = 'classic' | 'modern' | 'creative';
 const validTemplates: TemplateId[] = ['classic', 'modern', 'creative'];
 
 export default function Dashboard() {
-  const { currentUser } = useUserContext();
+  // Access the user context for authentication and user data
+  const { currentUser, setCurrentUser } = useUserContext();
+  const { showToast } = useToast();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   
   const userEmail = currentUser?.email || '';
   const initialTemplate = searchParams.get('template');
   
-  // Check if we're loading a specific resume
-  const [selectedResumeId, setSelectedResumeId] = useState<string | null>(null);
-  
-  // Check localStorage for a selected resume ID (from profile page)
-  useEffect(() => {
-    const resumeId = localStorage.getItem('selectedResumeId');
-    if (resumeId) {
-      setSelectedResumeId(resumeId);
-      localStorage.removeItem('selectedResumeId'); // Clean up
-    }
-  }, []);
+  // State for save operation
+  const [isSaving, setIsSaving] = useState(false);
   
   // Get template from URL (read-only on dashboard)
   const selectedTemplate = initialTemplate && validTemplates.includes(initialTemplate as TemplateId) 
@@ -135,13 +102,9 @@ export default function Dashboard() {
     error,
     refetch 
   } = useQuery({
-    queryKey: selectedResumeId 
-      ? ['specificResumeData', selectedResumeId] 
-      : ['resumeData', userEmail],
-    queryFn: selectedResumeId 
-      ? () => fetchSpecificResumeData(selectedResumeId)
-      : () => fetchAllResumeData(userEmail),
-    enabled: !!(selectedResumeId || userEmail),
+    queryKey: ['resumeData', userEmail],
+    queryFn: () => fetchAllResumeData(userEmail),
+    enabled: !!userEmail,
     staleTime: 5 * 60 * 1000, // 5 minutes
     refetchOnWindowFocus: false,
   });
@@ -167,12 +130,20 @@ export default function Dashboard() {
         
         if (JSON.stringify(prevData) !== JSON.stringify(newData)) {
           console.log('Initializing local form data with server data:', newData);
+          showToast('Resume data loaded successfully', 'success');
           return newData;
         }
         return prevData;
       });
     }
-  }, [serverData, isLoading, userEmail]);
+  }, [serverData, isLoading, userEmail, showToast]);
+  
+  // Show error toast when fetch fails
+  useEffect(() => {
+    if (isError && error) {
+      showToast(`Failed to load resume data: ${error instanceof Error ? error.message : 'Unknown error'}`, 'error');
+    }
+  }, [isError, error, showToast]);
 
   // Toggle section visibility
   const toggleSection = (section: keyof typeof openSections) => {
@@ -200,6 +171,88 @@ export default function Dashboard() {
     }
   };
 
+  // Handle saving resume data
+  const handleSaveResume = async () => {
+    if (!currentUser || !currentUser.email) {
+      showToast('You must be logged in to save a resume', 'error');
+      return;
+    }
+    
+    try {
+      setIsSaving(true);
+      showToast('Saving your resume...', 'info');
+      
+      const token = localStorage.getItem('token');
+      const resumeData = {
+        userEmail: currentUser.email,
+        title: `Resume ${new Date().toLocaleDateString()}`,
+        status: 'completed',
+        basic: localFormData.basicInfo,
+        education: localFormData.education,
+        experience: localFormData.experiences,
+        projects: localFormData.projects,
+        skills: localFormData.skills,
+        template: selectedTemplate
+      };
+      
+      console.log('Saving resume with data:', resumeData);
+      
+      // Always create a new resume
+      const url = '/api/users/resumes';
+      const method = 'POST';
+      
+      const response = await fetch(url, {
+        method,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(resumeData)
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => null);
+        throw new Error(`Failed to save resume: ${response.status} ${response.statusText}${errorData ? ' - ' + errorData.message : ''}`);
+      }
+      
+      showToast('Resume saved successfully!', 'success');
+      
+      // Navigate to profile page
+      navigate('/profile');
+    } catch (error) {
+      console.error('Error saving resume:', error);
+      showToast(`Failed to save resume: ${error instanceof Error ? error.message : 'Unknown error'}`, 'error');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  // Handle clearing resume data
+  const handleClearResume = () => {
+    if (window.confirm('Are you sure you want to clear all resume data? This cannot be undone.')) {
+      setLocalFormData({
+        basicInfo: { name: '', contact_no: '', email: userEmail, location: '', about: '' },
+        projects: [],
+        experiences: [],
+        skills: [],
+        education: []
+      });
+      
+      showToast('Resume data cleared', 'info');
+    }
+  };
+
+  // Check if resume has any content worth downloading
+  const hasResumeContent = useMemo(() => {
+    return !!(
+      (localFormData.basicInfo?.name && localFormData.basicInfo?.name.trim() !== '') ||
+      localFormData.projects.length > 0 ||
+      localFormData.experiences.length > 0 ||
+      localFormData.skills.length > 0 ||
+      localFormData.education.length > 0
+    );
+  }, [localFormData]);
+
   // Handle live updates to local form data
   const handleLocalDataChange = <K extends keyof FullResumeData>(
     section: K, 
@@ -207,15 +260,63 @@ export default function Dashboard() {
   ) => {
     console.log(`🔄 Live Update: ${String(section)} changing to:`, data);
     
+    // For basic info, sync with UserContext immediately
+    if (section === 'basicInfo' && data && typeof data === 'object' && 'email' in data) {
+      const basicData = data as Basic;
+      console.log('👤 Syncing BasicInfo with UserContext:', basicData);
+      // This helps other components that rely on UserContext to update immediately
+      if (setCurrentUser) {
+        setCurrentUser(basicData);
+      } else {
+        console.warn('setCurrentUser is undefined, cannot update user context');
+      }
+    }
+    
     setLocalFormData(prevData => {
-      // Prevent unnecessary updates for identical data
+      // For basic info, always force an update to ensure UI reflects changes
+      if (section === 'basicInfo') {
+        console.log(`👤 BasicInfo update detected, forcing refresh`);
+        // Clone the data to ensure React detects the change
+        const safeData = data || { 
+          name: '', 
+          contact_no: '', 
+          email: currentUser?.email || '', 
+          location: '', 
+          about: '' 
+        };
+        
+        const newData = { ...prevData, [section]: { ...safeData } };
+        console.log(`✅ Live Preview Updated for BasicInfo:`, newData);
+        return newData;
+      }
+      
+      // For other sections, check if data is actually different
       if (JSON.stringify(prevData[section]) === JSON.stringify(data)) {
         console.log(`⚡ Data for ${String(section)} is identical, skipping update`);
         return prevData;
       }
 
-      const newData = { ...prevData, [section]: data };
+      // Ensure data is non-null for the section
+      const safeData = data || (section === 'basicInfo' 
+        ? { name: '', contact_no: '', email: currentUser?.email || '', location: '', about: '' } 
+        : []
+      );
+
+      const newData = { ...prevData, [section]: safeData };
       console.log(`✅ Live Preview Updated: ${String(section)}`, newData);
+      
+      // Show toast for non-basic sections
+      if (section !== 'basicInfo') {
+        showToast(`${formatSectionName(section)} updated successfully`, 'success');
+      } else {
+        // For basic info, show a toast only if there was a significant change
+        const oldBasic = prevData.basicInfo as Basic;
+        const newBasic = safeData as Basic;
+        if (oldBasic?.name !== newBasic?.name || oldBasic?.email !== newBasic?.email) {
+          showToast(`Profile information updated`, 'success');
+        }
+      }
+      
       return newData;
     });
 
@@ -227,9 +328,31 @@ export default function Dashboard() {
       }));
     }
   };
+  
+  // Helper function to format section names for toast messages
+  const formatSectionName = (section: string): string => {
+    switch(section) {
+      case 'basicInfo': return 'Basic Information';
+      case 'projects': return 'Projects';
+      case 'experiences': return 'Experience';
+      case 'skills': return 'Skills';
+      case 'education': return 'Education';
+      default: return section.charAt(0).toUpperCase() + section.slice(1);
+    }
+  };
 
   // Memoize the current data to prevent unnecessary re-renders
   const currentResumeData = useMemo(() => localFormData, [localFormData]);
+  
+  // Preload PDF component
+  useEffect(() => {
+    // Preload the PDF component when data is loaded
+    if (!isLoading && serverData) {
+      import('@/components/ResumePDFCore').catch(error => {
+        console.error('Failed to preload PDF component:', error);
+      });
+    }
+  }, [isLoading, serverData]);
 
   // Loading state
   if (isLoading) {
@@ -255,7 +378,10 @@ export default function Dashboard() {
             {error?.message || 'An error occurred while loading your resume data.'}
           </p>
           <button
-            onClick={() => refetch()}
+            onClick={() => {
+              showToast('Attempting to reload data...', 'info');
+              refetch();
+            }}
             className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
           >
             Try Again
@@ -289,13 +415,10 @@ export default function Dashboard() {
           <aside className="w-full md:w-1/2 lg:w-2/5 h-screen overflow-y-auto bg-white dark:bg-black p-6 lg:p-8 space-y-8">
             <header className="mb-6">
               <h1 className="text-3xl font-bold text-foreground">
-                {selectedResumeId ? 'Edit Resume' : 'Live Resume Editor'}
+                Live Resume Editor
               </h1>
               <p className="text-muted-foreground">
-                {selectedResumeId 
-                  ? 'Editing a specific resume from your profile.' 
-                  : 'Your changes will appear live in the preview.'
-                }
+                Your changes will appear live in the preview.
               </p>
               
               {/* Template Information and Change Link */}
@@ -304,27 +427,15 @@ export default function Dashboard() {
                   Current template: <span className="font-medium text-gray-900 dark:text-white capitalize">{selectedTemplate}</span>
                 </div>
                 <button 
-                  onClick={() => navigate('/portfolio')}
+                  onClick={() => {
+                    showToast('Navigating to template selection', 'info');
+                    navigate('/portfolio');
+                  }}
                   className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-500 dark:hover:text-blue-300 font-medium hover:underline"
                 >
                   Change Template
                 </button>
               </div>
-              
-              {selectedResumeId && (
-                <div className="mt-2 flex items-center gap-2">
-                  <button 
-                    onClick={() => {
-                      setSelectedResumeId(null);
-                      refetch();
-                    }}
-                    className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-500 dark:hover:text-blue-300 font-medium"
-                  >
-                    ← Back to Live Editor
-                  </button>
-                </div>
-              )}
-              
             </header>
             
             {/* Form Sections */}
@@ -356,7 +467,7 @@ export default function Dashboard() {
                   
                   {openSections.basic && (
                     <div className="p-4 border-t transition-all duration-300 ease-in-out animate-fadeIn">
-                      <BasicForm 
+                      <EnhancedBasicForm 
                         initialData={currentResumeData.basicInfo} 
                         onDataChange={(newData) => handleLocalDataChange('basicInfo', newData)}
                       />
@@ -451,7 +562,7 @@ export default function Dashboard() {
                   
                   {openSections.project && (
                     <div className="p-4 border-t transition-all duration-300 ease-in-out animate-fadeIn">
-                      <ProjectForm 
+                      <EnhancedProjectForm 
                         initialData={currentResumeData.projects} 
                         onDataChange={(newData) => handleLocalDataChange('projects', newData)}
                       />
@@ -481,7 +592,7 @@ export default function Dashboard() {
                   
                   {openSections.skill && (
                     <div className="p-4 border-t transition-all duration-300 ease-in-out animate-fadeIn">
-                      <SkillForm 
+                      <EnhancedSkillForm 
                         initialData={currentResumeData.skills} 
                         onDataChange={(newData) => handleLocalDataChange('skills', newData)}
                       />
@@ -494,8 +605,41 @@ export default function Dashboard() {
             {/* PDF Export Section */}
             <div className="flex-shrink-0 mt-6 space-y-6">
               <ErrorBoundary>
-                <ResumePDF {...currentResumeData} templateType={selectedTemplate} />
+                <ResumePDF 
+                  {...currentResumeData} 
+                  templateType={selectedTemplate} 
+                  canDownload={hasResumeContent}
+                />
               </ErrorBoundary>
+              
+              {/* Save and Clear Resume Buttons */}
+              <div className="flex justify-between gap-4 mt-6">
+                <button
+                  onClick={handleClearResume}
+                  className="flex items-center justify-center gap-2 px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 transition-colors duration-200"
+                  disabled={isSaving}
+                >
+                  <Trash2 className="h-5 w-5" />
+                  Clear Resume
+                </button>
+                <button
+                  onClick={handleSaveResume}
+                  className="flex items-center justify-center gap-2 px-4 py-2 bg-primary text-white rounded hover:bg-primary/90 transition-colors duration-200"
+                  disabled={isSaving}
+                >
+                  {isSaving ? (
+                    <>
+                      <div className="h-5 w-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                      Saving...
+                    </>
+                  ) : (
+                    <>
+                      <Save className="h-5 w-5" />
+                      Save Resume
+                    </>
+                  )}
+                </button>
+              </div>
             </div>
           </aside>
 

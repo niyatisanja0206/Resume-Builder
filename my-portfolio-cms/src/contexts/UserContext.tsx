@@ -84,7 +84,27 @@ export function UserProvider({ children }: UserProviderProps) {
   // Memoize the context value to prevent unnecessary re-renders
   const value = useMemo(() => ({
     currentUser,
-    setCurrentUser,
+    setCurrentUser: (user: Basic | null) => {
+      console.log('UserContext - Setting current user:', user);
+      // Update the state
+      setCurrentUser(user);
+      
+      // If user is provided, also update localStorage
+      if (user && user.email) {
+        localStorage.setItem('currentUserEmail', user.email);
+        // Optionally update the full user object
+        try {
+          const userString = localStorage.getItem('user');
+          if (userString) {
+            const storedUser = JSON.parse(userString);
+            const updatedUser = { ...storedUser, ...user };
+            localStorage.setItem('user', JSON.stringify(updatedUser));
+          }
+        } catch (error) {
+          console.error('Error updating user in localStorage:', error);
+        }
+      }
+    },
     login,
     logout,
   }), [currentUser, login, logout]);

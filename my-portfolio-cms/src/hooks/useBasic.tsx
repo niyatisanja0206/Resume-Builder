@@ -143,17 +143,74 @@ export function useBasicForm() {
     // Mutation for updating basic info
     const updateBasic = useMutation({
         mutationFn: saveBasic,
+        // Update cache optimistically for immediate UI updates
+        onMutate: async (newBasicData) => {
+            // Cancel any outgoing refetches
+            await queryClient.cancelQueries({ queryKey: ['basic'] });
+            await queryClient.cancelQueries({ queryKey: ['basic-form'] });
+            await queryClient.cancelQueries({ queryKey: ['current-resume'] });
+            
+            // Snapshot the previous value
+            const previousBasicData = queryClient.getQueryData(['basic-form', newBasicData.email]);
+            
+            // Optimistically update to the new value
+            queryClient.setQueryData(['basic-form', newBasicData.email], newBasicData);
+            queryClient.setQueryData(['basic', newBasicData.email], newBasicData);
+            
+            // Update localStorage immediately
+            localStorage.setItem('currentUserEmail', newBasicData.email);
+            
+            // Return a context object with the snapshotted value
+            return { previousBasicData };
+        },
         onSuccess: (data) => {
             console.log('BasicForm - Save successful, data:', data);
-            // Update the cache with the new data
+            // Update all related cache entries
             queryClient.setQueryData(['basic-form', data.email], data);
-            // Also set the cache for the specific email key that other forms will use
             queryClient.setQueryData(['basic', data.email], data);
-            // Store the current user email in localStorage for other forms to use
+            
+            // Also update user context data in localStorage
             localStorage.setItem('currentUserEmail', data.email);
+            
+            // Try to update any user data in localStorage
+            try {
+                const userString = localStorage.getItem('user');
+                if (userString) {
+                    const user = JSON.parse(userString);
+                    user.email = data.email;
+                    localStorage.setItem('user', JSON.stringify(user));
+                }
+            } catch (error) {
+                console.error('Error updating user in localStorage:', error);
+            }
+            
             console.log('BasicForm - Set localStorage currentUserEmail:', data.email);
-            // Invalidate to ensure fresh data
-            queryClient.invalidateQueries({ queryKey: ['basic', data.email] });
+            
+            // Invalidate queries to ensure fresh data
+            queryClient.invalidateQueries({ queryKey: ['basic'] });
+            queryClient.invalidateQueries({ queryKey: ['basic-form'] });
+            queryClient.invalidateQueries({ queryKey: ['current-resume'] });
+        },
+        // If the mutation fails, use the context returned from onMutate to roll back
+        onError: (err, newBasicData, context: any) => {
+            console.error('Error updating basic info:', err);
+            if (context?.previousBasicData) {
+                queryClient.setQueryData(
+                    ['basic-form', newBasicData.email], 
+                    context.previousBasicData
+                );
+                queryClient.setQueryData(
+                    ['basic', newBasicData.email], 
+                    context.previousBasicData
+                );
+            }
+        },
+        // Always refetch after error or success
+        onSettled: (data) => {
+            if (data) {
+                queryClient.invalidateQueries({ queryKey: ['basic', data.email] });
+                queryClient.invalidateQueries({ queryKey: ['basic-form', data.email] });
+            }
         },
     });
 

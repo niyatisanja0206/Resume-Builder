@@ -1,6 +1,5 @@
 import { Button } from "@/components/ui/button";
 import React, { Suspense } from 'react';
-import { useUserStats } from '@/hooks/useUserStats';
 import type { Basic, Project, Experience, Skill, Education } from '@/types/portfolio';
 
 // --- PROPS INTERFACE ---
@@ -11,17 +10,34 @@ interface ResumePDFProps {
   skills: Skill[];
   education: Education[];
   templateType: 'classic' | 'modern' | 'creative';
+  canDownload?: boolean;
 }
 
 // Simple fallback component
 const SimplePDFDownload = () => {
-  const { incrementDownloadCount } = useUserStats();
-  
   const handleFallbackDownload = async () => {
     try {
-      await incrementDownloadCount();
+      const token = localStorage.getItem('token');
+      if (!token) {
+        console.warn('No authentication token found, skipping download count increment');
+        return;
+      }
+      
+      const response = await fetch('/api/auth/increment-download-count', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to increment download count');
+      }
+      
+      console.log('Download count incremented successfully');
     } catch (error) {
-      console.warn('Failed to increment download count:', error);
+      console.error('Error incrementing download count:', error);
     }
   };
 
@@ -52,6 +68,7 @@ const SimplePDFDownload = () => {
 // Dynamic import wrapper
 const PDFComponent = React.lazy(async () => {
   try {
+    // Force the browser to not use cached version
     const module = await import('./ResumePDFCore');
     return { default: module.default };
   } catch (error) {
@@ -61,7 +78,7 @@ const PDFComponent = React.lazy(async () => {
 });
 
 // --- MAIN EXPORTED COMPONENT ---
-export default function ResumePDF({ basicInfo, projects, experiences, skills, education, templateType }: ResumePDFProps) {
+export default function ResumePDF({ basicInfo, projects, experiences, skills, education, templateType, canDownload = true }: ResumePDFProps) {
   // Debug logging
   console.log('ResumePDF component rendered with:', {
     templateType,
@@ -69,7 +86,8 @@ export default function ResumePDF({ basicInfo, projects, experiences, skills, ed
     projectsCount: projects?.length || 0,
     experiencesCount: experiences?.length || 0,
     skillsCount: skills?.length || 0,
-    educationCount: education?.length || 0
+    educationCount: education?.length || 0,
+    canDownload
   });
 
   return (
@@ -88,6 +106,7 @@ export default function ResumePDF({ basicInfo, projects, experiences, skills, ed
         skills={skills}
         education={education}
         templateType={templateType}
+        canDownload={canDownload}
       />
     </Suspense>
   );
