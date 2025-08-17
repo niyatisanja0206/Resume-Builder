@@ -64,14 +64,12 @@ export default function Dashboard() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
 
-  console.log('Dashboard: Component rendering with currentUser:', currentUser);
-
   const userEmail = currentUser?.email || '';
   const initialTemplate = searchParams.get('template');
 
-  console.log('Dashboard: userEmail:', userEmail, 'initialTemplate:', initialTemplate);
-
   const [isSaving, setIsSaving] = useState(false);
+  const [showTitleDialog, setShowTitleDialog] = useState(false);
+  const [resumeTitle, setResumeTitle] = useState('');
 
   const selectedTemplate = initialTemplate && validTemplates.includes(initialTemplate as TemplateId)
     ? (initialTemplate as TemplateId)
@@ -101,8 +99,6 @@ export default function Dashboard() {
     refetchOnWindowFocus: false,
   });
 
-  console.log('Dashboard: Query state:', { serverData, isLoading, isError, error, userEmail });
-
   useEffect(() => {
     if (serverData && !isLoading) {
       setLocalFormData(prevData => {
@@ -129,7 +125,6 @@ export default function Dashboard() {
         // For deletions and other updates, rely on local state management
         if (isInitialLoad) {
           console.log('📊 Dashboard: Initial load - updating local data from server', { prevData, newData });
-          showToast('Resume data loaded successfully', 'success');
           return newData;
         }
         
@@ -137,7 +132,7 @@ export default function Dashboard() {
         return prevData;
       });
     }
-  }, [serverData, isLoading, userEmail, showToast]);
+  }, [serverData, isLoading, userEmail]);
 
   useEffect(() => {
     if (isError && error) {
@@ -156,14 +151,107 @@ export default function Dashboard() {
       return;
     }
 
+    // Validate resume completeness before allowing save
+    const validationErrors = validateResumeCompleteness(localFormData);
+    if (validationErrors.length > 0) {
+      showToast(`Resume is incomplete: ${validationErrors.join(', ')}`, 'error');
+      return;
+    }
+
+    // Set a default title suggestion based on user's name
+    const userName = localFormData.basicInfo?.name || currentUser.name || '';
+    const defaultTitle = userName ? `${userName}'s Resume` : 'My Resume';
+    setResumeTitle(defaultTitle);
+    
+    // Show title dialog instead of saving directly
+    setShowTitleDialog(true);
+  };
+
+  // Function to validate resume completeness
+  const validateResumeCompleteness = (data: FullResumeData): string[] => {
+    const errors: string[] = [];
+
+    // Validate basic information (all fields required)
+    if (!data.basicInfo) {
+      errors.push('Basic information is missing');
+    } else {
+      if (!data.basicInfo.name?.trim()) errors.push('Name');
+      if (!data.basicInfo.contact_no?.trim()) errors.push('Contact number');
+      if (!data.basicInfo.email?.trim()) errors.push('Email');
+      if (!data.basicInfo.location?.trim()) errors.push('Location');
+      if (!data.basicInfo.about?.trim()) errors.push('About section');
+    }
+
+    // Validate education (at least one entry required)
+    if (!data.education || data.education.length === 0) {
+      errors.push('Education (at least one entry required)');
+    } else {
+      // Validate each education entry
+      data.education.forEach((edu, index) => {
+        if (!edu.institution?.trim()) errors.push(`Education ${index + 1}: Institution name`);
+        if (!edu.degree?.trim()) errors.push(`Education ${index + 1}: Degree`);
+        if (!edu.startDate) errors.push(`Education ${index + 1}: Start date`);
+        if (!edu.Grade?.trim()) errors.push(`Education ${index + 1}: Grade/GPA`);
+      });
+    }
+
+    // Validate experience (at least one entry required)
+    if (!data.experiences || data.experiences.length === 0) {
+      errors.push('Experience (at least one entry required)');
+    } else {
+      // Validate each experience entry
+      data.experiences.forEach((exp, index) => {
+        if (!exp.company?.trim()) errors.push(`Experience ${index + 1}: Company name`);
+        if (!exp.position?.trim()) errors.push(`Experience ${index + 1}: Position`);
+        if (!exp.startDate) errors.push(`Experience ${index + 1}: Start date`);
+        if (!exp.skillsLearned || exp.skillsLearned.length === 0) {
+          errors.push(`Experience ${index + 1}: Skills learned`);
+        }
+      });
+    }
+
+    // Validate projects (at least one entry required)
+    if (!data.projects || data.projects.length === 0) {
+      errors.push('Projects (at least one entry required)');
+    } else {
+      // Validate each project entry
+      data.projects.forEach((project, index) => {
+        if (!project.title?.trim()) errors.push(`Project ${index + 1}: Title`);
+        if (!project.description?.trim()) errors.push(`Project ${index + 1}: Description`);
+        if (!project.techStack || project.techStack.length === 0) {
+          errors.push(`Project ${index + 1}: Tech stack`);
+        }
+      });
+    }
+
+    // Validate skills (at least one entry required)
+    if (!data.skills || data.skills.length === 0) {
+      errors.push('Skills (at least one entry required)');
+    } else {
+      // Validate each skill entry
+      data.skills.forEach((skill, index) => {
+        if (!skill.name?.trim()) errors.push(`Skill ${index + 1}: Name`);
+        if (!skill.level) errors.push(`Skill ${index + 1}: Level`);
+      });
+    }
+
+    return errors;
+  };
+
+  const handleSaveWithTitle = async () => {
+    if (!resumeTitle.trim()) {
+      showToast('Please enter a title for your resume', 'error');
+      return;
+    }
+
     try {
       setIsSaving(true);
       showToast('Saving your resume...', 'info');
 
       const token = localStorage.getItem('token');
       const resumeData = {
-        userEmail: currentUser.email,
-        title: `Resume ${new Date().toLocaleDateString()}`,
+        userEmail: currentUser!.email,
+        title: resumeTitle.trim(),
         status: 'completed',
         basic: localFormData.basicInfo,
         education: localFormData.education,
@@ -191,12 +279,20 @@ export default function Dashboard() {
       }
 
       showToast('Resume saved successfully!', 'success');
+      setShowTitleDialog(false);
+      setResumeTitle('');
       navigate('/profile');
     } catch (error) {
       showToast(`Failed to save resume: ${error instanceof Error ? error.message : 'Unknown error'}`, 'error');
     } finally {
       setIsSaving(false);
     }
+  };
+
+  const handleCancelSave = () => {
+    setShowTitleDialog(false);
+    setResumeTitle('');
+    setIsSaving(false);
   };
 
   const handleClearResume = () => {
@@ -220,6 +316,11 @@ export default function Dashboard() {
       localFormData.skills.length > 0 ||
       localFormData.education.length > 0
     );
+  }, [localFormData]);
+
+  const isResumeComplete = useMemo(() => {
+    const validationErrors = validateResumeCompleteness(localFormData);
+    return validationErrors.length === 0;
   }, [localFormData]);
 
   // MAIN: Live updates from child forms (now without toast spam for Education typing)
@@ -382,12 +483,32 @@ export default function Dashboard() {
                 <ResumePDF {...currentResumeData} templateType={selectedTemplate} canDownload={hasResumeContent} />
               </ErrorBoundary>
 
+              {/* Resume Completion Status */}
+              <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
+                <div className="flex items-center justify-between mb-2">
+                  <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">Resume Completion</h3>
+                  <span className={`text-sm font-medium ${isResumeComplete ? 'text-green-600' : 'text-orange-600'}`}>
+                    {isResumeComplete ? 'Complete' : 'Incomplete'}
+                  </span>
+                </div>
+                {!isResumeComplete && (
+                  <div className="text-xs text-gray-600 dark:text-gray-400">
+                    All sections must be filled before saving
+                  </div>
+                )}
+              </div>
+
               <div className="flex justify-between gap-4 mt-6">
                 <Button onClick={handleClearResume} variant="destructive" className="flex items-center gap-2" disabled={isSaving}>
                   <Trash2 className="h-5 w-5" />
                   Clear Resume
                 </Button>
-                <Button onClick={handleSaveResume} className="flex items-center gap-2" disabled={isSaving}>
+                <Button 
+                  onClick={handleSaveResume} 
+                  className="flex items-center gap-2" 
+                  disabled={isSaving || !isResumeComplete}
+                  title={!isResumeComplete ? "Complete all required fields before saving" : "Save your resume"}
+                >
                   {isSaving ? (
                     <>
                       <div className="h-5 w-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
@@ -426,6 +547,58 @@ export default function Dashboard() {
             </div>
           </main>
         </div>
+
+        {/* Title Dialog */}
+        {showTitleDialog && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-md mx-4">
+              <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">
+                Save Resume
+              </h3>
+              <p className="text-sm text-gray-600 dark:text-gray-300 mb-4">
+                Please enter a title for your resume:
+              </p>
+              <input
+                type="text"
+                value={resumeTitle}
+                onChange={(e) => setResumeTitle(e.target.value)}
+                placeholder="e.g., Software Developer Resume, Marketing Manager CV"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                disabled={isSaving}
+                autoFocus
+                onFocus={(e) => e.target.select()}
+                onKeyDown={(e) => e.key === 'Enter' && !isSaving && handleSaveWithTitle()}
+              />
+              <div className="flex justify-end gap-3 mt-6">
+                <Button
+                  variant="outline"
+                  onClick={handleCancelSave}
+                  disabled={isSaving}
+                  className="px-4 py-2"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={handleSaveWithTitle}
+                  disabled={isSaving || !resumeTitle.trim()}
+                  className="px-4 py-2 flex items-center gap-2"
+                >
+                  {isSaving ? (
+                    <>
+                      <div className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      Saving...
+                    </>
+                  ) : (
+                    <>
+                      <Save className="h-4 w-4" />
+                      Save Resume
+                    </>
+                  )}
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
       </ErrorBoundary>
     </AuthGuard>
   );

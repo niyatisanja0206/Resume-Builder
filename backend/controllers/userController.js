@@ -100,32 +100,65 @@ exports.deleteResume = async (req, res) => {
 // Create a new blank resume
 exports.createResume = async (req, res) => {
     try {
-        const { userEmail } = req.body;
+        const { 
+            userEmail, 
+            title, 
+            status = 'draft',
+            basic,
+            skills,
+            education,
+            experience,
+            projects,
+            template
+        } = req.body;
         
         // Verify the user is creating a resume for themselves
         if (req.user.email !== userEmail) {
             return res.status(403).json({ message: 'Access denied. You can only create resumes for yourself.' });
         }
 
-        // Count existing resumes to generate a unique title
-        const existingResumes = await Resume.countDocuments({ userEmail });
-        const resumeTitle = `Resume ${existingResumes + 1}`;
+        // If status is 'completed', validate that all required fields are present
+        if (status === 'completed') {
+            const validationErrors = validateResumeCompleteness({
+                basic,
+                skills,
+                education,
+                experience,
+                projects
+            });
+            
+            if (validationErrors.length > 0) {
+                return res.status(400).json({ 
+                    message: 'Resume is incomplete', 
+                    errors: validationErrors 
+                });
+            }
+        }
+
+        // Use provided title or generate a default one
+        let resumeTitle = title;
+        if (!resumeTitle) {
+            // Count existing resumes to generate a unique title
+            const existingResumes = await Resume.countDocuments({ userEmail });
+            resumeTitle = `Resume ${existingResumes + 1}`;
+        }
 
         const newResume = new Resume({
             userEmail,
             title: resumeTitle,
-            status: 'draft',
-            basic: {
+            status,
+            basic: basic || {
                 name: '',
                 email: userEmail,
                 contact_no: '',
                 location: '',
                 about: ''
             },
-            skills: [],
-            education: [],
-            experience: [],
-            projects: []
+            skills: skills || [],
+            education: education || [],
+            experience: experience || [],
+            projects: projects || [],
+            template: template || 'classic'
         });
 
         const savedResume = await newResume.save();
@@ -137,6 +170,73 @@ exports.createResume = async (req, res) => {
     } catch (error) {
         res.status(500).json({ message: 'Server error', error: error.message });
     }
+};
+
+// Validation function for resume completeness
+const validateResumeCompleteness = (data) => {
+    const errors = [];
+
+    // Validate basic information
+    if (!data.basic) {
+        errors.push('Basic information is missing');
+    } else {
+        if (!data.basic.name?.trim()) errors.push('Name is required');
+        if (!data.basic.contact_no?.trim()) errors.push('Contact number is required');
+        if (!data.basic.email?.trim()) errors.push('Email is required');
+        if (!data.basic.location?.trim()) errors.push('Location is required');
+        if (!data.basic.about?.trim()) errors.push('About section is required');
+    }
+
+    // Validate education
+    if (!data.education || data.education.length === 0) {
+        errors.push('At least one education entry is required');
+    } else {
+        data.education.forEach((edu, index) => {
+            if (!edu.institution?.trim()) errors.push(`Education ${index + 1}: Institution name is required`);
+            if (!edu.degree?.trim()) errors.push(`Education ${index + 1}: Degree is required`);
+            if (!edu.startDate) errors.push(`Education ${index + 1}: Start date is required`);
+            if (!edu.Grade?.trim()) errors.push(`Education ${index + 1}: Grade/GPA is required`);
+        });
+    }
+
+    // Validate experience
+    if (!data.experience || data.experience.length === 0) {
+        errors.push('At least one experience entry is required');
+    } else {
+        data.experience.forEach((exp, index) => {
+            if (!exp.company?.trim()) errors.push(`Experience ${index + 1}: Company name is required`);
+            if (!exp.position?.trim()) errors.push(`Experience ${index + 1}: Position is required`);
+            if (!exp.startDate) errors.push(`Experience ${index + 1}: Start date is required`);
+            if (!exp.skillsLearned || exp.skillsLearned.length === 0) {
+                errors.push(`Experience ${index + 1}: Skills learned is required`);
+            }
+        });
+    }
+
+    // Validate projects
+    if (!data.projects || data.projects.length === 0) {
+        errors.push('At least one project entry is required');
+    } else {
+        data.projects.forEach((project, index) => {
+            if (!project.title?.trim()) errors.push(`Project ${index + 1}: Title is required`);
+            if (!project.description?.trim()) errors.push(`Project ${index + 1}: Description is required`);
+            if (!project.techStack || project.techStack.length === 0) {
+                errors.push(`Project ${index + 1}: Tech stack is required`);
+            }
+        });
+    }
+
+    // Validate skills
+    if (!data.skills || data.skills.length === 0) {
+        errors.push('At least one skill entry is required');
+    } else {
+        data.skills.forEach((skill, index) => {
+            if (!skill.name?.trim()) errors.push(`Skill ${index + 1}: Name is required`);
+            if (!skill.level) errors.push(`Skill ${index + 1}: Level is required`);
+        });
+    }
+
+    return errors;
 };
 
 // Get a specific resume by ID

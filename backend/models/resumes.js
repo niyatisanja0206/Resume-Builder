@@ -56,7 +56,12 @@ const resumeSchema = new mongoose.Schema({
         description: String,
         techStack: [String],
         link: String
-    }]
+    }],
+    template: {
+        type: String,
+        enum: ['classic', 'modern', 'creative'],
+        default: 'classic'
+    }
 }, {
     timestamps: true
 });

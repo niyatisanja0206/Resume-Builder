@@ -1,3 +1,4 @@
+import React from 'react';
 import { PDFDownloadLink, Document, Page, Text, View, StyleSheet } from '@react-pdf/renderer';
 import type { Basic, Project, Experience, Skill, Education } from '@/types/portfolio';
 import { Button } from "@/components/ui/button";
@@ -21,13 +22,29 @@ const formatDate = (dateInput: Date | string | undefined): string => {
     return isNaN(date.getTime()) ? 'Present' : date.toLocaleDateString('en-US', { year: 'numeric', month: 'short' });
   } catch (error) {
     console.error('Error formatting date:', error);
-    return '';
+    return 'Present';
   }
 };
 
-// Fallback data for when props are missing
-const getValidBasicInfo = (basicInfo: Basic | null) => {
-  return basicInfo || {
+// Helper function to safely render text (prevents null/undefined errors)
+const safeText = (text: string | undefined | null): string => {
+  return text?.toString().trim() || '';
+};
+
+// Fallback data for when props are missing or empty
+const getValidBasicInfo = (basicInfo: Basic | null, hasValidInfo: boolean) => {
+  // If we have valid basic info, use it; otherwise use fallback
+  if (hasValidInfo && basicInfo) {
+    return {
+      name: basicInfo.name || 'Your Name',
+      email: basicInfo.email || 'email@example.com',
+      contact_no: basicInfo.contact_no || '+1-234-567-8900',
+      location: basicInfo.location || 'Your Location',
+      about: basicInfo.about || 'Professional summary goes here.'
+    };
+  }
+  
+  return {
     name: 'Your Name',
     email: 'email@example.com',
     contact_no: '+1-234-567-8900',
@@ -293,20 +310,29 @@ const creativeStyles = StyleSheet.create({
 
 // --- PDF DOCUMENT COMPONENT ---
 const SimpleDocument = ({ basicInfo, projects, experiences, skills, education, templateType }: ResumePDFCoreProps) => {
-  const validBasicInfo = getValidBasicInfo(basicInfo);
+  // Check if basicInfo has meaningful content
+  const hasValidInfo = basicInfo && (
+    (basicInfo.name && basicInfo.name.trim() !== '') ||
+    (basicInfo.email && basicInfo.email.trim() !== '') ||
+    (basicInfo.contact_no && basicInfo.contact_no.trim() !== '') ||
+    (basicInfo.location && basicInfo.location.trim() !== '') ||
+    (basicInfo.about && basicInfo.about.trim() !== '')
+  );
+  
+  const validBasicInfo = getValidBasicInfo(basicInfo, !!hasValidInfo);
 
   // Render Classic Template
   const renderClassicTemplate = () => (
     <Page size="A4" style={classicStyles.page}>
       {/* Header */}
       <View style={classicStyles.header}>
-        <Text style={classicStyles.name}>{validBasicInfo.name}</Text>
+        <Text style={classicStyles.name}>{safeText(validBasicInfo.name)}</Text>
         <View style={classicStyles.contactInfo}>
-          <Text style={classicStyles.contactItem}>{validBasicInfo.location}</Text>
+          <Text style={classicStyles.contactItem}>{safeText(validBasicInfo.location)}</Text>
           <Text>•</Text>
-          <Text style={classicStyles.contactItem}>{validBasicInfo.email}</Text>
+          <Text style={classicStyles.contactItem}>{safeText(validBasicInfo.email)}</Text>
           <Text>•</Text>
-          <Text style={classicStyles.contactItem}>{validBasicInfo.contact_no}</Text>
+          <Text style={classicStyles.contactItem}>{safeText(validBasicInfo.contact_no)}</Text>
         </View>
       </View>
 
@@ -314,7 +340,7 @@ const SimpleDocument = ({ basicInfo, projects, experiences, skills, education, t
       {validBasicInfo.about && (
         <View style={classicStyles.section}>
           <Text style={classicStyles.sectionTitle}>Professional Summary</Text>
-          <Text style={classicStyles.description}>{validBasicInfo.about}</Text>
+          <Text style={classicStyles.description}>{safeText(validBasicInfo.about)}</Text>
         </View>
       )}
 
@@ -325,11 +351,11 @@ const SimpleDocument = ({ basicInfo, projects, experiences, skills, education, t
           {education.map((edu, i) => (
             <View key={i} style={classicStyles.entry}>
               <View style={classicStyles.entryHeader}>
-                <Text style={classicStyles.title}>{edu.institution}</Text>
+                <Text style={classicStyles.title}>{safeText(edu.institution)}</Text>
                 <Text style={classicStyles.date}>{formatDate(edu.endDate)}</Text>
               </View>
-              <Text style={classicStyles.subtitle}>{edu.degree}</Text>
-              {edu.Grade && <Text style={classicStyles.description}>{edu.Grade}</Text>}
+              <Text style={classicStyles.subtitle}>{safeText(edu.degree)}</Text>
+              {edu.Grade && <Text style={classicStyles.description}>{safeText(edu.Grade)}</Text>}
             </View>
           ))}
         </View>
@@ -342,17 +368,17 @@ const SimpleDocument = ({ basicInfo, projects, experiences, skills, education, t
           {experiences.map((exp, i) => (
             <View key={i} style={classicStyles.entry}>
               <View style={classicStyles.entryHeader}>
-                <Text style={classicStyles.title}>{exp.company}</Text>
+                <Text style={classicStyles.title}>{safeText(exp.company)}</Text>
                 <Text style={classicStyles.date}>{formatDate(exp.startDate)} - {formatDate(exp.endDate)}</Text>
               </View>
-              <Text style={classicStyles.subtitle}>{exp.position}</Text>
-              {exp.description && <Text style={classicStyles.description}>{exp.description}</Text>}
+              <Text style={classicStyles.subtitle}>{safeText(exp.position)}</Text>
+              {exp.description && <Text style={classicStyles.description}>{safeText(exp.description)}</Text>}
               {exp.skillsLearned && exp.skillsLearned.length > 0 && (
                 <View style={classicStyles.bulletList}>
                   {exp.skillsLearned.map((skill, j) => (
                     <View key={j} style={classicStyles.bullet}>
                       <Text> • </Text>
-                      <Text style={classicStyles.bulletText}>{skill}</Text>
+                      <Text style={classicStyles.bulletText}>{safeText(skill)}</Text>
                     </View>
                   ))}
                 </View>
@@ -368,8 +394,8 @@ const SimpleDocument = ({ basicInfo, projects, experiences, skills, education, t
           <Text style={classicStyles.sectionTitle}>Additional</Text>
           {projects.map((project, i) => (
             <View key={i} style={classicStyles.entry}>
-              <Text style={classicStyles.title}>{project.title}</Text>
-              {project.description && <Text style={classicStyles.description}>{project.description}</Text>}
+              <Text style={classicStyles.title}>{safeText(project.title)}</Text>
+              {project.description && <Text style={classicStyles.description}>{safeText(project.description)}</Text>}
             </View>
           ))}
         </View>
@@ -379,7 +405,7 @@ const SimpleDocument = ({ basicInfo, projects, experiences, skills, education, t
       {skills && skills.length > 0 && (
         <View style={classicStyles.section}>
           <Text style={classicStyles.sectionTitle}>Technical Skills</Text>
-          <Text style={classicStyles.skills}>{skills.map(s => s.name).join(', ')}</Text>
+          <Text style={classicStyles.skills}>{skills.map(s => safeText(s.name)).filter(name => name).join(', ')}</Text>
         </View>
       )}
     </Page>
@@ -391,13 +417,13 @@ const SimpleDocument = ({ basicInfo, projects, experiences, skills, education, t
       <View style={modernStyles.container}>
         {/* Header */}
         <View style={modernStyles.header}>
-          <Text style={modernStyles.name}>{validBasicInfo.name}</Text>
+          <Text style={modernStyles.name}>{safeText(validBasicInfo.name)}</Text>
           <View style={modernStyles.contactInfo}>
-            <Text style={modernStyles.contactItem}>{validBasicInfo.email}</Text>
+            <Text style={modernStyles.contactItem}>{safeText(validBasicInfo.email)}</Text>
             <Text>•</Text>
-            <Text style={modernStyles.contactItem}>{validBasicInfo.contact_no}</Text>
+            <Text style={modernStyles.contactItem}>{safeText(validBasicInfo.contact_no)}</Text>
             <Text>•</Text>
-            <Text style={modernStyles.contactItem}>{validBasicInfo.location}</Text>
+            <Text style={modernStyles.contactItem}>{safeText(validBasicInfo.location)}</Text>
           </View>
         </View>
 
@@ -405,7 +431,7 @@ const SimpleDocument = ({ basicInfo, projects, experiences, skills, education, t
         {validBasicInfo.about && (
           <View style={modernStyles.section}>
             <Text style={modernStyles.sectionTitle}>Profile</Text>
-            <Text style={modernStyles.description}>{validBasicInfo.about}</Text>
+            <Text style={modernStyles.description}>{safeText(validBasicInfo.about)}</Text>
           </View>
         )}
 
@@ -416,11 +442,11 @@ const SimpleDocument = ({ basicInfo, projects, experiences, skills, education, t
             {experiences.map((exp, i) => (
               <View key={i} style={modernStyles.entry}>
                 <View style={modernStyles.entryHeader}>
-                  <Text style={modernStyles.subtitle}>{exp.position}</Text>
+                  <Text style={modernStyles.subtitle}>{safeText(exp.position)}</Text>
                   <Text style={modernStyles.date}>{formatDate(exp.startDate)} - {formatDate(exp.endDate)}</Text>
                 </View>
-                <Text style={modernStyles.title}>{exp.company}</Text>
-                <Text style={modernStyles.description}>{exp.description}</Text>
+                <Text style={modernStyles.title}>{safeText(exp.company)}</Text>
+                <Text style={modernStyles.description}>{safeText(exp.description)}</Text>
               </View>
             ))}
           </View>
@@ -433,10 +459,10 @@ const SimpleDocument = ({ basicInfo, projects, experiences, skills, education, t
             {education.map((edu, i) => (
               <View key={i} style={modernStyles.entry}>
                 <View style={modernStyles.entryHeader}>
-                  <Text style={modernStyles.subtitle}>{edu.institution}</Text>
+                  <Text style={modernStyles.subtitle}>{safeText(edu.institution)}</Text>
                   <Text style={modernStyles.date}>{formatDate(edu.startDate)} - {formatDate(edu.endDate)}</Text>
                 </View>
-                <Text style={modernStyles.title}>{edu.degree}</Text>
+                <Text style={modernStyles.title}>{safeText(edu.degree)}</Text>
               </View>
             ))}
           </View>
@@ -447,7 +473,7 @@ const SimpleDocument = ({ basicInfo, projects, experiences, skills, education, t
           <View style={modernStyles.section}>
             <Text style={modernStyles.sectionTitle}>Certificates & Languages</Text>
             {projects.map((proj, i) => (
-              <Text key={i} style={modernStyles.title}>{proj.title}</Text>
+              <Text key={i} style={modernStyles.title}>{safeText(proj.title)}</Text>
             ))}
           </View>
         )}
@@ -456,7 +482,7 @@ const SimpleDocument = ({ basicInfo, projects, experiences, skills, education, t
         {skills && skills.length > 0 && (
           <View style={modernStyles.section}>
             <Text style={modernStyles.sectionTitle}>Skills</Text>
-            <Text style={modernStyles.skills}>{skills.map(s => s.name).join(', ')}</Text>
+            <Text style={modernStyles.skills}>{skills.map(s => safeText(s.name)).filter(name => name).join(', ')}</Text>
           </View>
         )}
       </View>
@@ -468,19 +494,19 @@ const SimpleDocument = ({ basicInfo, projects, experiences, skills, education, t
     <Page size="A4" style={creativeStyles.page}>
       {/* Left Column */}
       <View style={creativeStyles.leftColumn}>
-        <Text style={creativeStyles.name}>{validBasicInfo.name}</Text>
+        <Text style={creativeStyles.name}>{safeText(validBasicInfo.name)}</Text>
         
         <View style={{marginTop: 10, marginBottom: 15}}>
-          <Text style={creativeStyles.contactItem}>{validBasicInfo.email}</Text>
-          <Text style={creativeStyles.contactItem}>{validBasicInfo.contact_no}</Text>
-          <Text style={creativeStyles.contactItem}>{validBasicInfo.location}</Text>
+          <Text style={creativeStyles.contactItem}>{safeText(validBasicInfo.email)}</Text>
+          <Text style={creativeStyles.contactItem}>{safeText(validBasicInfo.contact_no)}</Text>
+          <Text style={creativeStyles.contactItem}>{safeText(validBasicInfo.location)}</Text>
         </View>
 
         {/* Profile Section */}
         {validBasicInfo.about && (
           <View style={creativeStyles.leftSection}>
             <Text style={creativeStyles.leftSectionTitle}>Profile</Text>
-            <Text style={creativeStyles.profileText}>{validBasicInfo.about}</Text>
+            <Text style={creativeStyles.profileText}>{safeText(validBasicInfo.about)}</Text>
           </View>
         )}
 
@@ -490,8 +516,8 @@ const SimpleDocument = ({ basicInfo, projects, experiences, skills, education, t
             <Text style={creativeStyles.leftSectionTitle}>Education</Text>
             {education.map((edu, i) => (
               <View key={i} style={{marginBottom: 5}}>
-                <Text style={{fontSize: 9, fontWeight: 600}}>{edu.institution}</Text>
-                <Text style={{fontSize: 8.5}}>{edu.degree}</Text>
+                <Text style={{fontSize: 9, fontWeight: 600}}>{safeText(edu.institution)}</Text>
+                <Text style={{fontSize: 8.5}}>{safeText(edu.degree)}</Text>
                 <Text style={{fontSize: 8, color: '#ccc'}}>{formatDate(edu.startDate)} - {formatDate(edu.endDate)}</Text>
               </View>
             ))}
@@ -503,7 +529,7 @@ const SimpleDocument = ({ basicInfo, projects, experiences, skills, education, t
           <View style={creativeStyles.leftSection}>
             <Text style={creativeStyles.leftSectionTitle}>Languages</Text>
             {projects.map((proj, i) => (
-              <Text key={i} style={{fontSize: 9, marginTop: 4}}>{proj.title}</Text>
+              <Text key={i} style={{fontSize: 9, marginTop: 4}}>{safeText(proj.title)}</Text>
             ))}
           </View>
         )}
@@ -517,15 +543,15 @@ const SimpleDocument = ({ basicInfo, projects, experiences, skills, education, t
             <Text style={creativeStyles.rightSectionTitle}>Professional Experience</Text>
             {experiences.map((exp, i) => (
               <View key={i} style={creativeStyles.expEntry}>
-                <Text style={creativeStyles.position}>{exp.position}</Text>
-                <Text style={creativeStyles.company}>{exp.company} | {formatDate(exp.startDate)} - {formatDate(exp.endDate)}</Text>
-                {exp.description && <Text style={creativeStyles.expDescription}>{exp.description}</Text>}
+                <Text style={creativeStyles.position}>{safeText(exp.position)}</Text>
+                <Text style={creativeStyles.company}>{safeText(exp.company)} | {formatDate(exp.startDate)} - {formatDate(exp.endDate)}</Text>
+                {exp.description && <Text style={creativeStyles.expDescription}>{safeText(exp.description)}</Text>}
                 {exp.skillsLearned && exp.skillsLearned.length > 0 && (
                   <View style={{marginTop: 4, paddingLeft: 10}}>
                     {exp.skillsLearned.map((skill, j) => (
                       <View key={j} style={{flexDirection: 'row', marginBottom: 2}}>
                         <Text>• </Text>
-                        <Text style={{fontSize: 9, lineHeight: 1.4, flex: 1}}>{skill}</Text>
+                        <Text style={{fontSize: 9, lineHeight: 1.4, flex: 1}}>{safeText(skill)}</Text>
                       </View>
                     ))}
                   </View>
@@ -541,7 +567,7 @@ const SimpleDocument = ({ basicInfo, projects, experiences, skills, education, t
             <Text style={creativeStyles.rightSectionTitle}>Skills</Text>
             <View style={{paddingLeft: 5, marginTop: 4}}>
               {skills.map((skill, i) => (
-                <Text key={i} style={creativeStyles.skillItem}>• {skill.name}</Text>
+                <Text key={i} style={creativeStyles.skillItem}>• {safeText(skill.name)}</Text>
               ))}
             </View>
           </View>
@@ -552,7 +578,7 @@ const SimpleDocument = ({ basicInfo, projects, experiences, skills, education, t
           <View style={creativeStyles.rightSection}>
             <Text style={creativeStyles.rightSectionTitle}>Awards</Text>
             {projects.map((proj, i) => (
-              <Text key={i} style={{fontSize: 10, marginTop: 4}}>{proj.title}</Text>
+              <Text key={i} style={{fontSize: 10, marginTop: 4}}>{safeText(proj.title)}</Text>
             ))}
           </View>
         )}
@@ -571,6 +597,20 @@ const SimpleDocument = ({ basicInfo, projects, experiences, skills, education, t
 
 // --- MAIN EXPORTED COMPONENT ---
 export default function ResumePDFCore({ basicInfo, projects, experiences, skills, education, templateType, canDownload = true }: ResumePDFCoreProps) {
+  // Check if basicInfo has meaningful content
+  const hasValidBasicInfo = () => {
+    return basicInfo && (
+      (basicInfo.name && basicInfo.name.trim() !== '') ||
+      (basicInfo.email && basicInfo.email.trim() !== '') ||
+      (basicInfo.contact_no && basicInfo.contact_no.trim() !== '') ||
+      (basicInfo.location && basicInfo.location.trim() !== '') ||
+      (basicInfo.about && basicInfo.about.trim() !== '')
+    );
+  };
+
+  // Add retry state to force re-render of PDFDownloadLink on error
+  const [retryKey, setRetryKey] = React.useState(0);
+
   const getFileName = () => {
     const name = basicInfo?.name?.replace(/\s+/g, '_') || 'resume';
     return `${name}_${templateType}_resume.pdf`;
@@ -603,6 +643,12 @@ export default function ResumePDFCore({ basicInfo, projects, experiences, skills
     }
   };
 
+  // Function to retry PDF generation
+  const handleRetry = () => {
+    console.log('Retrying PDF generation...');
+    setRetryKey(prev => prev + 1);
+  };
+
   return (
     <div className="bg-white dark:bg-gray-800 p-5 rounded-lg shadow-md border dark:border-gray-700">
       <div className="text-center mb-5">
@@ -611,6 +657,7 @@ export default function ResumePDFCore({ basicInfo, projects, experiences, skills
       </div>
       
       <PDFDownloadLink 
+        key={retryKey} // Force re-render on retry
         document={<SimpleDocument basicInfo={basicInfo} projects={projects} experiences={experiences} skills={skills} education={education} templateType={templateType} />} 
         fileName={getFileName()} 
         className="w-full"
@@ -623,11 +670,18 @@ export default function ResumePDFCore({ basicInfo, projects, experiences, skills
             return (
               <div className="w-full p-4 bg-red-50 border border-red-200 rounded-md">
                 <p className="text-red-600 text-sm text-center">
-                  Error generating PDF. Please try again or refresh the page.
+                  Error generating PDF. Please try again.
                 </p>
                 <p className="text-red-500 text-xs text-center mt-1">
                   {error.message || 'Unknown error occurred'}
                 </p>
+                <Button 
+                  onClick={handleRetry}
+                  className="w-full mt-3 bg-red-600 hover:bg-red-700 text-white"
+                  size="sm"
+                >
+                  Try Again
+                </Button>
               </div>
             );
           }
@@ -635,7 +689,7 @@ export default function ResumePDFCore({ basicInfo, projects, experiences, skills
           return (
             <Button 
               className={`w-full font-medium py-2 flex items-center justify-center gap-2 ${canDownload ? 'text-white bg-black hover:bg-gray-800' : 'text-gray-500 bg-gray-200 cursor-not-allowed'}`}
-              disabled={loading || !basicInfo || !canDownload}
+              disabled={loading || !hasValidBasicInfo() || !canDownload}
             >
               {loading ? (
                 <>
@@ -665,13 +719,13 @@ export default function ResumePDFCore({ basicInfo, projects, experiences, skills
         }}
       </PDFDownloadLink>
       
-      {!basicInfo && (
+      {!hasValidBasicInfo() && (
         <p className="text-sm text-red-500 mt-2 text-center">
           Please add your basic information before downloading your resume.
         </p>
       )}
       
-      {!canDownload && basicInfo && (
+      {!canDownload && hasValidBasicInfo() && (
         <p className="text-sm text-amber-600 mt-2 text-center">
           You've cleared your resume. Add some content to enable PDF download.
         </p>
