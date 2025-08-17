@@ -19,6 +19,7 @@ import { Badge } from "@/components/ui/badge";
 import { type Project } from "@/types/portfolio";
 import { useToast } from '../contexts/ToastContext';
 import ErrorBoundary from './ErrorBoundary';
+import { shouldShowToast } from '@/utils/toastUtils';
 
 // --- PROPS INTERFACE ---
 interface ProjectFormProps {
@@ -27,12 +28,32 @@ interface ProjectFormProps {
 }
 
 export default function EnhancedProjectForm({ initialData, onDataChange }: ProjectFormProps) {
+    console.log('🔄 EnhancedProjectForm rendered with initialData:', initialData);
+    
     const { currentUser } = useUserContext();
     const userEmail = currentUser?.email || '';
-    const { showToast } = useToast();
+    const { showToast: originalShowToast } = useToast();
+
+    // Debounced toast function to prevent excessive notifications
+    const showToast = useCallback(
+        (message: string, type: 'success' | 'error' | 'info') => {
+            if (shouldShowToast(message)) {
+                originalShowToast(message, type);
+            }
+        },
+        [originalShowToast]
+    );
 
     // Hook for backend mutation functions
-    const { addProject, updateProject, removeProject, addProjectLoading, updateProjectLoading } = useProject(userEmail);
+    const { 
+        addProject, 
+        updateProject, 
+        removeProject, 
+        removeAllProjects,
+        addProjectLoading, 
+        updateProjectLoading,
+        removeAllProjectsLoading 
+    } = useProject(userEmail);
 
     // --- LOCAL STATE MANAGEMENT ---
     const [projectList, setProjectList] = useState<Project[]>([]);
@@ -42,21 +63,39 @@ export default function EnhancedProjectForm({ initialData, onDataChange }: Proje
 
     // --- DATA SYNCHRONIZATION ---
     useEffect(() => {
-        setProjectList(initialData || []);
+        console.log('🚀 Received initialData:', initialData);
+        if (Array.isArray(initialData) && initialData.length > 0) {
+            console.log('🚀 Processed project data:', initialData);
+            setProjectList(initialData);
+        } else if (Array.isArray(initialData) && initialData.length === 0) {
+            console.log('🚀 Initial data is empty array, setting empty list');
+            setProjectList([]);
+        } else {
+            console.log('🚀 Initial data is null/undefined or invalid, keeping current list');
+            // Don't reset if we have existing data and initialData is invalid
+        }
     }, [initialData]);
+
+    // Debug onDataChange prop
+    const debugOnDataChange = useCallback((data: Project[]) => {
+        console.log('🔄 onDataChange called with:', data);
+        onDataChange(data);
+    }, [onDataChange]);
 
     // --- LIVE UPDATE HANDLER ---
     const handleProjectListChange = useCallback((newProjectList: Project[]) => {
+        console.log('🚀 Updating project list:', newProjectList);
+        console.log('🚀 Calling onDataChange with:', newProjectList);
         setProjectList(newProjectList);
-        onDataChange(newProjectList);
-    }, [onDataChange]);
+        debugOnDataChange(newProjectList);
+    }, [debugOnDataChange]);
 
     const form = useForm<ProjectFormSchema>({
         resolver: zodResolver(projectSchema),
         defaultValues: {
             title: "",
             description: "",
-            technologies: [],
+            techStack: [],
             link: "",
         },
     });
@@ -74,7 +113,7 @@ export default function EnhancedProjectForm({ initialData, onDataChange }: Proje
             _id: editingProject?._id || (isAddingNew ? 'temp-new' : ''),
             title: currentFormData.title || '',
             description: currentFormData.description || '',
-            technologies: currentFormData.technologies || [],
+            techStack: currentFormData.techStack || [],
             link: currentFormData.link || ''
         };
 
@@ -104,54 +143,106 @@ export default function EnhancedProjectForm({ initialData, onDataChange }: Proje
     // --- TECHNOLOGY MANAGEMENT ---
     const addTechnology = () => {
         if (techInput.trim()) {
-            const currentTech = form.getValues().technologies || [];
+            const currentTech = form.getValues().techStack || [];
             const newTech = [...currentTech, techInput.trim()];
-            form.setValue("technologies", newTech);
-            handleFieldChange("technologies", newTech);
+            form.setValue("techStack", newTech);
+            handleFieldChange("techStack", newTech);
             setTechInput("");
         }
     };
 
     const removeTechnology = (techToRemove: string) => {
-        const currentTech = form.getValues().technologies || [];
-        const newTech = currentTech.filter(tech => tech !== techToRemove);
-        form.setValue("technologies", newTech);
-        handleFieldChange("technologies", newTech);
+        const currentTech = form.getValues().techStack || [];
+        const newTech = currentTech.filter((tech: string) => tech !== techToRemove);
+        form.setValue("techStack", newTech);
+        handleFieldChange("techStack", newTech);
     };
 
     // --- HANDLERS ---
     const onSubmit = async (data: ProjectFormSchema) => {
         try {
-            if (editingProject && editingProject._id !== 'temp-new') {
-                // Update existing project
-                const updatedProjectItem: Project = { ...editingProject, ...data };
-                await updateProject(editingProject._id || '', updatedProjectItem);
+            if (editingProject) {
+                // Update existing project entry
+                const updatedProjectItem: Project = { 
+                    ...editingProject, 
+                    ...data,
+                    _id: editingProject._id || editingProject.id
+                } as Project;
                 
-                const updatedList = projectList.map(proj => 
-                    proj._id === editingProject._id ? updatedProjectItem : proj
-                );
-                handleProjectListChange(updatedList);
-                
-                showToast("Project updated successfully!", "success");
+                const result = await updateProject(editingProject._id || editingProject.id || '', updatedProjectItem);
+
+                // Handle different hook return types
+                let nextList: Project[];
+                if (Array.isArray(result)) {
+                    nextList = result as Project[];
+                } else if (result && typeof result === 'object') {
+                    nextList = projectList.map((p) =>
+                        (p._id || p.id) === (updatedProjectItem._id || updatedProjectItem.id)
+                            ? (result as Project)
+                            : p
+                    );
+                } else {
+                    nextList = projectList.map((p) =>
+                        (p._id || p.id) === (updatedProjectItem._id || updatedProjectItem.id)
+                            ? updatedProjectItem
+                            : p
+                    );
+                }
+
+                handleProjectListChange(nextList);
+                showToast('Project updated successfully!', 'success');
             } else {
-                // Add new project
-                const newProjectItem = await addProject(data as Project);
+                // Add new project entry
+                const projectData: Project = { 
+                    ...data
+                } as Project;
                 
-                // Remove temp entry and add real one
-                const filteredList = projectList.filter(proj => proj._id !== 'temp-new');
-                const updatedList = [...filteredList, newProjectItem];
+                const result = await addProject(projectData);
+                console.log('✅ Add project result:', result);
+
+                let nextItem: Project | null = null;
+                if (Array.isArray(result)) {
+                    // If API returns a list, assume last one is newest
+                    nextItem = (result as Project[])[(result as Project[]).length - 1] || null;
+                    console.log('📋 Result is array, using last item:', nextItem);
+                } else if (result && typeof result === 'object') {
+                    nextItem = result as Project;
+                    console.log('📝 Result is object, using directly:', nextItem);
+                }
+
+                // Remove temp entry and add the real one
+                const withoutTemp = projectList.filter((proj) => proj._id !== 'temp-new');
+                console.log('🗑️ Filtered list without temp:', withoutTemp);
+                
+                const finalProject: Project = {
+                    ...projectData,
+                    _id: nextItem?._id || `saved-${Date.now()}`,
+                    id: nextItem?.id || `saved-${Date.now()}`,
+                    title: nextItem?.title || projectData.title,
+                    description: nextItem?.description || projectData.description,
+                    techStack: nextItem?.techStack || projectData.techStack,
+                    link: nextItem?.link || projectData.link,
+                };
+                
+                const updatedList = [...withoutTemp, finalProject];
+                console.log('🚀 Final updated list:', updatedList);
                 handleProjectListChange(updatedList);
-                
-                showToast("Project added successfully!", "success");
+                showToast('Project added successfully!', 'success');
             }
-            
-            // Reset form state
+
+            // Reset form state but keep the data visible
             setEditingProject(null);
             setIsAddingNew(false);
-            form.reset();
+            form.reset({
+                title: '',
+                description: '',
+                techStack: [],
+                link: '',
+            });
             setTechInput("");
+            
         } catch (error) {
-            console.error('Error submitting project:', error);
+            console.error('Error saving project:', error);
             showToast('Failed to save project', 'error');
         }
     };
@@ -181,25 +272,70 @@ export default function EnhancedProjectForm({ initialData, onDataChange }: Proje
     };
 
     const handleEdit = (project: Project) => {
+        // If we're currently adding a new entry, remove the temp entry
+        if (isAddingNew) {
+            handleProjectListChange(projectList.filter((proj) => proj._id !== 'temp-new'));
+        }
+        
         setEditingProject(project);
         setIsAddingNew(false);
         form.reset({
             title: project.title || '',
             description: project.description || '',
-            technologies: project.technologies || [],
+            techStack: project.techStack || [],
             link: project.link || '',
         });
     };
 
     const handleAddNew = () => {
+        // If we're currently editing, clear that state first
+        if (editingProject) {
+            setEditingProject(null);
+        }
+        
         setIsAddingNew(true);
-        setEditingProject(null);
         form.reset({
             title: "",
             description: "",
-            technologies: [],
+            techStack: [],
             link: "",
         });
+        
+        // Create a temporary entry for live preview
+        const tempProject: Project = {
+            _id: 'temp-new',
+            title: '',
+            description: '',
+            techStack: [],
+            link: ''
+        };
+        
+        const updatedList = [...projectList, tempProject];
+        handleProjectListChange(updatedList);
+    };
+
+    const handleDeleteAll = async () => {
+        if (projectList.length === 0) return;
+        
+        try {
+            const validProjects = projectList.filter(proj => proj._id !== 'temp-new');
+            
+            if (validProjects.length === 0) {
+                // Just clear the temporary project
+                handleProjectListChange([]);
+                showToast('All projects cleared.', 'success');
+                return;
+            }
+
+            // Use the removeAllProjects hook function
+            await removeAllProjects();
+            handleProjectListChange([]);
+            
+            showToast('All projects deleted successfully.', 'success');
+        } catch (error) {
+            console.error('Error deleting all projects:', error);
+            showToast('Error deleting projects. Please try again.', 'error');
+        }
     };
 
     const handleCancelEdit = () => {
@@ -226,9 +362,21 @@ export default function EnhancedProjectForm({ initialData, onDataChange }: Proje
                             <p className="text-sm text-muted-foreground">Showcase your personal and professional projects.</p>
                         </div>
                         {!editingProject && !isAddingNew && (
-                            <Button onClick={handleAddNew} size="sm">
-                                Add Project
-                            </Button>
+                            <div className="flex gap-2">
+                                {projectList.length > 0 && (
+                                    <Button 
+                                        onClick={handleDeleteAll} 
+                                        variant="destructive" 
+                                        size="sm"
+                                        disabled={removeAllProjectsLoading}
+                                    >
+                                        {removeAllProjectsLoading ? 'Deleting...' : 'Delete All'}
+                                    </Button>
+                                )}
+                                <Button onClick={handleAddNew} size="sm">
+                                    Add Project
+                                </Button>
+                            </div>
                         )}
                     </div>
                 </div>
@@ -305,12 +453,12 @@ export default function EnhancedProjectForm({ initialData, onDataChange }: Proje
                                         </Button>
                                     </div>
                                     <div className="flex flex-wrap gap-2 mt-2">
-                                        {form.watch("technologies")?.map((tech, index) => (
+                                        {form.watch("techStack")?.map((tech, index) => (
                                             <Badge key={index} variant="secondary" className="cursor-pointer">
                                                 {tech}
                                                 <button
                                                     type="button"
-                                                    onClick={() => removeTechnology(tech)}
+                                                    onClick={() => removeTechnology(tech as string)}
                                                     className="ml-2 text-red-500 hover:text-red-700"
                                                 >
                                                     ×
@@ -369,16 +517,16 @@ export default function EnhancedProjectForm({ initialData, onDataChange }: Proje
                                                 {proj.description}
                                             </p>
                                         )}
-                                        {proj.technologies && proj.technologies.length > 0 && (
+                                        {proj.techStack && proj.techStack.length > 0 && (
                                             <div className="flex flex-wrap gap-1 mt-2">
-                                                {proj.technologies.slice(0, 3).map((tech, index) => (
+                                                {proj.techStack.slice(0, 3).map((tech: string, index: number) => (
                                                     <Badge key={index} variant="outline" className="text-xs">
                                                         {tech}
                                                     </Badge>
                                                 ))}
-                                                {proj.technologies.length > 3 && (
+                                                {proj.techStack.length > 3 && (
                                                     <Badge variant="outline" className="text-xs">
-                                                        +{proj.technologies.length - 3} more
+                                                        +{proj.techStack.length - 3} more
                                                     </Badge>
                                                 )}
                                             </div>

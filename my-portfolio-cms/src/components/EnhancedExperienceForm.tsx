@@ -19,6 +19,7 @@ import { Badge } from "@/components/ui/badge";
 import { type Experience } from "@/types/portfolio";
 import { useToast } from '../contexts/ToastContext';
 import ErrorBoundary from './ErrorBoundary';
+import { shouldShowToast } from '@/utils/toastUtils';
 
 // --- PROPS INTERFACE ---
 interface ExperienceFormProps {
@@ -27,29 +28,73 @@ interface ExperienceFormProps {
 }
 
 export default function EnhancedExperienceForm({ initialData, onDataChange }: ExperienceFormProps) {
+    console.log('🔄 EnhancedExperienceForm rendered with initialData:', initialData);
+    
     const { currentUser } = useUserContext();
     const userEmail = currentUser?.email || '';
-    const { showToast } = useToast();
+    const { showToast: originalShowToast } = useToast();
+
+    // Debounced toast function to prevent excessive notifications
+    const showToast = useCallback(
+        (message: string, type: 'success' | 'error' | 'info') => {
+            if (shouldShowToast(message)) {
+                originalShowToast(message, type);
+            }
+        },
+        [originalShowToast]
+    );
 
     // Hook for backend mutation functions
-    const { addExperience, updateExperience, removeExperience, addExperienceLoading, updateExperienceLoading } = useExperience(userEmail);
+    const { 
+        addExperience, 
+        updateExperience, 
+        removeExperience, 
+        removeAllExperiences,
+        addExperienceLoading, 
+        updateExperienceLoading,
+        removeAllExperiencesLoading 
+    } = useExperience(userEmail);
 
     // --- LOCAL STATE MANAGEMENT ---
     const [experienceList, setExperienceList] = useState<Experience[]>([]);
     const [editingExperience, setEditingExperience] = useState<Experience | null>(null);
     const [isAddingNew, setIsAddingNew] = useState(false);
+    const [isDeleting, setIsDeleting] = useState(false);
     const [skillInput, setSkillInput] = useState("");
 
     // --- DATA SYNCHRONIZATION ---
     useEffect(() => {
-        setExperienceList(initialData || []);
+        console.log('💼 Received initialData:', initialData);
+        if (Array.isArray(initialData) && initialData.length > 0) {
+            const processedData = initialData.map((item) => ({
+                ...item,
+                startDate: item.startDate ? new Date(item.startDate) : new Date(),
+                endDate: item.endDate ? new Date(item.endDate) : undefined,
+            }));
+            console.log('💼 Processed experience data:', processedData);
+            setExperienceList(processedData);
+        } else if (Array.isArray(initialData) && initialData.length === 0) {
+            console.log('💼 Initial data is empty array, setting empty list');
+            setExperienceList([]);
+        } else {
+            console.log('💼 Initial data is null/undefined or invalid, keeping current list');
+            // Don't reset if we have existing data and initialData is invalid
+        }
     }, [initialData]);
+
+    // Debug onDataChange prop
+    const debugOnDataChange = useCallback((data: Experience[]) => {
+        console.log('🔄 onDataChange called with:', data);
+        onDataChange(data);
+    }, [onDataChange]);
 
     // --- LIVE UPDATE HANDLER ---
     const handleExperienceListChange = useCallback((newExperienceList: Experience[]) => {
+        console.log('💼 Updating experience list:', newExperienceList);
+        console.log('💼 Calling onDataChange with:', newExperienceList);
         setExperienceList(newExperienceList);
-        onDataChange(newExperienceList);
-    }, [onDataChange]);
+        debugOnDataChange(newExperienceList);
+    }, [debugOnDataChange]);
 
     const form = useForm<ExperienceFormSchema>({
         resolver: zodResolver(experienceSchema),
@@ -126,41 +171,101 @@ export default function EnhancedExperienceForm({ initialData, onDataChange }: Ex
     // --- HANDLERS ---
     const onSubmit = async (data: ExperienceFormSchema) => {
         try {
-            if (editingExperience && editingExperience._id !== 'temp-new') {
-                // Update existing experience
-                const updatedExperienceItem: Experience = { ...editingExperience, ...data };
-                await updateExperience(editingExperience._id || '', updatedExperienceItem);
+            if (editingExperience) {
+                // Update existing experience entry
+                const updatedExperienceItem: Experience = { 
+                    ...editingExperience, 
+                    ...data,
+                    _id: editingExperience._id || editingExperience.id
+                } as Experience;
                 
-                const updatedList = experienceList.map(exp => 
-                    exp._id === editingExperience._id ? updatedExperienceItem : exp
-                );
-                handleExperienceListChange(updatedList);
-                
-                showToast("Experience updated successfully!", "success");
+                const result = await updateExperience(editingExperience._id || editingExperience.id || '', updatedExperienceItem);
+
+                // Handle different hook return types
+                let nextList: Experience[];
+                if (Array.isArray(result)) {
+                    nextList = result as Experience[];
+                } else if (result && typeof result === 'object') {
+                    nextList = experienceList.map((e) =>
+                        (e._id || e.id) === (updatedExperienceItem._id || updatedExperienceItem.id)
+                            ? (result as Experience)
+                            : e
+                    );
+                } else {
+                    nextList = experienceList.map((e) =>
+                        (e._id || e.id) === (updatedExperienceItem._id || updatedExperienceItem.id)
+                            ? updatedExperienceItem
+                            : e
+                    );
+                }
+
+                handleExperienceListChange(nextList);
+                showToast('Experience updated successfully!', 'success');
             } else {
-                // Add new experience
-                const newExperienceItem = await addExperience(data as Experience);
+                // Add new experience entry
+                const experienceData: Experience = { 
+                    ...data,
+                    // Ensure dates are properly formatted
+                    startDate: data.startDate || new Date(),
+                    endDate: data.endDate || undefined
+                } as Experience;
                 
-                // Remove temp entry and add real one
-                const filteredList = experienceList.filter(exp => exp._id !== 'temp-new');
-                const updatedList = [...filteredList, newExperienceItem];
+                const result = await addExperience(experienceData);
+                console.log('✅ Add experience result:', result);
+
+                let nextItem: Experience | null = null;
+                if (Array.isArray(result)) {
+                    // If API returns a list, assume last one is newest
+                    nextItem = (result as Experience[])[(result as Experience[]).length - 1] || null;
+                    console.log('📋 Result is array, using last item:', nextItem);
+                } else if (result && typeof result === 'object') {
+                    nextItem = result as Experience;
+                    console.log('📝 Result is object, using directly:', nextItem);
+                }
+
+                // Remove temp entry and add the real one
+                const withoutTemp = experienceList.filter((exp) => exp._id !== 'temp-new');
+                console.log('🗑️ Filtered list without temp:', withoutTemp);
+                
+                const finalExperience: Experience = {
+                    ...experienceData,
+                    _id: nextItem?._id || `saved-${Date.now()}`,
+                    id: nextItem?.id || `saved-${Date.now()}`,
+                    company: nextItem?.company || experienceData.company,
+                    position: nextItem?.position || experienceData.position,
+                    startDate: nextItem?.startDate || experienceData.startDate,
+                    endDate: nextItem?.endDate || experienceData.endDate,
+                    description: nextItem?.description || experienceData.description,
+                    skillsLearned: nextItem?.skillsLearned || experienceData.skillsLearned,
+                };
+                
+                const updatedList = [...withoutTemp, finalExperience];
+                console.log('💼 Final updated list:', updatedList);
                 handleExperienceListChange(updatedList);
-                
-                showToast("Experience added successfully!", "success");
+                showToast('Experience added successfully!', 'success');
             }
-            
-            // Reset form state
+
+            // Reset form state but keep the data visible
             setEditingExperience(null);
             setIsAddingNew(false);
-            form.reset();
+            form.reset({
+                company: '',
+                position: '',
+                startDate: new Date(),
+                endDate: undefined,
+                description: '',
+                skillsLearned: [],
+            });
             setSkillInput("");
+            
         } catch (error) {
-            console.error('Error submitting experience:', error);
+            console.error('Error saving experience:', error);
             showToast('Failed to save experience', 'error');
         }
     };
 
     const handleDelete = async (experienceId: string) => {
+        if (!experienceId) return;
         if (experienceId === 'temp-new') {
             // Just remove from local state if it's a temporary entry
             const updatedList = experienceList.filter(exp => exp._id !== experienceId);
@@ -172,19 +277,32 @@ export default function EnhancedExperienceForm({ initialData, onDataChange }: Ex
         }
 
         if (window.confirm('Are you sure you want to delete this experience?')) {
+            setIsDeleting(true);
             try {
                 await removeExperience(experienceId);
-                const updatedList = experienceList.filter(exp => exp._id !== experienceId);
+                const updatedList = experienceList.filter(exp => (exp._id || exp.id) !== experienceId);
+                console.log('🗑️ Delete operation - filtered list:', updatedList);
                 handleExperienceListChange(updatedList);
-                showToast("Experience deleted successfully!", "success");
-            } catch (error) {
-                console.error('Error deleting experience:', error);
+                showToast('Experience deleted successfully!', 'success');
+                if ((editingExperience?._id || editingExperience?.id) === experienceId) {
+                    setEditingExperience(null);
+                    setIsAddingNew(false);
+                    form.reset();
+                }
+            } catch {
                 showToast('Failed to delete experience', 'error');
+            } finally {
+                setIsDeleting(false);
             }
         }
     };
 
     const handleEdit = (experience: Experience) => {
+        // If we're currently adding a new entry, remove the temp entry
+        if (isAddingNew) {
+            handleExperienceListChange(experienceList.filter((exp) => exp._id !== 'temp-new'));
+        }
+        
         setEditingExperience(experience);
         setIsAddingNew(false);
         form.reset({
@@ -198,8 +316,12 @@ export default function EnhancedExperienceForm({ initialData, onDataChange }: Ex
     };
 
     const handleAddNew = () => {
+        // If we're currently editing, clear that state first
+        if (editingExperience) {
+            setEditingExperience(null);
+        }
+        
         setIsAddingNew(true);
-        setEditingExperience(null);
         form.reset({
             company: "",
             position: "",
@@ -208,6 +330,20 @@ export default function EnhancedExperienceForm({ initialData, onDataChange }: Ex
             description: "",
             skillsLearned: [],
         });
+        
+        // Create a temporary entry for live preview
+        const tempExperience: Experience = {
+            _id: 'temp-new',
+            company: '',
+            position: '',
+            startDate: new Date(),
+            endDate: undefined,
+            description: '',
+            skillsLearned: []
+        };
+        
+        const updatedList = [...experienceList, tempExperience];
+        handleExperienceListChange(updatedList);
     };
 
     const handleCancelEdit = () => {
@@ -224,6 +360,22 @@ export default function EnhancedExperienceForm({ initialData, onDataChange }: Ex
         setSkillInput("");
     };
 
+    const handleDeleteAll = async () => {
+        if (window.confirm('Are you sure you want to delete ALL experience entries? This action cannot be undone.')) {
+            setIsDeleting(true);
+            try {
+                await removeAllExperiences();
+                console.log('🗑️ Delete all operation - setting empty list');
+                handleExperienceListChange([]);
+                showToast('All experience entries deleted successfully!', 'success');
+            } catch {
+                showToast('Failed to delete all experience entries', 'error');
+            } finally {
+                setIsDeleting(false);
+            }
+        }
+    };
+
     return (
         <ErrorBoundary>
             <section className="bg-card border border-border rounded-xl shadow-sm overflow-hidden">
@@ -234,9 +386,21 @@ export default function EnhancedExperienceForm({ initialData, onDataChange }: Ex
                             <p className="text-sm text-muted-foreground">Your professional work history and accomplishments.</p>
                         </div>
                         {!editingExperience && !isAddingNew && (
-                            <Button onClick={handleAddNew} size="sm">
-                                Add Experience
-                            </Button>
+                            <div className="flex space-x-2">
+                                <Button onClick={handleAddNew} size="sm">
+                                    Add Experience
+                                </Button>
+                                {experienceList.filter(exp => exp._id !== 'temp-new' && (exp.company || exp.position)).length > 0 && (
+                                    <Button 
+                                        onClick={handleDeleteAll} 
+                                        size="sm" 
+                                        variant="destructive"
+                                        disabled={removeAllExperiencesLoading}
+                                    >
+                                        {removeAllExperiencesLoading ? 'Deleting All...' : 'Delete All'}
+                                    </Button>
+                                )}
+                            </div>
                         )}
                     </div>
                 </div>
@@ -411,10 +575,12 @@ export default function EnhancedExperienceForm({ initialData, onDataChange }: Ex
                     )}
 
                     {/* List of existing experience items */}
-                    {experienceList.length > 0 && (
+                    {experienceList.filter(exp => exp._id !== 'temp-new' && (exp.company || exp.position)).length > 0 ? (
                         <div className="space-y-4 pt-6 border-t">
                             <h3 className="text-lg font-medium">Your Work History</h3>
-                            {experienceList.map((exp) => (
+                            {experienceList
+                                .filter(exp => exp._id !== 'temp-new' && (exp.company || exp.position))
+                                .map((exp) => (
                                 <div key={exp._id || exp.id || 'temp'} className="flex justify-between items-start p-3 bg-muted/50 rounded-md">
                                     <div className="flex-1">
                                         <p className="font-semibold">{exp.position || 'Untitled Position'}</p>
@@ -447,12 +613,18 @@ export default function EnhancedExperienceForm({ initialData, onDataChange }: Ex
                                             size="sm" 
                                             variant="destructive" 
                                             onClick={() => handleDelete(exp._id || exp.id || '')}
+                                            disabled={isDeleting}
                                         >
-                                            Delete
+                                            {isDeleting ? 'Deleting...' : 'Delete'}
                                         </Button>
                                     </div>
                                 </div>
                             ))}
+                        </div>
+                    ) : (
+                        <div className="text-center py-8 text-muted-foreground">
+                            <p>No work experience added yet.</p>
+                            <p className="text-sm">Click "Add Experience" to get started!</p>
                         </div>
                     )}
                 </div>
