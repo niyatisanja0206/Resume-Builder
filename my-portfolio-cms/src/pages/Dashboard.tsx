@@ -116,6 +116,10 @@ export default function Dashboard() {
   const [showTitleDialog, setShowTitleDialog] = useState(false);
   const [resumeTitle, setResumeTitle] = useState('');
   const [currentDraftId, setCurrentDraftId] = useState<string | null>(null);
+  const [saveStrategy, setSaveStrategy] = useState<{
+    isUpdate: boolean;
+    resumeIdToUpdate: string | null;
+  }>({ isUpdate: false, resumeIdToUpdate: null });
 
   const selectedTemplate = initialTemplate && validTemplates.includes(initialTemplate as TemplateId)
     ? (initialTemplate as TemplateId)
@@ -245,7 +249,6 @@ export default function Dashboard() {
     setOpenSections(prev => ({ ...prev, [section]: !prev[section] }));
   };
 
-
   const handleSaveResume = async () => {
     if (!currentUser || !currentUser.email) {
       showToast('You must be logged in to save a resume', 'error');
@@ -259,13 +262,111 @@ export default function Dashboard() {
       return;
     }
 
-    // Set a default title suggestion based on user's name
-    const userName = localFormData.basicInfo?.name || currentUser.name || '';
-    const defaultTitle = userName ? `${userName}'s Resume` : 'My Resume';
-    setResumeTitle(defaultTitle);
+    // Determine save strategy BEFORE showing dialog
+    const selectedResumeId = localStorage.getItem('selectedResumeId');
+    let resumeIdToUpdate: string | null = null;
+    let isUpdate = false;
+
+    // Priority 1: If there's a selectedResumeId (editing specific resume), use it
+    if (selectedResumeId) {
+      resumeIdToUpdate = selectedResumeId;
+      isUpdate = true;
+    }
+    // Priority 2: If there's a current draft (working on draft), use it  
+    else if (currentDraftId) {
+      resumeIdToUpdate = currentDraftId;
+      isUpdate = true;
+    }
+
+    // Store the save strategy
+    setSaveStrategy({ isUpdate, resumeIdToUpdate });
     
-    // Show title dialog instead of saving directly
+    // Set default title based on existing title or user's name
+    let defaultTitle = '';
+    if (selectedResumeId && specificResumeData && specificResumeData.title) {
+      defaultTitle = specificResumeData.title; // Use existing title as default
+    } else {
+      const userName = localFormData.basicInfo?.name || currentUser.name || '';
+      defaultTitle = userName ? `${userName}'s Resume` : 'My Resume';
+    }
+    
+    setResumeTitle(defaultTitle);
     setShowTitleDialog(true);
+  };
+
+  // Extracted save logic to be reused
+  const performSave = async (titleToUse: string) => {
+    try {
+      setIsSaving(true);
+      showToast('Saving your resume...', 'info');
+
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('No authentication token found');
+      }
+
+      const resumeData = {
+        userEmail: currentUser!.email,
+        title: titleToUse.trim(),
+        status: 'completed',
+        basic: localFormData.basicInfo,
+        education: localFormData.education,
+        experience: localFormData.experiences,
+        projects: localFormData.projects,
+        skills: localFormData.skills,
+        template: selectedTemplate
+      };
+
+      // Use the pre-determined save strategy
+      let url: string;
+      let method: string;
+
+      if (saveStrategy.isUpdate && saveStrategy.resumeIdToUpdate) {
+        console.log('Dashboard: Updating existing resume:', saveStrategy.resumeIdToUpdate);
+        url = `/api/users/resumes/${saveStrategy.resumeIdToUpdate}`;
+        method = 'PUT';
+      } else {
+        console.log('Dashboard: Creating new resume');
+        url = '/api/users/resumes';
+        method = 'POST';
+      }
+
+      const response = await fetch(url, {
+        method,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify(resumeData),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => null);
+        throw new Error(`Failed to save resume: ${response.status} ${response.statusText}${errorData ? ' - ' + errorData.message : ''}`);
+      }
+
+      const result = await response.json();
+      console.log('Dashboard: Resume saved successfully:', result);
+      
+      showToast('Resume saved successfully!', 'success');
+      setShowTitleDialog(false);
+      setResumeTitle('');
+      setCurrentDraftId(null); // Clear draft ID since it's now completed
+      
+      // Clean up localStorage after successful save
+      if (saveStrategy.isUpdate) {
+        // Only remove selectedResumeId if we were updating it
+        localStorage.removeItem('selectedResumeId');
+      }
+      localStorage.removeItem('isNewResume');
+      
+      navigate('/profile');
+    } catch (error) {
+      console.error('Save error:', error);
+      showToast(`Failed to save resume: ${error instanceof Error ? error.message : 'Unknown error'}`, 'error');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   // Function to validate resume completeness
@@ -337,75 +438,7 @@ export default function Dashboard() {
       return;
     }
 
-    try {
-      setIsSaving(true);
-      showToast('Saving your resume...', 'info');
-
-      const token = localStorage.getItem('token');
-      const resumeData = {
-        userEmail: currentUser!.email,
-        title: resumeTitle.trim(),
-        status: 'completed',
-        basic: localFormData.basicInfo,
-        education: localFormData.education,
-        experience: localFormData.experiences,
-        projects: localFormData.projects,
-        skills: localFormData.skills,
-        template: selectedTemplate
-      };
-
-      let url: string;
-      let method: string;
-      let resumeIdToUpdate: string | null = null;
-
-      // Priority 1: If there's a selectedResumeId (editing specific resume), use it
-      const selectedResumeId = localStorage.getItem('selectedResumeId');
-      if (selectedResumeId) {
-        resumeIdToUpdate = selectedResumeId;
-        localStorage.removeItem('selectedResumeId'); // Clean up
-      }
-      // Priority 2: If there's a current draft (working on draft), use it  
-      else if (currentDraftId) {
-        resumeIdToUpdate = currentDraftId;
-      }
-
-      if (resumeIdToUpdate) {
-        console.log('Dashboard: Updating existing resume:', resumeIdToUpdate);
-        url = `/api/users/resumes/${resumeIdToUpdate}`;
-        method = 'PUT';
-      } else {
-        console.log('Dashboard: Creating new resume');
-        url = '/api/users/resumes';
-        method = 'POST';
-      }
-
-      const response = await fetch(url, {
-        method,
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify(resumeData),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => null);
-        throw new Error(`Failed to save resume: ${response.status} ${response.statusText}${errorData ? ' - ' + errorData.message : ''}`);
-      }
-
-      const result = await response.json();
-      console.log('Dashboard: Resume saved successfully:', result);
-      
-      showToast('Resume saved successfully!', 'success');
-      setShowTitleDialog(false);
-      setResumeTitle('');
-      setCurrentDraftId(null); // Clear draft ID since it's now completed
-      navigate('/profile');
-    } catch (error) {
-      showToast(`Failed to save resume: ${error instanceof Error ? error.message : 'Unknown error'}`, 'error');
-    } finally {
-      setIsSaving(false);
-    }
+    await performSave(resumeTitle.trim());
   };
 
   const handleCancelSave = () => {
@@ -439,6 +472,7 @@ export default function Dashboard() {
 
   const isResumeComplete = useMemo(() => {
     const validationErrors = validateResumeCompleteness(localFormData);
+    console.log('Dashboard: Validation errors:', validationErrors);
     return validationErrors.length === 0;
   }, [localFormData]);
 
@@ -612,8 +646,14 @@ export default function Dashboard() {
                 <Button 
                   onClick={handleSaveResume} 
                   className="flex items-center gap-2" 
-                  disabled={isSaving || !isResumeComplete}
-                  title={!isResumeComplete ? "Complete all required fields before saving" : "Save your resume"}
+                  disabled={isSaving || !isResumeComplete || !currentUser}
+                  title={
+                    !currentUser 
+                      ? "Please log in to save" 
+                      : !isResumeComplete 
+                      ? "Complete all required fields before saving" 
+                      : "Save your resume"
+                  }
                 >
                   {isSaving ? (
                     <>
@@ -652,8 +692,8 @@ export default function Dashboard() {
           </main>
         </div>
 
-        {/* Title Dialog */}
-        {showTitleDialog && isNewResume && (
+        {/* Fixed Title Dialog - Now shows for both new and existing resumes when needed */}
+        {showTitleDialog && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
             <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-md mx-4">
               <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">
@@ -671,7 +711,7 @@ export default function Dashboard() {
                 disabled={isSaving}
                 autoFocus
                 onFocus={(e) => e.target.select()}
-                onKeyDown={(e) => e.key === 'Enter' && !isSaving && handleSaveWithTitle()}
+                onKeyDown={(e) => e.key === 'Enter' && !isSaving && resumeTitle.trim() && handleSaveWithTitle()}
               />
               <div className="flex justify-end gap-3 mt-6">
                 <Button

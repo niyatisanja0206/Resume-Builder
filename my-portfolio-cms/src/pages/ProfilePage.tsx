@@ -122,8 +122,6 @@ export default function ProfilePage() {
       localStorage.removeItem('currentResumeId');
       localStorage.setItem('isNewResume', 'true'); // Flag for new resume
       
-      // Navigate to dashboard with the new resume
-      navigate('/dashboard');
     },
     onError: (error: Error) => {
       showToast(`Failed to create resume: ${error.message}`, 'error');
