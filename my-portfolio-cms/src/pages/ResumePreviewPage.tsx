@@ -1,4 +1,4 @@
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { ArrowLeft, Edit } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -42,9 +42,14 @@ const fetchResumeById = async (resumeId: string): Promise<Resume> => {
   return response.json();
 };
 
+// Template validation
+type TemplateId = 'classic' | 'modern' | 'creative';
+const validTemplates: TemplateId[] = ['classic', 'modern', 'creative'];
+
 export default function ResumePreviewPage() {
   const { resumeId } = useParams<{ resumeId: string }>();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
 
   // Fetch resume data
   const { 
@@ -58,6 +63,14 @@ export default function ResumePreviewPage() {
     enabled: !!resumeId,
   });
 
+  // Get template from URL params, fallback to resume template, then default to 'classic'
+  const urlTemplate = searchParams.get('template');
+  const selectedTemplate = urlTemplate && validTemplates.includes(urlTemplate as TemplateId)
+    ? (urlTemplate as TemplateId)
+    : (resume?.template && validTemplates.includes(resume.template as TemplateId) 
+        ? (resume.template as TemplateId) 
+        : 'classic');
+
   const handleGoBack = () => {
     navigate('/profile');
   };
@@ -65,7 +78,7 @@ export default function ResumePreviewPage() {
   const handleEditResume = () => {
     if (resume) {
       localStorage.setItem('selectedResumeId', resume._id);
-      navigate('/dashboard');
+      navigate(`/dashboard?template=${selectedTemplate}`);
     }
   };
 
@@ -84,7 +97,6 @@ export default function ResumePreviewPage() {
     education: []
   };
 
-  const selectedTemplate = resume?.template || 'classic';
   const hasResumeContent = resume ? (
     (resume.basic?.name && resume.basic?.email) ||
     (resume.projects && resume.projects.length > 0) ||
