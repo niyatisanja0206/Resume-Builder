@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { ChevronDown, ChevronUp, Save, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-
+import { Link } from 'react-router-dom';
 // Import form components
 import EnhancedExperienceForm from "@/components/dashboard/EnhancedExperienceForm";
 import EnhancedProjectForm from "@/components/dashboard/EnhancedProjectForm";
@@ -539,6 +539,7 @@ export default function Dashboard() {
       <div className="flex flex-col md:flex-row w-full min-height-screen bg-gray-100 dark:bg-gray-900">
           {/* LEFT: Forms */}
           <aside className="w-full md:w-1/2 lg:w-2/5 h-screen overflow-y-auto bg-white dark:bg-black p-6 lg:p-8 space-y-8">
+            <Button className='mb-4'><Link to="/portfolio">Change template</Link></Button>
             {/* Basic */}
               <div className={`border rounded-lg overflow-hidden bg-white dark:bg-gray-800 shadow-sm ${openSections.basic ? 'ring-2 ring-primary/20' : ''}`}>
                 <button onClick={() => toggleSection('basic')} className={`w-full flex justify-between items-center p-4 text-left font-medium ${openSections.basic ? 'bg-primary/10 text-primary' : ''}`}>
