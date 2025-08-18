@@ -98,17 +98,6 @@ Make sure you have the following installed on your machine:
         ```
     The application will be running on `http://localhost:5173`.
 
-## 📸 Screenshots
-
-![Landing Page](./my-portfolio-cms/src/assets/resume1.png)
-_Landing Page_
-
-![Dashboard](./my-portfolio-cms/src/assets/Resume2.png)
-_User Dashboard_
-
-![Resume Preview](./my-portfolio-cms/src/assets/Resume3.png)
-_Resume Preview_
-
 ## 🤝 Contributing
 
 Contributions are what make the open-source community such an amazing place to learn, inspire, and create. Any contributions you make are **greatly appreciated**.
