@@ -17,10 +17,8 @@ import { useToast } from "@/contexts/ToastContext";
 // Import preview components
 import ResumePreview from '@/components/dashboard/ResumePreview';
 import ResumePDF from '@/components/dashboard/ResumePDFSimple';
-import ErrorBoundary from '@/components/dashboard/ErrorBoundary';
 
 // Import utilities and context
-import AuthGuard from "@/components/AuthGuard";
 import { useUserContext } from "@/hooks/useUserContext";
 
 // Import data types
@@ -158,7 +156,7 @@ export default function Dashboard() {
   useEffect(() => {
     // Scenario 1: New resume - start with empty data
     if (isNewResume) {
-      console.log('📊 Dashboard: Starting with empty data for new resume');
+      console.log('Dashboard: Starting with empty data for new resume');
       localStorage.removeItem('isNewResume');
       // Clear URL parameters if present
       if (isNewResumeFromUrl) {
@@ -511,12 +509,11 @@ export default function Dashboard() {
   }, [currentResumeData.education]);
 
   return (
-    <AuthGuard>
-        <div className="flex flex-col md:flex-row w-full min-height-screen bg-gray-100 dark:bg-gray-900">
+    <>
+      <div className="flex flex-col md:flex-row w-full min-height-screen bg-gray-100 dark:bg-gray-900">
           {/* LEFT: Forms */}
           <aside className="w-full md:w-1/2 lg:w-2/5 h-screen overflow-y-auto bg-white dark:bg-black p-6 lg:p-8 space-y-8">
             {/* Basic */}
-            <ErrorBoundary>
               <div className={`border rounded-lg overflow-hidden bg-white dark:bg-gray-800 shadow-sm ${openSections.basic ? 'ring-2 ring-primary/20' : ''}`}>
                 <button onClick={() => toggleSection('basic')} className={`w-full flex justify-between items-center p-4 text-left font-medium ${openSections.basic ? 'bg-primary/10 text-primary' : ''}`}>
                   <span className="text-lg">Basic Information</span>
@@ -531,12 +528,10 @@ export default function Dashboard() {
                   </div>
                 )}
               </div>
-            </ErrorBoundary>
 
             {/* Education */}
-            <ErrorBoundary>
-              <div className={`border rounded-lg overflow-hidden bg-white dark:bg-gray-800 shadow-sm ${openSections.education ? 'ring-2 ring-primary/20' : ''}`}>
-                <button onClick={() => toggleSection('education')} className={`w-full flex justify-between items-center p-4 text-left font-medium ${openSections.education ? 'bg-primary/10 text-primary' : ''}`}>
+            <div className={`border rounded-lg overflow-hidden bg-white dark:bg-gray-800 shadow-sm ${openSections.education ? 'ring-2 ring-primary/20' : ''}`}>
+              <button onClick={() => toggleSection('education')} className={`w-full flex justify-between items-center p-4 text-left font-medium ${openSections.education ? 'bg-primary/10 text-primary' : ''}`}>
                   <span className="text-lg">Education</span>
                   {openSections.education ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
                 </button>
@@ -549,12 +544,10 @@ export default function Dashboard() {
                   </div>
                 )}
               </div>
-            </ErrorBoundary>
 
             {/* Experience */}
-            <ErrorBoundary>
-              <div className={`border rounded-lg overflow-hidden bg-white dark:bg-gray-800 shadow-sm ${openSections.experience ? 'ring-2 ring-primary/20' : ''}`}>
-                <button onClick={() => toggleSection('experience')} className={`w-full flex justify-between items-center p-4 text-left font-medium ${openSections.experience ? 'bg-primary/10 text-primary' : ''}`}>
+            <div className={`border rounded-lg overflow-hidden bg-white dark:bg-gray-800 shadow-sm ${openSections.experience ? 'ring-2 ring-primary/20' : ''}`}>
+              <button onClick={() => toggleSection('experience')} className={`w-full flex justify-between items-center p-4 text-left font-medium ${openSections.experience ? 'bg-primary/10 text-primary' : ''}`}>
                   <span className="text-lg">Experience</span>
                   {openSections.experience ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
                 </button>
@@ -567,12 +560,10 @@ export default function Dashboard() {
                   </div>
                 )}
               </div>
-            </ErrorBoundary>
 
             {/* Projects */}
-            <ErrorBoundary>
-              <div className={`border rounded-lg overflow-hidden bg-white dark:bg-gray-800 shadow-sm ${openSections.project ? 'ring-2 ring-primary/20' : ''}`}>
-                <button onClick={() => toggleSection('project')} className={`w-full flex justify-between items-center p-4 text-left font-medium ${openSections.project ? 'bg-primary/10 text-primary' : ''}`}>
+            <div className={`border rounded-lg overflow-hidden bg-white dark:bg-gray-800 shadow-sm ${openSections.project ? 'ring-2 ring-primary/20' : ''}`}>
+              <button onClick={() => toggleSection('project')} className={`w-full flex justify-between items-center p-4 text-left font-medium ${openSections.project ? 'bg-primary/10 text-primary' : ''}`}>
                   <span className="text-lg">Projects</span>
                   {openSections.project ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
                 </button>
@@ -585,12 +576,10 @@ export default function Dashboard() {
                   </div>
                 )}
               </div>
-            </ErrorBoundary>
 
             {/* Skills */}
-            <ErrorBoundary>
-              <div className={`border rounded-lg overflow-hidden bg-white dark:bg-gray-800 shadow-sm ${openSections.skill ? 'ring-2 ring-primary/20' : ''}`}>
-                <button onClick={() => toggleSection('skill')} className={`w-full flex justify-between items-center p-4 text-left font-medium ${openSections.skill ? 'bg-primary/10 text-primary' : ''}`}>
+            <div className={`border rounded-lg overflow-hidden bg-white dark:bg-gray-800 shadow-sm ${openSections.skill ? 'ring-2 ring-primary/20' : ''}`}>
+              <button onClick={() => toggleSection('skill')} className={`w-full flex justify-between items-center p-4 text-left font-medium ${openSections.skill ? 'bg-primary/10 text-primary' : ''}`}>
                   <span className="text-lg">Skills</span>
                   {openSections.skill ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
                 </button>
@@ -603,14 +592,11 @@ export default function Dashboard() {
                   </div>
                 )}
               </div>
-            </ErrorBoundary>
 
             {/* PDF + Save/Clear */}
             <div className="flex-shrink-0 mt-6 space-y-6">
-              <ErrorBoundary>
                 <ResumePDF {...currentResumeData} templateType={selectedTemplate} canDownload={hasResumeContent} />
-              </ErrorBoundary>
-
+              
               {/* Resume Completion Status */}
               <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
                 <div className="flex items-center justify-between mb-2">
@@ -668,9 +654,7 @@ export default function Dashboard() {
 
             <div className="flex-grow flex flex-col items-center justify-start overflow-auto bg-gray-200 dark:bg-gray-800 rounded-lg p-4">
               <div className="transform scale-[0.85] origin-top w-full mt-4 transition-transform duration-200">
-                <ErrorBoundary>
                   <ResumePreview {...currentResumeData} template={selectedTemplate} />
-                </ErrorBoundary>
               </div>
             </div>
           </main>
@@ -727,6 +711,6 @@ export default function Dashboard() {
             </div>
           </div>
         )}
-    </AuthGuard>
+    </>
   );
 }

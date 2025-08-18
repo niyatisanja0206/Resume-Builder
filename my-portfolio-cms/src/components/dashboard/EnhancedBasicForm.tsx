@@ -18,7 +18,6 @@ import { Textarea } from '@/components/ui/textarea';
 import { type Basic } from '@/types/portfolio';
 import { useUserContext } from '@/hooks/useUserContext';
 import { useToast } from '../../contexts/ToastContext';
-import ErrorBoundary from './ErrorBoundary';
 import { shouldShowToast } from '@/utils/toastUtils';
 
 // --- PROPS INTERFACE ---
@@ -188,7 +187,6 @@ export default function EnhancedBasicForm({
     }, [initialData, form, onDataChange]);
 
     return (
-        <ErrorBoundary>
             <div className="space-y-6">
                 <div className="flex justify-between items-center">
                     <h3 className="text-lg font-semibold">Basic Information</h3>
@@ -332,6 +330,5 @@ export default function EnhancedBasicForm({
                     </form>
                 </Form>
             </div>
-        </ErrorBoundary>
     );
 }

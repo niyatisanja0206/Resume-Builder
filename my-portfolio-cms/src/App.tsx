@@ -15,6 +15,10 @@ import Signup from './components/auth/Signup';
 import ForgetPass from './components/auth/ForgetPass';
 import ErrorBoundary from './components/dashboard/ErrorBoundary';
 
+// Import the new layout components
+import ProtectedLayout from './layout/ProtectedLayout';
+import PublicLayout from './layout/PublicLayout';
+
 const queryClient = new QueryClient();
 
 export default function App() {
@@ -25,31 +29,43 @@ export default function App() {
           <Router>
             <Header/>
             <Routes>
+              {/* Public routes that are always accessible */}
               <Route path="/" element={<Landing />} />
-              <Route
-                path="/portfolio"
-                element={<><ErrorBoundary fallback={<div>Portfolio Error</div>}><Portfolio /></ErrorBoundary></>}
-              />
-              <Route
-                path="/signup"
-                element={<Signup />}
-              />
-              <Route
-                path="/dashboard"
-                element={<><ErrorBoundary fallback={<div>Dashboard Error</div>}><Dashboard /></ErrorBoundary></>}
-              />
-              <Route
-                path="/profile"
-                element={<><ErrorBoundary fallback={<div>Profile Error</div>}><ProfilePage /></ErrorBoundary></>}
-              />
-              <Route
-                path="/login"
-                element={<Login />}
-              />
-              <Route
-                path="/forget-password"
-                element={<ForgetPass />}
-              />
+
+              {/* Routes for authenticated users only */}
+              <Route element={<ProtectedLayout />}>
+                <Route 
+                  path="/portfolio" 
+                  element={
+                    <ErrorBoundary fallback={<div>Portfolio Error</div>}>
+                      <Portfolio />
+                    </ErrorBoundary>
+                  } 
+                />
+                <Route 
+                  path="/dashboard" 
+                  element={
+                    <ErrorBoundary fallback={<div>Dashboard Error</div>}>
+                      <Dashboard />
+                    </ErrorBoundary>
+                  } 
+                />
+                <Route 
+                  path="/profile" 
+                  element={
+                    <ErrorBoundary fallback={<div>Profile Error</div>}>
+                      <ProfilePage />
+                    </ErrorBoundary>
+                  } 
+                />
+              </Route>
+
+              {/* Routes for unauthenticated users only */}
+              <Route element={<PublicLayout />}>
+                <Route path="/signup" element={<Signup />} />
+                <Route path="/login" element={<Login />} />
+                <Route path="/forget-password" element={<ForgetPass />} />
+              </Route>
             </Routes>
             <Footer/>
           </Router>

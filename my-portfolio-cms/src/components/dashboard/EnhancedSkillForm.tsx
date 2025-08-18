@@ -24,7 +24,6 @@ import { type Skill } from "@/types/portfolio";
 import { useSkill } from "../../hooks/useSkills";
 import { useUserContext } from "@/hooks/useUserContext";
 import { useToast } from '../../contexts/ToastContext';
-import ErrorBoundary from './ErrorBoundary';
 import { shouldShowToast } from '@/utils/toastUtils';
 import { Edit2, Trash2 } from "lucide-react";
 
@@ -35,7 +34,7 @@ interface SkillFormProps {
 }
 
 export default function EnhancedSkillForm({ initialData, onDataChange }: SkillFormProps) {
-    console.log('🔄 EnhancedSkillForm rendered with initialData:', initialData);
+    console.log('EnhancedSkillForm rendered with initialData:', initialData);
     
     const { currentUser } = useUserContext();
     const userEmail = currentUser?.email || '';
@@ -69,32 +68,32 @@ export default function EnhancedSkillForm({ initialData, onDataChange }: SkillFo
 
     // --- DATA SYNCHRONIZATION ---
     useEffect(() => {
-        console.log('🚀 Received initialData:', initialData);
+        console.log('Received initialData:', initialData);
         if (Array.isArray(initialData) && initialData.length > 0) {
-            console.log('🚀 Processed skill data:', initialData);
+            console.log('Processed skill data:', initialData);
             setSkillList(initialData);
         } else if (Array.isArray(initialData) && initialData.length === 0) {
-            console.log('🚀 Initial data is empty array, setting empty list');
+            console.log('Initial data is empty array, setting empty list');
             setSkillList([]);
         } else {
-            console.log('🚀 Initial data is null/undefined or invalid, keeping current list');
+            console.log('Initial data is null/undefined or invalid, keeping current list');
             // Don't reset if we have existing data and initialData is invalid
         }
     }, [initialData]);
 
     // Debug onDataChange prop
     useEffect(() => {
-        console.log('🔄 onDataChange prop function:', typeof onDataChange);
+        console.log('onDataChange prop function:', typeof onDataChange);
     }, [onDataChange]);
 
     // Live update handler for skill data changes
     const handleSkillListChange = useCallback((newSkillList: Skill[]) => {
-        console.log('📡 handleSkillListChange called with:', newSkillList);
+        console.log('handleSkillListChange called with:', newSkillList);
         setSkillList(newSkillList);
         if (typeof onDataChange === 'function') {
             onDataChange(newSkillList);
         } else {
-            console.warn('⚠️ onDataChange is not a function');
+            console.warn('onDataChange is not a function');
         }
     }, [onDataChange]);
 
@@ -161,13 +160,13 @@ export default function EnhancedSkillForm({ initialData, onDataChange }: SkillFo
     // --- FORM RESET LOGIC ---
     useEffect(() => {
         if (editingSkill && editingSkill._id !== 'temp-new') {
-            console.log('📝 Setting form for editing skill:', editingSkill);
+            console.log('Setting form for editing skill:', editingSkill);
             form.reset({
                 name: editingSkill.name,
                 level: editingSkill.level,
             });
         } else {
-            console.log('📝 Resetting form for new skill');
+            console.log('Resetting form for new skill');
             form.reset({
                 name: '',
                 level: 'beginner',
@@ -177,18 +176,18 @@ export default function EnhancedSkillForm({ initialData, onDataChange }: SkillFo
 
     // --- FORM SUBMISSION HANDLER ---
     const onSubmit = async (data: SkillFormSchema) => {
-        console.log('📤 Form submitted with data:', data);
-        
+        console.log('Form submitted with data:', data);
+
         try {
             if (editingSkill && editingSkill._id !== 'temp-new') {
                 // Update existing skill
-                console.log('🔄 Updating skill:', editingSkill._id);
+                console.log('Updating skill:', editingSkill._id);
                 const result = await updateSkill(editingSkill._id!, {
                     ...data,
                     _id: editingSkill._id
                 } as Skill);
                 
-                console.log('✅ Update skill result:', result);
+                console.log('Update skill result:', result);
                 
                 // Handle both array and single skill response
                 if (Array.isArray(result)) {
@@ -205,27 +204,27 @@ export default function EnhancedSkillForm({ initialData, onDataChange }: SkillFo
                 showToast('Skill updated successfully!', 'success');
             } else {
                 // Add new skill
-                console.log('➕ Adding new skill');
+                console.log('Adding new skill');
                 const skillData: Skill = { 
                     ...data,
                 } as Skill;
                 
                 const result = await addSkill(skillData);
-                console.log('✅ Add skill result:', result);
+                console.log('Add skill result:', result);
 
                 let nextItem: Skill | null = null;
                 if (Array.isArray(result)) {
                     // If API returns a list, assume last one is newest
                     nextItem = (result as Skill[])[(result as Skill[]).length - 1] || null;
-                    console.log('📋 Result is array, using last item:', nextItem);
+                    console.log('Result is array, using last item:', nextItem);
                 } else if (result && typeof result === 'object') {
                     nextItem = result as Skill;
-                    console.log('📝 Result is object, using directly:', nextItem);
+                    console.log('Result is object, using directly:', nextItem);
                 }
 
                 // Remove temp entry and add the real one
                 const withoutTemp = skillList.filter((skill) => skill._id !== 'temp-new');
-                console.log('🗑️ Filtered list without temp:', withoutTemp);
+                console.log('Filtered list without temp:', withoutTemp);
                 
                 const finalSkill: Skill = {
                     ...skillData,
@@ -235,7 +234,7 @@ export default function EnhancedSkillForm({ initialData, onDataChange }: SkillFo
                 };
                 
                 const updatedList = [...withoutTemp, finalSkill];
-                console.log('🎯 Final updated list:', updatedList);
+                console.log('Final updated list:', updatedList);
                 handleSkillListChange(updatedList);
                 showToast('Skill added successfully!', 'success');
             }
@@ -248,7 +247,7 @@ export default function EnhancedSkillForm({ initialData, onDataChange }: SkillFo
                 level: 'beginner',
             });
         } catch (error) {
-            console.error('❌ Error in skill submission:', error);
+            console.error('Error in skill submission:', error);
             showToast(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`, 'error');
         }
     };
@@ -259,7 +258,7 @@ export default function EnhancedSkillForm({ initialData, onDataChange }: SkillFo
         
         if (window.confirm('Are you sure you want to delete this skill?')) {
             try {
-                console.log('🗑️ Deleting skill:', skillId);
+                console.log('Deleting skill:', skillId);
                 await removeSkill(skillId);
                 
                 const updatedSkills = skillList.filter(skill => skill._id !== skillId);
@@ -272,7 +271,7 @@ export default function EnhancedSkillForm({ initialData, onDataChange }: SkillFo
                 
                 showToast('Skill deleted successfully!', 'success');
             } catch (error) {
-                console.error('❌ Error deleting skill:', error);
+                console.error('Error deleting skill:', error);
                 showToast(`Error deleting skill: ${error instanceof Error ? error.message : 'Unknown error'}`, 'error');
             }
         }
@@ -354,7 +353,6 @@ export default function EnhancedSkillForm({ initialData, onDataChange }: SkillFo
 
     // --- RENDER LOGIC ---
     return (
-        <ErrorBoundary>
             <section className="bg-card border border-border rounded-xl shadow-sm overflow-hidden">
                 <div className="p-6 border-b border-border">
                     <div className="flex justify-between items-center">
@@ -533,6 +531,5 @@ export default function EnhancedSkillForm({ initialData, onDataChange }: SkillFo
                     )}
                 </div>
             </section>
-        </ErrorBoundary>
     );
 }

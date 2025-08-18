@@ -5,7 +5,6 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { useUserContext } from '@/hooks/useUserContext';
 import { useToast } from '@/contexts/ToastContext';
-import AuthGuard from '@/components/AuthGuard';
 
 // Resume interface matching the backend model
 interface Resume {
@@ -165,7 +164,6 @@ export default function ProfilePage() {
   }
 
   return (
-    <AuthGuard>
         <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             
@@ -331,6 +329,5 @@ export default function ProfilePage() {
             </div>
           </div>
         </div>
-    </AuthGuard>
   );
 }

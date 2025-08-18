@@ -16,7 +16,6 @@ import { useEducation } from '../../hooks/useEducation';
 import { useUserContext } from '@/hooks/useUserContext';
 import { type Education } from '@/types/portfolio';
 import { useToast } from '../../contexts/ToastContext';
-import ErrorBoundary from './ErrorBoundary';
 import { shouldShowToast } from '@/utils/toastUtils';
 
 // --- PROPS INTERFACE ---
@@ -383,7 +382,6 @@ export default function EnhancedEducationForm({ initialData, onDataChange }: Edu
   };
 
   return (
-    <ErrorBoundary>
       <section className="bg-card border border-border rounded-xl shadow-sm overflow-hidden">
         <div className="p-6 border-b border-border">
           <div className="flex justify-between items-center">
@@ -716,6 +714,5 @@ export default function EnhancedEducationForm({ initialData, onDataChange }: Edu
           })()}
         </div>
       </section>
-    </ErrorBoundary>
   );
 }

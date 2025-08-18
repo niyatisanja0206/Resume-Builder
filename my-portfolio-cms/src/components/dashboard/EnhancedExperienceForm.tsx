@@ -18,7 +18,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { type Experience } from "@/types/portfolio";
 import { useToast } from '../../contexts/ToastContext';
-import ErrorBoundary from './ErrorBoundary';
 import { shouldShowToast } from '@/utils/toastUtils';
 
 // --- PROPS INTERFACE ---
@@ -64,34 +63,34 @@ export default function EnhancedExperienceForm({ initialData, onDataChange }: Ex
 
     // --- DATA SYNCHRONIZATION ---
     useEffect(() => {
-        console.log('💼 Received initialData:', initialData);
+        console.log('Received initialData:', initialData);
         if (Array.isArray(initialData) && initialData.length > 0) {
             const processedData = initialData.map((item) => ({
                 ...item,
                 startDate: item.startDate ? new Date(item.startDate) : new Date(),
                 endDate: item.endDate ? new Date(item.endDate) : undefined,
             }));
-            console.log('💼 Processed experience data:', processedData);
+            console.log('Processed experience data:', processedData);
             setExperienceList(processedData);
         } else if (Array.isArray(initialData) && initialData.length === 0) {
-            console.log('💼 Initial data is empty array, setting empty list');
+            console.log('Initial data is empty array, setting empty list');
             setExperienceList([]);
         } else {
-            console.log('💼 Initial data is null/undefined or invalid, keeping current list');
+            console.log('Initial data is null/undefined or invalid, keeping current list');
             // Don't reset if we have existing data and initialData is invalid
         }
     }, [initialData]);
 
     // Debug onDataChange prop
     const debugOnDataChange = useCallback((data: Experience[]) => {
-        console.log('🔄 onDataChange called with:', data);
+        console.log('onDataChange called with:', data);
         onDataChange(data);
     }, [onDataChange]);
 
     // --- LIVE UPDATE HANDLER ---
     const handleExperienceListChange = useCallback((newExperienceList: Experience[]) => {
-        console.log('💼 Updating experience list:', newExperienceList);
-        console.log('💼 Calling onDataChange with:', newExperienceList);
+        console.log('Updating experience list:', newExperienceList);
+        console.log('Calling onDataChange with:', newExperienceList);
         setExperienceList(newExperienceList);
         debugOnDataChange(newExperienceList);
     }, [debugOnDataChange]);
@@ -211,21 +210,21 @@ export default function EnhancedExperienceForm({ initialData, onDataChange }: Ex
                 } as Experience;
                 
                 const result = await addExperience(experienceData);
-                console.log('✅ Add experience result:', result);
+                console.log('Add experience result:', result);
 
                 let nextItem: Experience | null = null;
                 if (Array.isArray(result)) {
                     // If API returns a list, assume last one is newest
                     nextItem = (result as Experience[])[(result as Experience[]).length - 1] || null;
-                    console.log('📋 Result is array, using last item:', nextItem);
+                    console.log('Result is array, using last item:', nextItem);
                 } else if (result && typeof result === 'object') {
                     nextItem = result as Experience;
-                    console.log('📝 Result is object, using directly:', nextItem);
+                    console.log('Result is object, using directly:', nextItem);
                 }
 
                 // Remove temp entry and add the real one
                 const withoutTemp = experienceList.filter((exp) => exp._id !== 'temp-new');
-                console.log('🗑️ Filtered list without temp:', withoutTemp);
+                console.log('Filtered list without temp:', withoutTemp);
                 
                 const finalExperience: Experience = {
                     ...experienceData,
@@ -240,7 +239,7 @@ export default function EnhancedExperienceForm({ initialData, onDataChange }: Ex
                 };
                 
                 const updatedList = [...withoutTemp, finalExperience];
-                console.log('💼 Final updated list:', updatedList);
+                console.log('Final updated list:', updatedList);
                 handleExperienceListChange(updatedList);
                 showToast('Experience added successfully!', 'success');
             }
@@ -281,7 +280,7 @@ export default function EnhancedExperienceForm({ initialData, onDataChange }: Ex
             try {
                 await removeExperience(experienceId);
                 const updatedList = experienceList.filter(exp => (exp._id || exp.id) !== experienceId);
-                console.log('🗑️ Delete operation - filtered list:', updatedList);
+                console.log('Delete operation - filtered list:', updatedList);
                 handleExperienceListChange(updatedList);
                 showToast('Experience deleted successfully!', 'success');
                 if ((editingExperience?._id || editingExperience?.id) === experienceId) {
@@ -365,7 +364,7 @@ export default function EnhancedExperienceForm({ initialData, onDataChange }: Ex
             setIsDeleting(true);
             try {
                 await removeAllExperiences();
-                console.log('🗑️ Delete all operation - setting empty list');
+                console.log('Delete all operation - setting empty list');
                 handleExperienceListChange([]);
                 showToast('All experience entries deleted successfully!', 'success');
             } catch {
@@ -377,7 +376,6 @@ export default function EnhancedExperienceForm({ initialData, onDataChange }: Ex
     };
 
     return (
-        <ErrorBoundary>
             <section className="bg-card border border-border rounded-xl shadow-sm overflow-hidden">
                 <div className="p-6 border-b border-border">
                     <div className="flex justify-between items-center">
@@ -629,6 +627,5 @@ export default function EnhancedExperienceForm({ initialData, onDataChange }: Ex
                     )}
                 </div>
             </section>
-        </ErrorBoundary>
     );
 }

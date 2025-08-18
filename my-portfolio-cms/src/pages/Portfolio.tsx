@@ -1,7 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent } from "@/components/ui/card";
 //import { Badge } from "@/components/ui/badge";
-import AuthGuard from "@/components/AuthGuard";
 //import { Check } from "lucide-react";
 import resume4 from "@/assets/resume4.png";
 import resume5 from "@/assets/resume5.png";
@@ -42,7 +41,6 @@ export default function Portfolio() {
   };
 
   return (
-    <AuthGuard>
       <div className="min-h-screen bg-gray-50 text-foreground">
         <div className="container max-w-5xl mx-auto p-4 sm:p-6 lg:p-8">
           
@@ -92,6 +90,5 @@ export default function Portfolio() {
 
         </div>
       </div>
-    </AuthGuard>
   );
 }

@@ -18,7 +18,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { type Project } from "@/types/portfolio";
 import { useToast } from '../../contexts/ToastContext';
-import ErrorBoundary from './ErrorBoundary';
 import { shouldShowToast } from '@/utils/toastUtils';
 
 // --- PROPS INTERFACE ---
@@ -28,7 +27,7 @@ interface ProjectFormProps {
 }
 
 export default function EnhancedProjectForm({ initialData, onDataChange }: ProjectFormProps) {
-    console.log('🔄 EnhancedProjectForm rendered with initialData:', initialData);
+    console.log('EnhancedProjectForm rendered with initialData:', initialData);
     
     const { currentUser } = useUserContext();
     const userEmail = currentUser?.email || '';
@@ -63,15 +62,15 @@ export default function EnhancedProjectForm({ initialData, onDataChange }: Proje
 
     // --- DATA SYNCHRONIZATION ---
     useEffect(() => {
-        console.log('🚀 Received initialData:', initialData);
+        console.log('Received initialData:', initialData);
         if (Array.isArray(initialData) && initialData.length > 0) {
-            console.log('🚀 Processed project data:', initialData);
+            console.log('Processed project data:', initialData);
             setProjectList(initialData);
         } else if (Array.isArray(initialData) && initialData.length === 0) {
-            console.log('🚀 Initial data is empty array, setting empty list');
+            console.log('Initial data is empty array, setting empty list');
             setProjectList([]);
         } else {
-            console.log('🚀 Initial data is null/undefined or invalid, keeping current list');
+            console.log('Initial data is null/undefined or invalid, keeping current list');
             // Don't reset if we have existing data and initialData is invalid
         }
     }, [initialData]);
@@ -84,8 +83,8 @@ export default function EnhancedProjectForm({ initialData, onDataChange }: Proje
 
     // --- LIVE UPDATE HANDLER ---
     const handleProjectListChange = useCallback((newProjectList: Project[]) => {
-        console.log('🚀 Updating project list:', newProjectList);
-        console.log('🚀 Calling onDataChange with:', newProjectList);
+        console.log('Updating project list:', newProjectList);
+        console.log('Calling onDataChange with:', newProjectList);
         setProjectList(newProjectList);
         debugOnDataChange(newProjectList);
     }, [debugOnDataChange]);
@@ -198,21 +197,21 @@ export default function EnhancedProjectForm({ initialData, onDataChange }: Proje
                 } as Project;
                 
                 const result = await addProject(projectData);
-                console.log('✅ Add project result:', result);
+                console.log('Add project result:', result);
 
                 let nextItem: Project | null = null;
                 if (Array.isArray(result)) {
                     // If API returns a list, assume last one is newest
                     nextItem = (result as Project[])[(result as Project[]).length - 1] || null;
-                    console.log('📋 Result is array, using last item:', nextItem);
+                    console.log('Result is array, using last item:', nextItem);
                 } else if (result && typeof result === 'object') {
                     nextItem = result as Project;
-                    console.log('📝 Result is object, using directly:', nextItem);
+                    console.log('Result is object, using directly:', nextItem);
                 }
 
                 // Remove temp entry and add the real one
                 const withoutTemp = projectList.filter((proj) => proj._id !== 'temp-new');
-                console.log('🗑️ Filtered list without temp:', withoutTemp);
+                console.log('Filtered list without temp:', withoutTemp);
                 
                 const finalProject: Project = {
                     ...projectData,
@@ -225,7 +224,7 @@ export default function EnhancedProjectForm({ initialData, onDataChange }: Proje
                 };
                 
                 const updatedList = [...withoutTemp, finalProject];
-                console.log('🚀 Final updated list:', updatedList);
+                console.log('Final updated list:', updatedList);
                 handleProjectListChange(updatedList);
                 showToast('Project added successfully!', 'success');
             }
@@ -353,7 +352,6 @@ export default function EnhancedProjectForm({ initialData, onDataChange }: Proje
     };
 
     return (
-        <ErrorBoundary>
             <section className="bg-card border border-border rounded-xl shadow-sm overflow-hidden">
                 <div className="p-6 border-b border-border">
                     <div className="flex justify-between items-center">
@@ -560,6 +558,5 @@ export default function EnhancedProjectForm({ initialData, onDataChange }: Proje
                     )}
                 </div>
             </section>
-        </ErrorBoundary>
     );
 }
