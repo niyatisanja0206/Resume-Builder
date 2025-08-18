@@ -283,11 +283,18 @@ export default function Dashboard() {
       if (!data.basicInfo.about?.trim()) errors.push('About section');
     }
 
-    // Validate education (at least one entry required)
-    if (!data.education || data.education.length === 0) {
-      errors.push('Education (at least one entry required)');
-    } else {
-      // Validate each education entry
+    // Check if at least one of the other sections has an entry
+    const hasEducation = data.education && data.education.length > 0;
+    const hasExperience = data.experiences && data.experiences.length > 0;
+    const hasProjects = data.projects && data.projects.length > 0;
+    const hasSkills = data.skills && data.skills.length > 0;
+
+    if (!hasEducation && !hasExperience && !hasProjects && !hasSkills) {
+      errors.push('At least one of Education, Experience, Projects, or Skills is required');
+    }
+
+    // Validate each filled section's entries (if present)
+    if (hasEducation) {
       data.education.forEach((edu, index) => {
         if (!edu.institution?.trim()) errors.push(`Education ${index + 1}: Institution name`);
         if (!edu.degree?.trim()) errors.push(`Education ${index + 1}: Degree`);
@@ -295,12 +302,7 @@ export default function Dashboard() {
         if (!edu.Grade?.trim()) errors.push(`Education ${index + 1}: Grade/GPA`);
       });
     }
-
-    // Validate experience (at least one entry required)
-    if (!data.experiences || data.experiences.length === 0) {
-      errors.push('Experience (at least one entry required)');
-    } else {
-      // Validate each experience entry
+    if (hasExperience) {
       data.experiences.forEach((exp, index) => {
         if (!exp.company?.trim()) errors.push(`Experience ${index + 1}: Company name`);
         if (!exp.position?.trim()) errors.push(`Experience ${index + 1}: Position`);
@@ -310,12 +312,7 @@ export default function Dashboard() {
         }
       });
     }
-
-    // Validate projects (at least one entry required)
-    if (!data.projects || data.projects.length === 0) {
-      errors.push('Projects (at least one entry required)');
-    } else {
-      // Validate each project entry
+    if (hasProjects) {
       data.projects.forEach((project, index) => {
         if (!project.title?.trim()) errors.push(`Project ${index + 1}: Title`);
         if (!project.description?.trim()) errors.push(`Project ${index + 1}: Description`);
@@ -324,12 +321,7 @@ export default function Dashboard() {
         }
       });
     }
-
-    // Validate skills (at least one entry required)
-    if (!data.skills || data.skills.length === 0) {
-      errors.push('Skills (at least one entry required)');
-    } else {
-      // Validate each skill entry
+    if (hasSkills) {
       data.skills.forEach((skill, index) => {
         if (!skill.name?.trim()) errors.push(`Skill ${index + 1}: Name`);
         if (!skill.level) errors.push(`Skill ${index + 1}: Level`);
@@ -661,7 +653,7 @@ export default function Dashboard() {
         </div>
 
         {/* Title Dialog */}
-        {showTitleDialog && (
+  {showTitleDialog && isNewResume && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
             <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-md mx-4">
               <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">
