@@ -1,6 +1,6 @@
 import { useAuth } from "@/hooks/useAuth";
-import Login from "./Login";
-import Signup from "./Signup";
+import Login from "./auth/Login";
+import Signup from "./auth/Signup";
 import { useState } from "react";
 
 interface AuthGuardProps {

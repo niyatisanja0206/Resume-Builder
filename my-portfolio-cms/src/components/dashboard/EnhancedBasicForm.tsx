@@ -13,11 +13,11 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
-import { useBasicForm } from '../hooks/useBasic';
+import { useBasicForm } from '../../hooks/useBasic';
 import { Textarea } from '@/components/ui/textarea';
 import { type Basic } from '@/types/portfolio';
-import { useUserContext } from '@/contexts/useUserContext';
-import { useToast } from '../contexts/ToastContext';
+import { useUserContext } from '@/hooks/useUserContext';
+import { useToast } from '../../contexts/ToastContext';
 import ErrorBoundary from './ErrorBoundary';
 import { shouldShowToast } from '@/utils/toastUtils';
 
@@ -77,6 +77,7 @@ export default function EnhancedBasicForm({
         if (!initialData || !initialData.name) {
             setIsEditing(true);
         }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []); // Empty dependency array ensures this runs only once.
 
     // Effect to keep the form's displayed values in sync with data from the parent Dashboard

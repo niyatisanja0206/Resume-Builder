@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import type { ReactNode } from 'react';
-import { ToastContext, type ToastType, type ToastTypeEnum } from '../contexts/ToastContext';
+import { ToastContext, type ToastType, type ToastTypeEnum } from '../../contexts/ToastContext';
 
 interface ToastProviderProps {
   children: ReactNode;

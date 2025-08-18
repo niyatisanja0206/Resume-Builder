@@ -1,8 +1,8 @@
 import { useContext } from 'react';
-import { UserContext } from './UserContextObject';
-import type { UserContextType } from './UserContextObject';
+import { UserContext, type UserContextType } from '../contexts/UserContextDefinition';
 
-export function useUserContext(): UserContextType {
+// User Context Hook - separated to satisfy Fast Refresh requirements
+export const useUserContext = (): UserContextType => {
     const context = useContext(UserContext);
     if (context === undefined) {
         console.error('useUserContext must be used within a UserProvider');
@@ -16,4 +16,4 @@ export function useUserContext(): UserContextType {
         };
     }
     return context;
-}
+};

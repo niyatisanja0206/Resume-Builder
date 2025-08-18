@@ -260,3 +260,74 @@ exports.getResumeById = async (req, res) => {
         res.status(500).json({ message: 'Server error', error: error.message });
     }
 };
+
+// Update an existing resume
+exports.updateResume = async (req, res) => {
+    try {
+        const { resumeId } = req.params;
+        const userEmail = req.user.email;
+        const { 
+            title, 
+            status,
+            basic,
+            skills,
+            education,
+            experience,
+            projects,
+            template
+        } = req.body;
+
+        // Find the resume and check ownership
+        const existingResume = await Resume.findById(resumeId);
+        
+        if (!existingResume) {
+            return res.status(404).json({ message: 'Resume not found' });
+        }
+
+        if (existingResume.userEmail !== userEmail) {
+            return res.status(403).json({ message: 'Access denied. You can only update your own resumes.' });
+        }
+
+        // If updating to 'completed' status, validate completeness
+        if (status === 'completed') {
+            const validationErrors = validateResumeCompleteness({
+                basic,
+                skills,
+                education,
+                experience,
+                projects
+            });
+            
+            if (validationErrors.length > 0) {
+                return res.status(400).json({ 
+                    message: 'Resume is incomplete', 
+                    errors: validationErrors 
+                });
+            }
+        }
+
+        // Update the resume
+        const updatedResume = await Resume.findByIdAndUpdate(
+            resumeId,
+            {
+                title: title || existingResume.title,
+                status: status || existingResume.status,
+                basic: basic || existingResume.basic,
+                skills: skills || existingResume.skills,
+                education: education || existingResume.education,
+                experience: experience || existingResume.experience,
+                projects: projects || existingResume.projects,
+                template: template || existingResume.template,
+                updatedAt: new Date()
+            },
+            { new: true, runValidators: true }
+        );
+
+        res.status(200).json({
+            message: 'Resume updated successfully',
+            resume: updatedResume
+        });
+    } catch (error) {
+        res.status(500).json({ message: 'Server error', error: error.message });
+    }
+};

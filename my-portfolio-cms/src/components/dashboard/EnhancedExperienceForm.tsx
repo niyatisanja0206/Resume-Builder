@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { experienceSchema, type ExperienceFormSchema } from "../lib/zodschema";
+import { experienceSchema, type ExperienceFormSchema } from "../../lib/zodschema";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
@@ -12,12 +12,12 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { useExperience } from '../hooks/useExperience';
-import { useUserContext } from '@/contexts/useUserContext';
+import { useExperience } from '../../hooks/useExperience';
+import { useUserContext } from '@/hooks/useUserContext';
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { type Experience } from "@/types/portfolio";
-import { useToast } from '../contexts/ToastContext';
+import { useToast } from '../../contexts/ToastContext';
 import ErrorBoundary from './ErrorBoundary';
 import { shouldShowToast } from '@/utils/toastUtils';
 

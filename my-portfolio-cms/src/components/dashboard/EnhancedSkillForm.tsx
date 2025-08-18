@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { skillSchema, type SkillFormSchema } from "../lib/zodschema";
+import { skillSchema, type SkillFormSchema } from "../../lib/zodschema";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -21,9 +21,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { type Skill } from "@/types/portfolio";
-import { useSkill } from "../hooks/useSkills";
-import { useUserContext } from "@/contexts/useUserContext";
-import { useToast } from '../contexts/ToastContext';
+import { useSkill } from "../../hooks/useSkills";
+import { useUserContext } from "@/hooks/useUserContext";
+import { useToast } from '../../contexts/ToastContext';
 import ErrorBoundary from './ErrorBoundary';
 import { shouldShowToast } from '@/utils/toastUtils';
 import { Edit2, Trash2 } from "lucide-react";

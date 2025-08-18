@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { Button } from "@/components/ui/button";
 import { Link, useNavigate } from "react-router-dom";
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -12,11 +12,12 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/hooks/useAuth";
-import { useUserContext } from "@/contexts/useUserContext";
+import { useUserContext } from "@/hooks/useUserContext";
 
-export default function Login() {
+export default function Signup() {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
+    const [confirmPassword, setConfirmPassword] = useState("");
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
     const navigate = useNavigate();
@@ -26,10 +27,22 @@ export default function Login() {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError("");
+
+        if (password !== confirmPassword) {
+            setError("Passwords do not match");
+            return;
+        }
+
+        if (password.length < 6) {
+            setError("Password must be at least 6 characters");
+            return;
+        }
+
         setLoading(true);
 
         try {
-            const response = await fetch('http://localhost:5000/api/auth/login', {
+            // Sign up user
+            const signupResponse = await fetch('http://localhost:5000/api/auth/signup', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -37,26 +50,36 @@ export default function Login() {
                 body: JSON.stringify({ email, password }),
             });
 
-            const data = await response.json();
+            const signupData = await signupResponse.json();
 
-            if (!response.ok) {
-                throw new Error(data.message || 'Login failed');
+            if (!signupResponse.ok) {
+                throw new Error(signupData.message || 'Signup failed');
             }
 
-            // Check if user data exists in response
-            if (!data.user || !data.user.email) {
-                throw new Error('Invalid response from server - missing user data');
+            // Auto login after successful signup
+            const loginResponse = await fetch('http://localhost:5000/api/auth/login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ email, password }),
+            });
+
+            const loginData = await loginResponse.json();
+
+            if (!loginResponse.ok) {
+                throw new Error(loginData.message || 'Login failed');
             }
 
             // Store auth data
-            login(data.token, data.user);
+            login(loginData.token, loginData.user);
             
             // Also store email separately for easier access
-            localStorage.setItem('currentUserEmail', data.user.email);
+            localStorage.setItem('currentUserEmail', loginData.user.email);
             
             // Set user context for forms
             setCurrentUser({
-                email: data.user.email,
+                email: loginData.user.email,
                 name: '',
                 contact_no: '',
                 about: '',
@@ -77,9 +100,9 @@ export default function Login() {
         <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-blue-100 to-purple-100">
             <Card className="w-full max-w-lg shadow-lg">
                 <CardHeader>
-                    <CardTitle>Login to your account</CardTitle>
+                    <CardTitle>Create your account</CardTitle>
                     <CardDescription>
-                        Enter your email and password to access your account.
+                        Enter your details to create a new account.
                     </CardDescription>
                 </CardHeader>
                 <form onSubmit={handleSubmit}>
@@ -102,20 +125,22 @@ export default function Login() {
                                 />
                             </div>
                             <div className="grid gap-2">
-                                <div className="flex items-center">
-                                    <Label htmlFor="password">Password</Label>
-                                    <Link
-                                        to="/forget-password"
-                                        className="ml-auto inline-block text-sm underline-offset-4 hover:underline"
-                                    >
-                                        Forgot your password?
-                                    </Link>
-                                </div>
+                                <Label htmlFor="password">Password</Label>
                                 <Input 
                                     id="password" 
                                     type="password" 
                                     value={password}
                                     onChange={(e) => setPassword(e.target.value)}
+                                    required 
+                                />
+                            </div>
+                            <div className="grid gap-2">
+                                <Label htmlFor="confirm-password">Confirm Password</Label>
+                                <Input 
+                                    id="confirm-password" 
+                                    type="password" 
+                                    value={confirmPassword}
+                                    onChange={(e) => setConfirmPassword(e.target.value)}
                                     required 
                                 />
                             </div>
@@ -127,13 +152,12 @@ export default function Login() {
                             className="w-full bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600"
                             disabled={loading}
                         >
-                            {loading ? "Logging in..." : "Login"}
-                            
+                            {loading ? "Creating Account..." : "Sign Up"}
                         </Button>
                         <p className="text-sm text-center mt-4">
-                            Don't have an account?{" "}
-                            <Link to="/signup" className="text-primary hover:underline">
-                                Sign up
+                            Already have an account?{" "}
+                            <Link to="/login" className="text-primary hover:underline">
+                                Sign in
                             </Link>
                         </p>
                     </CardFooter>

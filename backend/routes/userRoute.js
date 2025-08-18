@@ -14,6 +14,7 @@ router.put('/profile', userController.updateUserProfile);
 router.get('/resumes', userController.getUserResumes);
 router.post('/resumes', userController.createResume);
 router.get('/resumes/:resumeId', userController.getResumeById);
+router.put('/resumes/:resumeId', userController.updateResume);
 router.delete('/resumes/:resumeId', userController.deleteResume);
 
 module.exports = router;

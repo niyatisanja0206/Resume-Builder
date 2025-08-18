@@ -5,26 +5,70 @@ import { ChevronDown, ChevronUp, Save, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 // Import form components
-import EnhancedExperienceForm from "@/components/EnhancedExperienceForm";
-import EnhancedProjectForm from "@/components/EnhancedProjectForm";
-import EnhancedBasicForm from "@/components/EnhancedBasicForm";
-import EnhancedEducationForm from "@/components/EnhancedEducationForm";
-import EnhancedSkillForm from "@/components/EnhancedSkillForm";
+import EnhancedExperienceForm from "@/components/dashboard/EnhancedExperienceForm";
+import EnhancedProjectForm from "@/components/dashboard/EnhancedProjectForm";
+import EnhancedBasicForm from "@/components/dashboard/EnhancedBasicForm";
+import EnhancedEducationForm from "@/components/dashboard/EnhancedEducationForm";
+import EnhancedSkillForm from "@/components/dashboard/EnhancedSkillForm";
 
 // Import Toast Context
 import { useToast } from "@/contexts/ToastContext";
 
 // Import preview components
-import ResumePreview from '@/components/ResumePreview';
-import ResumePDF from '@/components/ResumePDFSimple';
-import ErrorBoundary from '@/components/ErrorBoundary';
+import ResumePreview from '@/components/dashboard/ResumePreview';
+import ResumePDF from '@/components/dashboard/ResumePDFSimple';
+import ErrorBoundary from '@/components/dashboard/ErrorBoundary';
 
 // Import utilities and context
 import AuthGuard from "@/components/AuthGuard";
-import { useUserContext } from "@/contexts/useUserContext";
+import { useUserContext } from "@/hooks/useUserContext";
 
 // Import data types
 import type { Basic, Project, Experience, Skill, Education } from '@/types/portfolio';
+
+// Helper function to fetch specific resume data by ID
+const fetchResumeById = async (resumeId: string) => {
+  const token = localStorage.getItem('token');
+  const response = await fetch(`/api/users/resumes/${resumeId}`, {
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    }
+  });
+  
+  if (!response.ok) {
+    throw new Error('Failed to fetch resume');
+  }
+  
+  return response.json();
+};
+
+// Helper function to get current draft resume ID
+const getCurrentDraftResumeId = async (userEmail: string): Promise<string | null> => {
+  try {
+    const token = localStorage.getItem('token');
+    const response = await fetch(`/api/users/resumes?email=${userEmail}`, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
+    });
+    
+    if (!response.ok) {
+      return null;
+    }
+    
+    const resumes = await response.json();
+    // Find the draft resume (status === 'draft' and isDownloaded === false)
+    const draftResume = resumes.find((resume: { status: string; isDownloaded: boolean; _id: string }) => 
+      resume.status === 'draft' && !resume.isDownloaded
+    );
+    return draftResume ? draftResume._id : null;
+  } catch (error) {
+    console.error('Error fetching draft resume ID:', error);
+    return null;
+  }
+};
 
 // Helper function to fetch all resume data (unchanged)
 const fetchAllResumeData = async (userEmail: string) => {
@@ -66,10 +110,14 @@ export default function Dashboard() {
 
   const userEmail = currentUser?.email || '';
   const initialTemplate = searchParams.get('template');
+  const selectedResumeId = localStorage.getItem('selectedResumeId');
+  const isNewResumeFromUrl = searchParams.get('new') === 'true';
+  const isNewResume = localStorage.getItem('isNewResume') === 'true' || isNewResumeFromUrl;
 
   const [isSaving, setIsSaving] = useState(false);
   const [showTitleDialog, setShowTitleDialog] = useState(false);
   const [resumeTitle, setResumeTitle] = useState('');
+  const [currentDraftId, setCurrentDraftId] = useState<string | null>(null);
 
   const selectedTemplate = initialTemplate && validTemplates.includes(initialTemplate as TemplateId)
     ? (initialTemplate as TemplateId)
@@ -91,15 +139,63 @@ export default function Dashboard() {
     skill: false
   });
 
+  // Query for specific resume (when editing)
+  const { data: specificResumeData, isLoading: specificResumeLoading } = useQuery({
+    queryKey: ['specificResume', selectedResumeId],
+    queryFn: () => fetchResumeById(selectedResumeId!),
+    enabled: !!selectedResumeId && !isNewResume,
+  });
+
+  // Query for draft resume data (when not editing specific resume and not new)
   const { data: serverData, isLoading, isError, error } = useQuery({
     queryKey: ['resumeData', userEmail],
     queryFn: () => fetchAllResumeData(userEmail),
-    enabled: !!userEmail,
+    enabled: !!userEmail && !selectedResumeId && !isNewResume,
     staleTime: 5 * 60 * 1000,
     refetchOnWindowFocus: false,
   });
 
   useEffect(() => {
+    // Scenario 1: New resume - start with empty data
+    if (isNewResume) {
+      console.log('📊 Dashboard: Starting with empty data for new resume');
+      localStorage.removeItem('isNewResume');
+      // Clear URL parameters if present
+      if (isNewResumeFromUrl) {
+        navigate('/dashboard', { replace: true });
+      }
+      setLocalFormData({
+        basicInfo: { name: '', contact_no: '', email: userEmail, location: '', about: '' },
+        projects: [],
+        experiences: [],
+        skills: [],
+        education: []
+      });
+      setCurrentDraftId(null); // No draft for new resume
+      return;
+    }
+
+    // Scenario 2: Editing specific resume
+    if (specificResumeData && !specificResumeLoading) {
+      console.log('Dashboard: Loading specific resume data', specificResumeData);
+      setLocalFormData({
+        basicInfo: specificResumeData.basic || { name: '', contact_no: '', email: userEmail, location: '', about: '' },
+        projects: specificResumeData.projects || [],
+        experiences: specificResumeData.experience || [],
+        skills: specificResumeData.skills || [],
+        education: specificResumeData.education || []
+      });
+      // Don't clear selectedResumeId here - we need it for saving
+      // Only set currentDraftId if this is actually a draft resume
+      if (specificResumeData.status === 'draft') {
+        setCurrentDraftId(specificResumeData._id || null);
+      } else {
+        setCurrentDraftId(null); // This is a completed resume, don't treat as draft
+      }
+      return;
+    }
+
+    // Scenario 3: Working with draft resume (existing behavior)
     if (serverData && !isLoading) {
       setLocalFormData(prevData => {
         const newData = {
@@ -122,17 +218,24 @@ export default function Dashboard() {
         );
         
         // Only update on initial load to avoid overriding local changes
-        // For deletions and other updates, rely on local state management
         if (isInitialLoad) {
-          console.log('📊 Dashboard: Initial load - updating local data from server', { prevData, newData });
+          console.log('Dashboard: Initial load - updating local data from server', { prevData, newData });
           return newData;
         }
         
-        console.log('📊 Dashboard: Keeping local data (avoiding server override)', { prevData, serverData });
+        console.log('Dashboard: Keeping local data (avoiding server override)', { prevData, serverData });
         return prevData;
       });
+      
+      // Fetch the current draft resume ID for updating
+      if (userEmail) {
+        getCurrentDraftResumeId(userEmail).then(draftId => {
+          console.log('Dashboard: Found draft resume ID:', draftId);
+          setCurrentDraftId(draftId);
+        });
+      }
     }
-  }, [serverData, isLoading, userEmail]);
+  }, [serverData, isLoading, specificResumeData, specificResumeLoading, userEmail, isNewResume, isNewResumeFromUrl, navigate]);
 
   useEffect(() => {
     if (isError && error) {
@@ -261,8 +364,30 @@ export default function Dashboard() {
         template: selectedTemplate
       };
 
-      const url = '/api/users/resumes';
-      const method = 'POST';
+      let url: string;
+      let method: string;
+      let resumeIdToUpdate: string | null = null;
+
+      // Priority 1: If there's a selectedResumeId (editing specific resume), use it
+      const selectedResumeId = localStorage.getItem('selectedResumeId');
+      if (selectedResumeId) {
+        resumeIdToUpdate = selectedResumeId;
+        localStorage.removeItem('selectedResumeId'); // Clean up
+      }
+      // Priority 2: If there's a current draft (working on draft), use it  
+      else if (currentDraftId) {
+        resumeIdToUpdate = currentDraftId;
+      }
+
+      if (resumeIdToUpdate) {
+        console.log('Dashboard: Updating existing resume:', resumeIdToUpdate);
+        url = `/api/users/resumes/${resumeIdToUpdate}`;
+        method = 'PUT';
+      } else {
+        console.log('Dashboard: Creating new resume');
+        url = '/api/users/resumes';
+        method = 'POST';
+      }
 
       const response = await fetch(url, {
         method,
@@ -278,9 +403,13 @@ export default function Dashboard() {
         throw new Error(`Failed to save resume: ${response.status} ${response.statusText}${errorData ? ' - ' + errorData.message : ''}`);
       }
 
+      const result = await response.json();
+      console.log('Dashboard: Resume saved successfully:', result);
+      
       showToast('Resume saved successfully!', 'success');
       setShowTitleDialog(false);
       setResumeTitle('');
+      setCurrentDraftId(null); // Clear draft ID since it's now completed
       navigate('/profile');
     } catch (error) {
       showToast(`Failed to save resume: ${error instanceof Error ? error.message : 'Unknown error'}`, 'error');
@@ -325,7 +454,7 @@ export default function Dashboard() {
 
   // MAIN: Live updates from child forms (now without toast spam for Education typing)
   const handleLocalDataChange = <K extends keyof FullResumeData>(section: K, data: FullResumeData[K]) => {
-    console.log('📊 Dashboard: handleLocalDataChange called', { section, data });
+    console.log('Dashboard: handleLocalDataChange called', { section, data });
     
     // Sync basic to user context
     if (section === 'basicInfo' && data && typeof data === 'object' && 'email' in data) {
@@ -340,7 +469,7 @@ export default function Dashboard() {
         ? { name: '', contact_no: '', email: currentUser?.email || '', location: '', about: '' }
         : []) as FullResumeData[K];
       const next = { ...prev, [section]: safeData } as FullResumeData;
-      console.log('📊 Dashboard: Updated localFormData', { section, safeData, prev, next });
+      console.log('Dashboard: Updated localFormData', { section, safeData, prev, next });
       return next;
     });
 
@@ -378,12 +507,11 @@ export default function Dashboard() {
 
   // Debug current education data
   useEffect(() => {
-    console.log('📊 Dashboard: currentResumeData.education changed:', currentResumeData.education);
+    console.log('Dashboard: currentResumeData.education changed:', currentResumeData.education);
   }, [currentResumeData.education]);
 
   return (
     <AuthGuard>
-      <ErrorBoundary fallback={<div>Dashboard Error</div>}>
         <div className="flex flex-col md:flex-row w-full min-height-screen bg-gray-100 dark:bg-gray-900">
           {/* LEFT: Forms */}
           <aside className="w-full md:w-1/2 lg:w-2/5 h-screen overflow-y-auto bg-white dark:bg-black p-6 lg:p-8 space-y-8">
@@ -599,7 +727,6 @@ export default function Dashboard() {
             </div>
           </div>
         )}
-      </ErrorBoundary>
     </AuthGuard>
   );
 }

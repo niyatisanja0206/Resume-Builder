@@ -1,5 +1,5 @@
 import React from 'react';
-import { PDFDownloadLink, Document, Page, Text, View, StyleSheet } from '@react-pdf/renderer';
+import { Document, Page, Text, View, StyleSheet } from '@react-pdf/renderer';
 import type { Basic, Project, Experience, Skill, Education } from '@/types/portfolio';
 import { Button } from "@/components/ui/button";
 
@@ -608,6 +608,10 @@ export default function ResumePDFCore({ basicInfo, projects, experiences, skills
     );
   };
 
+  // Add loading and error state for download
+  const [isDownloading, setIsDownloading] = React.useState(false);
+  const [downloadError, setDownloadError] = React.useState<string | null>(null);
+
   // Add retry state to force re-render of PDFDownloadLink on error
   const [retryKey, setRetryKey] = React.useState(0);
 
@@ -616,8 +620,8 @@ export default function ResumePDFCore({ basicInfo, projects, experiences, skills
     return `${name}_${templateType}_resume.pdf`;
   };
   
-  // Function to increment download count
-  const handleDownloadClick = async () => {
+  // Function to increment download count (only called on successful download)
+  const incrementDownloadCount = async () => {
     try {
       const token = localStorage.getItem('token');
       if (!token) {
@@ -643,10 +647,65 @@ export default function ResumePDFCore({ basicInfo, projects, experiences, skills
     }
   };
 
+  // Function to handle PDF download with proper download tracking
+  const handlePDFDownload = async () => {
+    setIsDownloading(true);
+    setDownloadError(null);
+    
+    try {
+      // Generate the PDF blob
+      const { pdf } = await import('@react-pdf/renderer');
+      const blob = await pdf(<SimpleDocument basicInfo={basicInfo} projects={projects} experiences={experiences} skills={skills} education={education} templateType={templateType} />).toBlob();
+      
+      // Create download URL
+      const url = URL.createObjectURL(blob);
+      
+      // Create a temporary link element
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = getFileName();
+      link.style.display = 'none';
+      
+      // Add to DOM and trigger click
+      document.body.appendChild(link);
+      link.click();
+      
+      // Clean up
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      
+      // Only increment count after successful download initiation
+      await incrementDownloadCount();
+      
+    } catch (error) {
+      console.error('Error downloading PDF:', error);
+      let errorMessage = 'Unknown error occurred';
+      
+      if (error instanceof Error) {
+        errorMessage = error.message;
+        
+        // Provide specific error messages for common PDF generation issues
+        if (errorMessage.includes('fetch') || errorMessage.includes('network')) {
+          errorMessage = 'Network error: Check your internet connection for loading fonts and resources';
+        } else if (errorMessage.includes('Canvas') || errorMessage.includes('render')) {
+          errorMessage = 'Rendering error: Your browser may not support this PDF feature';
+        } else if (errorMessage.includes('memory') || errorMessage.includes('size')) {
+          errorMessage = 'Memory error: Your resume may be too large. Try reducing content or refreshing the page';
+        }
+      }
+      
+      setDownloadError(errorMessage);
+      // Don't increment count on error
+    } finally {
+      setIsDownloading(false);
+    }
+  };
+
   // Function to retry PDF generation
   const handleRetry = () => {
     console.log('Retrying PDF generation...');
     setRetryKey(prev => prev + 1);
+    setDownloadError(null);
   };
 
   return (
@@ -656,68 +715,74 @@ export default function ResumePDFCore({ basicInfo, projects, experiences, skills
         <p className="text-sm text-gray-600 dark:text-gray-400">Generate a professional, print-ready PDF of your resume.</p>
       </div>
       
-      <PDFDownloadLink 
-        key={retryKey} // Force re-render on retry
-        document={<SimpleDocument basicInfo={basicInfo} projects={projects} experiences={experiences} skills={skills} education={education} templateType={templateType} />} 
-        fileName={getFileName()} 
-        className="w-full"
-        onClick={handleDownloadClick}
-      >
-        {({ loading, error }) => {
-          // Handle PDF generation errors
-          if (error) {
-            console.error('PDF generation error:', error);
-            return (
-              <div className="w-full p-4 bg-red-50 border border-red-200 rounded-md">
-                <p className="text-red-600 text-sm text-center">
-                  Error generating PDF. Please try again.
-                </p>
-                <p className="text-red-500 text-xs text-center mt-1">
-                  {error.message || 'Unknown error occurred'}
-                </p>
-                <Button 
-                  onClick={handleRetry}
-                  className="w-full mt-3 bg-red-600 hover:bg-red-700 text-white"
-                  size="sm"
-                >
-                  Try Again
-                </Button>
-              </div>
-            );
-          }
-          
-          return (
+      {/* Show error message if download failed */}
+      {downloadError && (
+        <div className="w-full p-4 bg-red-50 border border-red-200 rounded-md mb-4">
+          <h4 className="text-red-800 font-medium mb-2">PDF Generation Error</h4>
+          <p className="text-red-600 text-sm mb-3">
+            {downloadError}
+          </p>
+          <div className="bg-red-100 border border-red-300 rounded p-2 mb-3">
+            <p className="text-red-700 text-xs font-medium mb-1">Common solutions:</p>
+            <ul className="text-red-600 text-xs list-disc list-inside space-y-1">
+              <li>Check your internet connection</li>
+              <li>Try refreshing the page</li>
+              <li>Use a different browser (Chrome/Firefox recommended)</li>
+              <li>Clear browser cache and try again</li>
+              <li>Ensure all resume sections have valid data</li>
+            </ul>
+          </div>
+          <div className="flex gap-2">
             <Button 
-              className={`w-full font-medium py-2 flex items-center justify-center gap-2 ${canDownload ? 'text-white bg-black hover:bg-gray-800' : 'text-gray-500 bg-gray-200 cursor-not-allowed'}`}
-              disabled={loading || !hasValidBasicInfo() || !canDownload}
+              onClick={handleRetry}
+              className="bg-red-600 hover:bg-red-700 text-white"
+              size="sm"
             >
-              {loading ? (
-                <>
-                  <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                  Generating PDF...
-                </>
-              ) : !canDownload ? (
-                <>
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                  </svg>
-                  Add Content to Enable Download
-                </>
-              ) : (
-                <>
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                  </svg>
-                  Download {templateType.charAt(0).toUpperCase() + templateType.slice(1)} PDF
-                </>
-              )}
+              Try Again
             </Button>
-          );
-        }}
-      </PDFDownloadLink>
+            <Button 
+              onClick={() => window.location.reload()}
+              variant="outline"
+              size="sm"
+              className="border-red-300 text-red-600 hover:bg-red-50"
+            >
+              Refresh Page
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* Custom PDF Download Button */}
+      <Button 
+        key={retryKey} // Force re-render on retry
+        className={`w-full font-medium py-2 flex items-center justify-center gap-2 ${canDownload ? 'text-white bg-black hover:bg-gray-800' : 'text-gray-500 bg-gray-200 cursor-not-allowed'}`}
+        disabled={isDownloading || !hasValidBasicInfo() || !canDownload}
+        onClick={handlePDFDownload}
+      >
+        {isDownloading ? (
+          <>
+            <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            Generating PDF...
+          </>
+        ) : !canDownload ? (
+          <>
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+            Add Content to Enable Download
+          </>
+        ) : (
+          <>
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+            Download {templateType.charAt(0).toUpperCase() + templateType.slice(1)} PDF
+          </>
+        )}
+      </Button>
       
       {!hasValidBasicInfo() && (
         <p className="text-sm text-red-500 mt-2 text-center">

@@ -1,8 +1,8 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import type { ReactNode } from 'react';
 import { jwtDecode } from 'jwt-decode';
-import { UserContext } from './UserContextObject';
 import { type Basic } from '@/types/portfolio';
+import { UserContext } from './UserContextDefinition';
 
 // Define the shape of the decoded token (matches JWT payload)
 interface DecodedToken {
@@ -18,8 +18,8 @@ interface UserProviderProps {
   children: ReactNode;
 }
 
-// Create the provider component
-export function UserProvider({ children }: UserProviderProps) {
+// Create the provider component - this is the main export
+export default function UserProvider({ children }: UserProviderProps) {
   const [currentUser, setCurrentUser] = useState<Basic | null>(null);
 
   // On initial load, check for an existing token in localStorage
@@ -115,3 +115,6 @@ export function UserProvider({ children }: UserProviderProps) {
     </UserContext.Provider>
   );
 }
+
+// Named export for backward compatibility
+export { UserProvider };

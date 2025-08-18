@@ -3,10 +3,9 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { User, Edit, Trash2, FileText, Plus, Calendar, Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { useUserContext } from '@/contexts/useUserContext';
+import { useUserContext } from '@/hooks/useUserContext';
 import { useToast } from '@/contexts/ToastContext';
 import AuthGuard from '@/components/AuthGuard';
-import ErrorBoundary from '@/components/ErrorBoundary';
 
 // Resume interface matching the backend model
 interface Resume {
@@ -118,6 +117,12 @@ export default function ProfilePage() {
       showToast('New resume created successfully!', 'success');
       queryClient.invalidateQueries({ queryKey: ['userResumes'] });
       refetchResumes();
+      
+      // Clear any existing resume data from localStorage to ensure clean start
+      localStorage.removeItem('selectedResumeId');
+      localStorage.removeItem('currentResumeId');
+      localStorage.setItem('isNewResume', 'true'); // Flag for new resume
+      
       // Navigate to dashboard with the new resume
       navigate('/dashboard');
     },
@@ -129,6 +134,7 @@ export default function ProfilePage() {
   const handleEditResume = (resume: Resume) => {
     // Store the selected resume ID in localStorage so Dashboard can load it
     localStorage.setItem('selectedResumeId', resume._id);
+    localStorage.removeItem('isNewResume'); // Ensure this is not a new resume
     navigate('/dashboard');
   };
 
@@ -160,7 +166,6 @@ export default function ProfilePage() {
 
   return (
     <AuthGuard>
-      <ErrorBoundary>
         <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             
@@ -326,7 +331,6 @@ export default function ProfilePage() {
             </div>
           </div>
         </div>
-      </ErrorBoundary>
     </AuthGuard>
   );
 }
