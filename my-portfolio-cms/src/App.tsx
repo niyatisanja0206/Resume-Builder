@@ -9,6 +9,7 @@ import Dashboard from '@/pages/Dashboard';
 import Portfolio from '@/pages/Portfolio';
 import Landing from '@/pages/Landing';
 import ProfilePage from '@/pages/ProfilePage';
+import ResumePreviewPage from '@/pages/ResumePreviewPage';
 import { UserProvider } from '@/contexts/UserContext';
 import Login from './components/auth/Login';
 import Signup from './components/auth/Signup';
@@ -55,6 +56,14 @@ export default function App() {
                   element={
                     <ErrorBoundary fallback={<div>Profile Error</div>}>
                       <ProfilePage />
+                    </ErrorBoundary>
+                  } 
+                />
+                <Route 
+                  path="/resume/:resumeId" 
+                  element={
+                    <ErrorBoundary fallback={<div>Resume Preview Error</div>}>
+                      <ResumePreviewPage />
                     </ErrorBoundary>
                   } 
                 />

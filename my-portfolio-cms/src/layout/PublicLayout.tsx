@@ -16,9 +16,9 @@ const PublicLayout = () => {
     );
   }
 
-  // If the user is already authenticated, redirect them to the dashboard
+  // If the user is already authenticated, redirect them to the portfolio
   if (isAuthenticated) {
-    return <Navigate to="/dashboard" replace />;
+    return <Navigate to="/portfolio" replace />;
   }
 
   // If the user is not authenticated, render the nested child routes (e.g., login, signup)

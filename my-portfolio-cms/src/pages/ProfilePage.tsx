@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { User, Edit, Trash2, FileText, Plus, Calendar, Download } from 'lucide-react';
+import { User, Edit, Trash2, FileText, Plus, Calendar, Download, Eye } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { useUserContext } from '@/hooks/useUserContext';
@@ -135,6 +135,11 @@ export default function ProfilePage() {
     localStorage.setItem('selectedResumeId', resume._id);
     localStorage.removeItem('isNewResume'); // Ensure this is not a new resume
     navigate('/dashboard');
+  };
+
+  const handlePreviewResume = (resume: Resume) => {
+    // Navigate to the resume preview page
+    navigate(`/resume/${resume._id}`);
   };
 
   const handleDeleteResume = (resumeId: string, resumeTitle: string) => {
@@ -309,6 +314,16 @@ export default function ProfilePage() {
                           >
                             <Edit className="h-4 w-4" />
                             Edit
+                          </Button>
+                          
+                          <Button 
+                            size="sm" 
+                            variant="outline" 
+                            onClick={() => handlePreviewResume(resume)}
+                            className="flex items-center justify-center gap-2"
+                          >
+                            <Eye className="h-4 w-4" />
+                            Preview
                           </Button>
                           
                           <Button 
