@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo, useCallback } from 'react';
 import type { ReactNode } from 'react';
 import { jwtDecode } from 'jwt-decode';
 import { type Basic } from '@/types/portfolio';
-import { UserContext } from './UserContextDefinition';
+import { UserContext } from '../types/UserContextDefinition';
 
 // Define the shape of the decoded token (matches JWT payload)
 interface DecodedToken {

@@ -1,5 +1,5 @@
 import { useContext } from 'react';
-import { UserContext, type UserContextType } from '../contexts/UserContextDefinition';
+import { UserContext, type UserContextType } from '../types/UserContextDefinition';
 
 // User Context Hook - separated to satisfy Fast Refresh requirements
 export const useUserContext = (): UserContextType => {
