@@ -25,7 +25,7 @@ interface Resume {
   education?: Education[];
   template?: 'classic' | 'modern' | 'creative';
 }
-
+ 
 // API functions
 const fetchUserResumes = async (userEmail: string): Promise<Resume[]> => {
   const token = localStorage.getItem('token');
@@ -60,8 +60,11 @@ const deleteResume = async (resumeId: string) => {
   return response.json();
 };
 
-const createNewResume = async (userEmail: string) => {
+
+const createNewResume = async (userEmail: string, nav: ReturnType<typeof useNavigate>) => {
+
   const token = localStorage.getItem('token');
+  
   const response = await fetch('/api/users/resumes', {
     method: 'POST',
     headers: {
@@ -75,6 +78,8 @@ const createNewResume = async (userEmail: string) => {
     throw new Error('Failed to create resume');
   }
   
+  // Go to choose new template and then go to editing dashboard
+  nav('/portfolio');
   return response.json();
 };
 
@@ -122,7 +127,7 @@ export default function ProfilePage() {
 
   // Create new resume mutation
   const createResumeMutation = useMutation({
-    mutationFn: () => createNewResume(currentUser?.email || ''),
+    mutationFn: () => createNewResume(currentUser?.email || '', navigate),
     onSuccess: () => {
       showToast('New resume created successfully!', 'success');
       queryClient.invalidateQueries({ queryKey: ['userResumes'] });

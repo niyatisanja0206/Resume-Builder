@@ -63,8 +63,33 @@ export default function Login() {
                 location: ''
             });
 
-            // Redirect to dashboard page
-            navigate('/dashboard');
+
+            // After login, check for draft resume and redirect accordingly
+            const token = data.token;
+            // Fetch user's resumes to check for draft
+            try {
+                const resumesResp = await fetch(`http://localhost:5000/api/users/resumes?email=${data.user.email}`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                if (resumesResp.ok) {
+                    const resumes = await resumesResp.json();
+                    const draftResume = resumes.find((resume) => resume.status === 'draft' && !resume.isDownloaded);
+                    if (draftResume) {
+                        // Optionally set selectedResumeId in localStorage
+                        localStorage.setItem('selectedResumeId', draftResume._id);
+                        navigate('/dashboard');
+                        return;
+                    }
+                }
+            } catch (e) {
+                // If error, fallback to profile
+                console.error('Error checking for draft resume:', e);
+            }
+            // If no draft, go to profile
+            navigate('/profile');
 
         } catch (error) {
             setError(error instanceof Error ? error.message : 'An error occurred');

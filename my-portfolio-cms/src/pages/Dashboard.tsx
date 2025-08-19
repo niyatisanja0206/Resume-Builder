@@ -254,6 +254,14 @@ export default function Dashboard() {
       return;
     }
 
+    // Require basic info before saving
+    const basicInfo = localFormData.basicInfo;
+    const hasBasic = basicInfo && basicInfo.name && basicInfo.email && basicInfo.contact_no && basicInfo.location && basicInfo.about;
+    if (!hasBasic) {
+      showToast('Please fill all basic information fields before saving.', 'error');
+      return;
+    }
+
     // Warn if incomplete, but allow save
     const validationErrors = validateResumeCompleteness(localFormData);
     const isIncomplete = validationErrors.length > 0;

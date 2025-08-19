@@ -5,14 +5,13 @@ const phoneRegex = /^$|^[+]?[(]?[0-9]{0,4}[)]?[-\s.]?[0-9]{0,4}[-\s.]?[0-9]{0,9}
 
 export const basicSchema = z.object({
   // Removed 'id' field to use MongoDB's _id
-  name: z.string().optional().default(''),
+  name: z.string().min(1, 'Full Name is required'),
   contact_no: z.string()
-    .regex(phoneRegex, "Invalid phone number format")
-    .optional()
-    .default(''),
-  email: z.string().email("Invalid email address").optional().default(''),
-  location: z.string().optional().default(''), 
-  about: z.string().optional().default(''),
+    .min(1, 'Phone number is required')
+    .regex(phoneRegex, "Invalid phone number format"),
+  email: z.string().email("Invalid email address").min(1, 'Email is required'),
+  location: z.string().min(1, 'Location is required'),
+  about: z.string().min(1, 'Summary/About is required'),
 });
 
 export type BasicFormSchema = z.infer<typeof basicSchema>;

@@ -151,7 +151,7 @@ export function useBasicForm() {
             await queryClient.cancelQueries({ queryKey: ['current-resume'] });
             
             // Snapshot the previous value
-            const previousBasicData = queryClient.getQueryData(['basic-form', newBasicData.email]);
+            const previousBasicData = queryClient.getQueryData(['basic-form', newBasicData.email]) as Basic | null;
             
             // Optimistically update to the new value
             queryClient.setQueryData(['basic-form', newBasicData.email], newBasicData);
@@ -192,7 +192,11 @@ export function useBasicForm() {
             queryClient.invalidateQueries({ queryKey: ['current-resume'] });
         },
         // If the mutation fails, use the context returned from onMutate to roll back
-        onError: (err, newBasicData, context: any) => {
+        onError: (
+            err,
+            newBasicData,
+            context: { previousBasicData?: Basic | null } | undefined
+        ) => {
             console.error('Error updating basic info:', err);
             if (context?.previousBasicData) {
                 queryClient.setQueryData(
