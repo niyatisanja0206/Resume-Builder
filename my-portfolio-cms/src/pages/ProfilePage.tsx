@@ -132,7 +132,8 @@ export default function ProfilePage() {
     // Store the selected resume ID in localStorage so Dashboard can load it
     localStorage.setItem('selectedResumeId', resume._id);
     localStorage.removeItem('isNewResume'); // Ensure this is not a new resume
-    navigate('/dashboard');
+    //navigate to resume with previously selected template only
+    navigate(`/dashboard?template=${resume.template || 'classic'}`);
   };
 
   const handlePreviewResume = (resume: Resume) => {

@@ -1,3 +1,4 @@
+// backend/controllers/userController.js
 const User = require('../models/users');
 const Resume = require('../models/resumes');
 
@@ -64,7 +65,7 @@ exports.getUserResumes = async (req, res) => {
 
         const resumes = await Resume.find({ userEmail: email })
             .sort({ updatedAt: -1 }) // Sort by most recently updated
-            .select('_id userEmail title status isDownloaded downloadCount createdAt updatedAt basic');
+            .select('_id userEmail title status isDownloaded downloadCount createdAt updatedAt basic template'); // FIX: Added 'template' to the selection
 
         res.status(200).json(resumes);
     } catch (error) {

@@ -1,10 +1,9 @@
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent } from "@/components/ui/card";
-//import { Badge } from "@/components/ui/badge";
-//import { Check } from "lucide-react";
 import resume4 from "@/assets/resume4.png";
 import resume5 from "@/assets/resume5.png";
 import resume6 from "@/assets/resume6.png";
+import { useAuth } from '@/hooks/useAuth';
 
 // Define the available templates
 const templates = [
@@ -32,12 +31,17 @@ type TemplateId = typeof templates[number]['id'];
 
 export default function Portfolio() {
   const navigate = useNavigate();
+  const { isAuthenticated } = useAuth();
 
   // Function to handle template selection and navigate to the dashboard
   const handleTemplateSelect = (templateId: TemplateId) => {
-    // Navigate to the dashboard, passing the chosen template ID as a URL parameter.
-    // The Dashboard will read this to show the correct preview.
-    navigate(`/dashboard?template=${templateId}`);
+    if (isAuthenticated) {
+      navigate(`/dashboard?template=${templateId}`);
+    } else {
+      // Store the selected template and redirect to login
+      sessionStorage.setItem('selectedTemplate', templateId);
+      navigate('/login');
+    }
   };
 
   return (

@@ -1,10 +1,11 @@
 import { Link } from 'react-router-dom';
-import { useAuth } from '@/hooks/useAuth';
+import { useUserContext } from '@/hooks/useUserContext';
 import Profile from './Profile';
 import { Button } from '@/components/ui/button';
 
 export default function Header() {
-    const { isAuthenticated, user, logout } = useAuth();
+    const { currentUser, logout } = useUserContext();
+    const isAuthenticated = !!currentUser;
 
     return (
         <header className="sticky top-0 z-50 w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -57,12 +58,12 @@ export default function Header() {
                     </Link>
 
                     {/* Authentication Section */}
-                    {isAuthenticated && user ? (
+                    {isAuthenticated && currentUser ? (
                         <div className="ml-4">
                             <Profile 
-                                userEmail={user.email} 
-                                onLogout={logout}
-                                onDeleteAccount={logout}
+                                userEmail={currentUser.email} 
+                                onLogout={logout ?? (() => {})}
+                                onDeleteAccount={logout ?? (() => {})}
                             />
                         </div>
                     ) : (

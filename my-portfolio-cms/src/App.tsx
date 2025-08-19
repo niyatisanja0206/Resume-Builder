@@ -32,10 +32,7 @@ export default function App() {
             <Routes>
               {/* Public routes that are always accessible */}
               <Route path="/" element={<Landing />} />
-
-              {/* Routes for authenticated users only */}
-              <Route element={<ProtectedLayout />}>
-                <Route 
+              <Route 
                   path="/portfolio" 
                   element={
                     <ErrorBoundary fallback={<div>Portfolio Error</div>}>
@@ -43,6 +40,9 @@ export default function App() {
                     </ErrorBoundary>
                   } 
                 />
+
+              {/* Routes for authenticated users only */}
+              <Route element={<ProtectedLayout />}>
                 <Route 
                   path="/dashboard" 
                   element={
