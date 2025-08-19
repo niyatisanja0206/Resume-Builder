@@ -15,19 +15,10 @@ export const useAuth = () => {
   useEffect(() => {
     const token = localStorage.getItem('token');
     const userData = localStorage.getItem('user');
-    
     if (token && userData) {
-      try {
-        const parsedUser = JSON.parse(userData);
-        setUser(parsedUser);
-        setIsAuthenticated(true);
-      } catch (error) {
-        console.error('Error parsing user data:', error);
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
-      }
+      setUser(JSON.parse(userData));
+      setIsAuthenticated(true);
     }
-    
     setLoading(false);
   }, []);
 
@@ -54,3 +45,5 @@ export const useAuth = () => {
     logout
   };
 };
+
+export default useAuth;
