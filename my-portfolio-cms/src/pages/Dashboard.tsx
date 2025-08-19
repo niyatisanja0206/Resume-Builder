@@ -5,6 +5,7 @@ import { useSearchParams, useNavigate } from 'react-router-dom';
 import { ChevronDown, ChevronUp, Save, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
+
 // Import form components
 import EnhancedExperienceForm from "@/components/dashboard/EnhancedExperienceForm";
 import EnhancedProjectForm from "@/components/dashboard/EnhancedProjectForm";
