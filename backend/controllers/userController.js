@@ -139,9 +139,17 @@ exports.createResume = async (req, res) => {
         // Use provided title or generate a default one
         let resumeTitle = title;
         if (!resumeTitle) {
-            // Count existing resumes to generate a unique title
-            const existingResumes = await Resume.countDocuments({ userEmail });
-            resumeTitle = `Resume ${existingResumes + 1}`;
+            // Find all resume titles for this user
+            const userResumes = await Resume.find({ userEmail }).select('title');
+            let maxNum = 0;
+            userResumes.forEach(r => {
+                const match = r.title && r.title.match(/^Resume (\d+)$/);
+                if (match) {
+                    const num = parseInt(match[1], 10);
+                    if (num > maxNum) maxNum = num;
+                }
+            });
+            resumeTitle = `Resume ${maxNum + 1}`;
         }
 
         const newResume = new Resume({

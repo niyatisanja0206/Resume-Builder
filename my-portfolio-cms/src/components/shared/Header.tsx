@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { useUserContext } from '@/hooks/useUserContext';
 import Profile from './Profile';
 import { Button } from '@/components/ui/button';
@@ -6,6 +6,8 @@ import { Button } from '@/components/ui/button';
 export default function Header() {
     const { currentUser, logout } = useUserContext();
     const isAuthenticated = !!currentUser;
+    const location = useLocation();
+    const isDashboard = location.pathname === '/dashboard';
 
     return (
         <header className="sticky top-0 z-50 w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -45,7 +47,9 @@ export default function Header() {
 
                     <Link
                     to="/dashboard"
-                    className="relative px-4 py-2 rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-colors group"
+                    className={`relative px-4 py-2 rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-colors group ${isDashboard ? 'pointer-events-none opacity-60 cursor-default' : ''}`}
+                    tabIndex={isDashboard ? -1 : 0}
+                    aria-disabled={isDashboard}
                     >
                     <span className="flex items-center space-x-2">
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

@@ -126,6 +126,12 @@ const componentStyles = `
       padding: 0;
       font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
   }
+  .creative-template > aside {
+    padding: 2.5rem 2rem 2.5rem 2.5rem;
+  }
+  .creative-template > main {
+    padding: 2.5rem 2.5rem 2.5rem 2rem;
+  }
   .creative-template h1, .creative-template h2, .creative-template h3, .creative-template p, .creative-template li {
     font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif !important;
   }
