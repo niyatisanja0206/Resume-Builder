@@ -131,7 +131,7 @@ export default function Dashboard() {
 
   const [openSections, setOpenSections] = useState({
     basic: true,
-    education: true, // default open so users can type and see preview instantly
+    education: false,
     experience: false,
     project: false,
     skill: false
