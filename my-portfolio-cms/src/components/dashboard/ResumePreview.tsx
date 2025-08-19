@@ -17,23 +17,170 @@ const componentStyles = `
   }
 
   .resume-template-wrapper {
-    /* This is the white, A4-proportioned page */
     background-color: white;
     box-sizing: border-box;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
     position: relative;
-    
-    /* --- A4 Sizing --- */
-    /* 1. Set a base width for the page. */
     width: 816px;
-    
-    /* 2. Make it responsive: it won't exceed the viewport width. */
-    max-width: 95%;
-    
-    /* 3. The container will grow with the content. */
-
-    /* 4. Content will now expand the container, no scrollbar. */
+    aspect-ratio: 210/297;
+    max-width: 100vw;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    align-items: stretch;
     overflow: visible;
+    transform-origin: top center;
+    transition: box-shadow 0.2s;
+  }
+
+  /* Responsive scaling for all screens using transform: scale() */
+  .a4-container {
+    width: 100vw;
+    padding: 1.5rem;
+    background-color: #f0f2f5;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    box-sizing: border-box;
+    /* Calculate scale based on viewport width, keeping A4 ratio */
+  }
+
+  @media (max-width: 900px) {
+    .resume-template-wrapper {
+      width: 816px;
+      max-width: 816px;
+      aspect-ratio: 210/297;
+    }
+    .a4-container {
+      padding: 0.5rem;
+    }
+  }
+
+  @media (max-width: 850px) {
+    .resume-template-wrapper {
+      /* Scale down the whole resume proportionally */
+      transform: scale(calc((100vw - 16px) / 816));
+      /* 16px for padding/margin */
+      width: 816px;
+      height: 1152px;
+      max-width: unset;
+      max-height: unset;
+    }
+    .a4-container {
+      padding: 0;
+    }
+  }
+
+  @media (max-width: 600px) {
+    .resume-template-wrapper {
+      transform: scale(calc((100vw - 4px) / 816));
+      width: 816px;
+      height: 1152px;
+    }
+    .a4-container {
+      padding: 0;
+    }
+  }
+
+  /* Use clamp for font sizes for all templates */
+  .resume-template {
+    font-size: clamp(10px, 2vw, 16px) !important;
+    padding: 2rem;
+  }
+  .resume-template h1 {
+    font-size: clamp(14px, 3vw, 28px) !important;
+  }
+  .resume-template h2 {
+    font-size: clamp(11px, 2.2vw, 20px) !important;
+  }
+  .resume-template h3 {
+    font-size: clamp(10px, 1.8vw, 18px) !important;
+  }
+  .resume-template p, .resume-template li {
+    font-size: clamp(9px, 1.7vw, 16px) !important;
+  }
+  .modern-template-section-title, .classic-template h2, .creative-template h2 {
+    font-size: clamp(10px, 2vw, 20px) !important;
+    padding: 0.3em 0.7em !important;
+  }
+  svg, .resume-template svg {
+    width: clamp(10px, 2vw, 20px) !important;
+    height: clamp(10px, 2vw, 20px) !important;
+  }
+
+  /* Responsive scaling for mobile and small screens */
+  @media (max-width: 900px) {
+    .resume-template-wrapper {
+      width: 100vw;
+      max-width: 100vw;
+      height: auto;
+      aspect-ratio: 210/297;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.10);
+    }
+    .resume-template {
+      font-size: 13px !important;
+      padding: 1rem;
+    }
+    .classic-template, .modern-template, .creative-template > aside, .creative-template > main {
+      padding: 1rem !important;
+    }
+    .modern-template-section-title, .classic-template h2, .creative-template h2 {
+      font-size: 1rem !important;
+      padding: 0.3em 0.7em !important;
+    }
+    .resume-template h1 {
+      font-size: 20px !important;
+    }
+    .resume-template h2 {
+      font-size: 15px !important;
+    }
+    .resume-template h3 {
+      font-size: 13px !important;
+    }
+    .resume-template p, .resume-template li {
+      font-size: 12px !important;
+    }
+    svg, .resume-template svg {
+      width: 14px !important;
+      height: 14px !important;
+    }
+  }
+
+  @media (max-width: 600px) {
+    .resume-template-wrapper {
+      width: 100vw;
+      max-width: 100vw;
+      aspect-ratio: 210/297;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    }
+    .resume-template {
+      font-size: 10px !important;
+      padding: 0.5rem;
+    }
+    .classic-template, .modern-template, .creative-template > aside, .creative-template > main {
+      padding: 0.5rem !important;
+    }
+    .modern-template-section-title, .classic-template h2, .creative-template h2 {
+      font-size: 0.8rem !important;
+      padding: 0.2em 0.4em !important;
+    }
+    .resume-template h1 {
+      font-size: 14px !important;
+    }
+    .resume-template h2 {
+      font-size: 11px !important;
+    }
+    .resume-template h3 {
+      font-size: 10px !important;
+    }
+    .resume-template p, .resume-template li {
+      font-size: 9px !important;
+    }
+    svg, .resume-template svg {
+      width: 10px !important;
+      height: 10px !important;
+    }
   }
   
   /* Font Loading */
