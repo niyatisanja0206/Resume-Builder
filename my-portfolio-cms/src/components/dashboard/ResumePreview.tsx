@@ -40,12 +40,11 @@ const componentStyles = `
   @import url('https://fonts.googleapis.com/css2?family=Merriweather:wght@400;700&family=Open+Sans:wght@400;600;700&display=swap');
 
   /* Typography Classes */
-  .font-merriweather {
-    font-family: 'Merriweather', serif;
+  .font-times {
+    font-family: 'Times New Roman', Times, serif;
   }
-  
-  .font-opensans {
-    font-family: 'Open Sans', sans-serif;
+  .font-helvetica {
+    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
   }
 
   /* Scrollbar Styling (Hidden) */
@@ -88,74 +87,47 @@ const componentStyles = `
   /* Classic Template Styles */
   .classic-template {
     padding: 2.5rem;
+    font-family: 'Times New Roman', Times, serif;
   }
-  .classic-template h1 {
-    font-size: 28px !important;
-  }
-  
-  .classic-template h2 {
-    font-size: 22px !important;
+  .classic-template h1, .classic-template h2, .classic-template h3, .classic-template p, .classic-template li {
+    font-family: 'Times New Roman', Times, serif !important;
   }
   
-  .classic-template h3 {
-    font-size: 18px !important;
-  }
-  
-  .classic-template p, .classic-template li {
-    font-size: 16px !important;
-  }
-
   /* Modern Template Styles */
   .modern-template {
      padding: 3rem;
+     border: 10px solid #efaec6ff;
+     border-radius: 8px;
+     font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
   }
-  .modern-template h1 {
-    font-size: 42px !important;
-    color: #333;
+  .modern-template h1, .modern-template h2, .modern-template h3, .modern-template p, .modern-template li, .modern-template span {
+    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif !important;
   }
-  
-  .modern-template h2 {
-    font-size: 18px !important;
-    font-weight: 700 !important;
+
+  .modern-template-section-title {
+    background: #f3f3f3;
+    color: #111;
+    font-weight: 700;
+    padding: 0.5em 1.2em;
+    border-radius: 5px;
+    margin-bottom: 1.2em;
+    margin-top: 1.2em;
+    font-size: 1rem;
+    display: block;
+    width: 100%;
+    letter-spacing: 0.5px;
     text-transform: uppercase;
-    letter-spacing: 2px;
-    color: #D95D8A;
-  }
-  
-  .modern-template h3 {
-    font-size: 18px !important;
-    font-weight: bold;
-  }
-  
-  .modern-template p, .modern-template li, .modern-template span {
-    font-size: 15px !important;
+    box-sizing: border-box;
   }
 
   /* Creative Template Styles */
   .creative-template {
       /* Creative template has its own padding defined by the columns */
       padding: 0;
+      font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
   }
-  .creative-template > aside, .creative-template > main {
-      padding: 2.5rem;
-  }
-  .creative-template h1 {
-    font-size: 28px !important;
-  }
-  
-  .creative-template h2 {
-    font-size: 22px !important;
-    border-bottom-width: 2px;
-    padding-bottom: 0.5rem;
-    margin-bottom: 1rem;
-  }
-  
-  .creative-template h3 {
-    font-size: 18px !important;
-  }
-  
-  .creative-template p, .creative-template li {
-    font-size: 16px !important;
+  .creative-template h1, .creative-template h2, .creative-template h3, .creative-template p, .creative-template li {
+    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif !important;
   }
 
   /* Print-specific styles */
@@ -237,15 +209,15 @@ interface ResumePreviewProps {
 const ClassicTemplate: React.FC<Omit<ResumePreviewProps, 'template'>> = ({ basicInfo, projects, experiences, skills, education }) => {
     const Section: React.FC<{ title: string; children: React.ReactNode; className?: string }> = ({ title, children, className }) => (
       <div className={`mb-6 ${className}`}>
-        <h2 className="font-bold uppercase border-b-2 border-gray-300 pb-1 mb-4 text-xl">{title}</h2>
+        <h2 className="font-bold uppercase border-b-2 border-gray-300 pb-1 mb-4 text-xl font-times">{title}</h2>
         <div>{children}</div>
       </div>
     );
 
     return (
-      <div className="resume-template classic-template bg-white font-opensans">
+      <div className="resume-template classic-template bg-white font-times">
           <header className="text-center mb-8">
-              <h1 className="font-bold tracking-wider mb-3 font-merriweather">{basicInfo?.name}</h1>
+              <h1 className="font-bold tracking-wider mb-3 font-times">{basicInfo?.name}</h1>
               <div className="text-gray-600 flex flex-wrap justify-center items-center gap-x-3 gap-y-1">
                   <span className="text-base">{basicInfo?.location }</span>
                   <span>•</span>
@@ -342,16 +314,16 @@ const ClassicTemplate: React.FC<Omit<ResumePreviewProps, 'template'>> = ({ basic
 // --- MODERN TEMPLATE ---
 const ModernTemplate: React.FC<Omit<ResumePreviewProps, 'template'>> = ({ basicInfo, projects, experiences, skills, education }) => {
     const Section: React.FC<{ title: string; children: React.ReactNode; className?: string }> = ({ title, children, className }) => (
-      <section className={`py-6 ${className}`}>
-        <h2 className="mb-6">{title}</h2>
+      <section className={`py-6 ${className || ''}`}>
+        <h2 className="modern-template-section-title">{title}</h2>
         <div className="space-y-6">{children}</div>
       </section>
     );
 
     return (
-        <div className="resume-template modern-template bg-white font-opensans text-gray-700">
+        <div className="resume-template modern-template bg-white font-helvetica text-gray-700">
             <header className="text-center pb-8 border-b-2 border-gray-100">
-                <h1 className="font-merriweather">{basicInfo?.name}</h1>
+                <h1 className="font-helvetica">{basicInfo?.name}</h1>
                 <div className="mt-4 flex justify-center items-center space-x-6 text-sm text-gray-500">
                     <span className="flex items-center"><svg className="w-4 h-4 mr-2 text-[#D95D8A]" fill="currentColor" viewBox="0 0 20 20"><path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z"></path><path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z"></path></svg> {basicInfo?.email }</span>
                     <span className="flex items-center"><svg className="w-4 h-4 mr-2 text-[#D95D8A]" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd"></path></svg> {basicInfo?.location }</span>
@@ -361,9 +333,9 @@ const ModernTemplate: React.FC<Omit<ResumePreviewProps, 'template'>> = ({ basicI
 
             <main>
                 {basicInfo?.about && (
-                    <section className='py-6'>
+                    <Section title="Professional Summary">
                         <p className="text-center text-base leading-relaxed whitespace-pre-line">{basicInfo.about}</p>
-                    </section>
+                    </Section>
                 )}
 
                 {experiences && experiences.length > 0 && (
@@ -440,11 +412,11 @@ const ModernTemplate: React.FC<Omit<ResumePreviewProps, 'template'>> = ({ basicI
 
 // --- CREATIVE TEMPLATE ---
 const CreativeTemplate: React.FC<Omit<ResumePreviewProps, 'template'>> = ({ basicInfo, projects, experiences, skills, education }) => (
-    <div className="resume-template creative-template flex font-opensans h-full">
+    <div className="resume-template creative-template flex font-helvetica h-full">
         {/* Left Section */}
         <aside className="w-1/3 bg-[#1A4331] text-white flex flex-col">
             <header className="text-left mb-8">
-                <h1 className="text-3xl font-bold mb-2">{basicInfo?.name}</h1>
+                <h1 className="text-3xl font-bold mb-2 font-helvetica">{basicInfo?.name}</h1>
                 <div className="space-y-4 mt-6">
                      <p className="flex items-start text-sm"><svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-3 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg> {basicInfo?.email}</p>
                      <p className="flex items-start text-sm"><svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-3 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" /></svg> {basicInfo?.contact_no}</p>

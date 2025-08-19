@@ -4,7 +4,7 @@ import { ArrowLeft, Edit } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import ResumePreview from '@/components/dashboard/ResumePreview';
-import ResumePDFCore from '@/components/dashboard/ResumePDFCore';
+import ResumePDFCore from '@/components/dashboard/ResumePDFtemplate';
 import type { Basic, Project, Experience, Skill, Education } from '@/types/portfolio';
 
 // Resume interface matching the backend model

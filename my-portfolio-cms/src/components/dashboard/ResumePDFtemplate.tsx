@@ -397,6 +397,31 @@ const SimpleDocument = ({ basicInfo, projects, experiences, skills, education, t
         </View>
       )}
 
+      {/* Skills Section */}
+      {skills && skills.length > 0 && (
+        <View style={classicStyles.section}>
+          <Text style={classicStyles.sectionTitle}>Technical Skills</Text>
+          <Text style={classicStyles.skills}>{skills.map(s => `${s.name} (${s.level})`).join(', ')}</Text>
+        </View>
+      )}
+
+      {/* Projects Section */}
+      {projects && projects.length > 0 && (
+        <View style={classicStyles.section}>
+          <Text style={classicStyles.sectionTitle}>Projects</Text>
+          {projects.map((project, i) => (
+            <View key={i} style={classicStyles.entry}>
+              <Text style={classicStyles.title}>{safeText(project.title)}</Text>
+              {project.description && <Text style={classicStyles.description}>{safeText(project.description)}</Text>}
+              {project.techStack && project.techStack.length > 0 && (
+                  <Text style={classicStyles.techStack}>Tech: {project.techStack.join(', ')}</Text>
+              )}
+              {project.link && <Link style={classicStyles.link} src={project.link}>View Project</Link>}
+            </View>
+          ))}
+        </View>
+      )}
+
       {/* Experience Section */}
       {experiences && experiences.length > 0 && (
         <View style={classicStyles.section}>
@@ -424,30 +449,6 @@ const SimpleDocument = ({ basicInfo, projects, experiences, skills, education, t
         </View>
       )}
 
-      {/* Projects Section */}
-      {projects && projects.length > 0 && (
-        <View style={classicStyles.section}>
-          <Text style={classicStyles.sectionTitle}>Projects</Text>
-          {projects.map((project, i) => (
-            <View key={i} style={classicStyles.entry}>
-              <Text style={classicStyles.title}>{safeText(project.title)}</Text>
-              {project.description && <Text style={classicStyles.description}>{safeText(project.description)}</Text>}
-              {project.techStack && project.techStack.length > 0 && (
-                  <Text style={classicStyles.techStack}>Tech: {project.techStack.join(', ')}</Text>
-              )}
-              {project.link && <Link style={classicStyles.link} src={project.link}>View Project</Link>}
-            </View>
-          ))}
-        </View>
-      )}
-
-      {/* Skills Section */}
-      {skills && skills.length > 0 && (
-        <View style={classicStyles.section}>
-          <Text style={classicStyles.sectionTitle}>Technical Skills</Text>
-          <Text style={classicStyles.skills}>{skills.map(s => `${s.name} (${s.level})`).join(', ')}</Text>
-        </View>
-      )}
     </Page>
   );
 
@@ -475,6 +476,31 @@ const SimpleDocument = ({ basicInfo, projects, experiences, skills, education, t
           </View>
         )}
 
+        {/* Education Section */}
+        {education && education.length > 0 && (
+          <View style={modernStyles.section}>
+            <Text style={modernStyles.sectionTitle}>Education</Text>
+            {education.map((edu, i) => (
+              <View key={i} style={modernStyles.entry}>
+                <View style={modernStyles.entryHeader}>
+                  <Text style={modernStyles.subtitle}>{safeText(edu.institution)}</Text>
+                  <Text style={modernStyles.date}>{formatDate(edu.startDate)} - {formatDate(edu.endDate)}</Text>
+                </View>
+                <Text style={modernStyles.title}>{safeText(edu.degree)}</Text>
+                {edu.Grade && <Text style={modernStyles.description}>Grade: {safeText(edu.Grade)}</Text>}
+              </View>
+            ))}
+          </View>
+        )}
+
+        {/* Skills Section */}
+        {skills && skills.length > 0 && (
+          <View style={modernStyles.section}>
+            <Text style={modernStyles.sectionTitle}>Skills</Text>
+            <Text style={modernStyles.skills}>{skills.map(s => `${s.name} (${s.level})`).join(', ')}</Text>
+          </View>
+        )}
+
         {/* Experience Section */}
         {experiences && experiences.length > 0 && (
           <View style={modernStyles.section}>
@@ -490,23 +516,6 @@ const SimpleDocument = ({ basicInfo, projects, experiences, skills, education, t
                 {exp.skillsLearned && exp.skillsLearned.length > 0 && (
                     <Text style={modernStyles.description}>Skills Learned: {exp.skillsLearned.join(', ')}</Text>
                 )}
-              </View>
-            ))}
-          </View>
-        )}
-
-        {/* Education Section */}
-        {education && education.length > 0 && (
-          <View style={modernStyles.section}>
-            <Text style={modernStyles.sectionTitle}>Education</Text>
-            {education.map((edu, i) => (
-              <View key={i} style={modernStyles.entry}>
-                <View style={modernStyles.entryHeader}>
-                  <Text style={modernStyles.subtitle}>{safeText(edu.institution)}</Text>
-                  <Text style={modernStyles.date}>{formatDate(edu.startDate)} - {formatDate(edu.endDate)}</Text>
-                </View>
-                <Text style={modernStyles.title}>{safeText(edu.degree)}</Text>
-                {edu.Grade && <Text style={modernStyles.description}>Grade: {safeText(edu.Grade)}</Text>}
               </View>
             ))}
           </View>
@@ -529,13 +538,6 @@ const SimpleDocument = ({ basicInfo, projects, experiences, skills, education, t
           </View>
         )}
 
-        {/* Skills Section */}
-        {skills && skills.length > 0 && (
-          <View style={modernStyles.section}>
-            <Text style={modernStyles.sectionTitle}>Skills</Text>
-            <Text style={modernStyles.skills}>{skills.map(s => `${s.name} (${s.level})`).join(', ')}</Text>
-          </View>
-        )}
       </View>
     </Page>
   );
@@ -553,14 +555,7 @@ const SimpleDocument = ({ basicInfo, projects, experiences, skills, education, t
           <Text style={creativeStyles.contactItem}>{safeText(validBasicInfo.location)}</Text>
         </View>
 
-        {/* Profile Section */}
-        {validBasicInfo.about && (
-          <View style={creativeStyles.leftSection}>
-            <Text style={creativeStyles.leftSectionTitle}>Profile</Text>
-            <Text style={creativeStyles.profileText}>{safeText(validBasicInfo.about)}</Text>
-          </View>
-        )}
-
+        
         {/* Education Section */}
         {education && education.length > 0 && (
           <View style={creativeStyles.leftSection}>
@@ -591,6 +586,31 @@ const SimpleDocument = ({ basicInfo, projects, experiences, skills, education, t
 
       {/* Right Column */}
       <View style={creativeStyles.rightColumn}>
+        {/* Profile Section */}
+        {validBasicInfo.about && (
+          <View style={creativeStyles.rightSection}>
+            <Text style={creativeStyles.rightSectionTitle}>Profile</Text>
+            <Text style={creativeStyles.profileText}>{safeText(validBasicInfo.about)}</Text>
+          </View>
+        )}
+
+        {/* Projects Section */}
+        {projects && projects.length > 0 && (
+          <View style={creativeStyles.rightSection}>
+            <Text style={creativeStyles.rightSectionTitle}>Projects</Text>
+            {projects.map((proj, i) => (
+              <View key={i} style={creativeStyles.expEntry}>
+                <Text style={creativeStyles.position}>{safeText(proj.title)}</Text>
+                {proj.description && <Text style={creativeStyles.expDescription}>{safeText(proj.description)}</Text>}
+                {proj.techStack && proj.techStack.length > 0 && (
+                    <Text style={creativeStyles.techStack}>Tech Stack: {proj.techStack.join(', ')}</Text>
+                )}
+                {proj.link && <Link style={creativeStyles.link} src={proj.link}>View Project</Link>}
+              </View>
+            ))}
+          </View>
+        )}
+
         {/* Experience Section */}
         {experiences && experiences.length > 0 && (
           <View style={creativeStyles.rightSection}>
@@ -615,22 +635,6 @@ const SimpleDocument = ({ basicInfo, projects, experiences, skills, education, t
           </View>
         )}
 
-        {/* Projects Section */}
-        {projects && projects.length > 0 && (
-          <View style={creativeStyles.rightSection}>
-            <Text style={creativeStyles.rightSectionTitle}>Projects</Text>
-            {projects.map((proj, i) => (
-              <View key={i} style={creativeStyles.expEntry}>
-                <Text style={creativeStyles.position}>{safeText(proj.title)}</Text>
-                {proj.description && <Text style={creativeStyles.expDescription}>{safeText(proj.description)}</Text>}
-                {proj.techStack && proj.techStack.length > 0 && (
-                    <Text style={creativeStyles.techStack}>Tech Stack: {proj.techStack.join(', ')}</Text>
-                )}
-                {proj.link && <Link style={creativeStyles.link} src={proj.link}>View Project</Link>}
-              </View>
-            ))}
-          </View>
-        )}
       </View>
     </Page>
   );

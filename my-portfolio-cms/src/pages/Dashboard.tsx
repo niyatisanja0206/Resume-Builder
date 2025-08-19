@@ -16,7 +16,7 @@ import { useToast } from "@/contexts/ToastContext";
 
 // Import preview components
 import ResumePreview from '@/components/dashboard/ResumePreview';
-import ResumePDF from '@/components/dashboard/ResumePDFSimple';
+import ResumePDF from '@/components/dashboard/ResumePDF';
 
 // Import utilities and context
 import { useUserContext } from "@/hooks/useUserContext";

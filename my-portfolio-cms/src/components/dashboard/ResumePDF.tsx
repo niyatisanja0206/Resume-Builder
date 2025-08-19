@@ -155,7 +155,7 @@ const SimplePDFDownload = () => {
 const PDFComponent = React.lazy(async () => {
   try {
     // Force the browser to not use cached version
-    const module = await import('./ResumePDFCore');
+    const module = await import('./ResumePDFtemplate');
     return { default: module.default };
   } catch (error) {
     console.error('Failed to load PDF component:', error);
