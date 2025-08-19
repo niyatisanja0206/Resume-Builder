@@ -13,9 +13,9 @@ const resumeSchema = new mongoose.Schema({
         }
     },
     status: {
-        type: String,
-        enum: ['draft', 'completed'],
-        default: 'draft'
+    type: String,
+    enum: ['draft', 'completed', 'incomplete'],
+    default: 'draft'
     },
     isDownloaded: {
         type: Boolean,

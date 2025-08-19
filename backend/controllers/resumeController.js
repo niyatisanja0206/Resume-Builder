@@ -32,15 +32,34 @@ exports.createResume = async (req, res) => {
             return res.status(401).json({ message: 'Authentication error: User email not found.' });
         }
 
+        // Extract basic details from request body
+        const { basic = {}, status = 'draft', ...rest } = req.body;
+        const { name, email, contact_no, location, about } = basic;
+
+        // Check if basic details are filled
+        const hasBasic = name && email && contact_no && location && about;
+
+        let resumeStatus = status;
+        if (status === 'incomplete') {
+            if (!hasBasic) {
+                return res.status(400).json({ message: 'Cannot save as incomplete. Basic details are required.' });
+            }
+        }
+
+        // If not completed and has basic, allow incomplete
+        if (!resumeStatus || (resumeStatus !== 'completed' && hasBasic)) {
+            resumeStatus = hasBasic ? 'incomplete' : 'draft';
+        }
+
         const newResume = new Resume({
             userEmail: req.user.email,
+            basic,
+            status: resumeStatus,
+            ...rest
         });
 
         const savedResume = await newResume.save();
-        
-        // Increment resume count for the user since this is a new resume
         await incrementResumeCountByEmail(req.user.email);
-        
         res.status(201).json({ message: 'New resume created successfully', resume: savedResume });
     } catch (error) {
         res.status(500).json({ message: 'Server error while creating resume', error: error.message });
@@ -50,9 +69,26 @@ exports.createResume = async (req, res) => {
 // Update a resume by ID
 exports.updateResume = async (req, res) => {
     try {
+        const { basic = {}, status, ...rest } = req.body;
+        const { name, email, contact_no, location, about } = basic || {};
+        const hasBasic = name && email && contact_no && location && about;
+
+        let resumeStatus = status;
+        if (status === 'incomplete') {
+            if (!hasBasic) {
+                return res.status(400).json({ message: 'Cannot save as incomplete. Basic details are required.' });
+            }
+        }
+        if (!resumeStatus || (resumeStatus !== 'completed' && hasBasic)) {
+            resumeStatus = hasBasic ? 'incomplete' : 'draft';
+        }
+
+        const updateData = { ...rest, status: resumeStatus };
+        if (basic) updateData.basic = basic;
+
         const updatedResume = await Resume.findOneAndUpdate(
             { _id: req.params.id, userEmail: req.user.email },
-            req.body,
+            updateData,
             { new: true, runValidators: true }
         );
 

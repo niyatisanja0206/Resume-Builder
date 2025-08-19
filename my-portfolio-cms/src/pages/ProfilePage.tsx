@@ -1,4 +1,5 @@
 import { useNavigate } from 'react-router-dom';
+import { useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { User, Edit, Trash2, FileText, Plus, Calendar, Download, Eye } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -95,6 +96,16 @@ export default function ProfilePage() {
     enabled: !!currentUser?.email,
     staleTime: 5 * 60 * 1000,
   });
+
+  // Listen for resume-saved event to refetch resumes and ensure UI is always up to date
+  useEffect(() => {
+    const handler = () => {
+      queryClient.invalidateQueries({ queryKey: ['userResumes'] });
+      refetchResumes();
+    };
+    window.addEventListener('resume-saved', handler);
+    return () => window.removeEventListener('resume-saved', handler);
+  }, [refetchResumes, queryClient]);
 
   // Delete resume mutation
   const deleteResumeMutation = useMutation({
@@ -212,7 +223,14 @@ export default function ProfilePage() {
                 <div className="flex items-center justify-between mb-6">
                   <h2 className="text-2xl font-bold text-gray-900 dark:text-white">My Resumes</h2>
                   <Button 
-                    onClick={() => createResumeMutation.mutate()}
+                    onClick={() => {
+                      const hasDraft = resumes.some(r => r.status === 'draft');
+                      if (hasDraft) {
+                        showToast('You can have only one draft resume at a time. Please complete or delete your existing draft.', 'error');
+                        return;
+                      }
+                      createResumeMutation.mutate();
+                    }}
                     disabled={createResumeMutation.isPending}
                     className="flex items-center gap-2"
                   >

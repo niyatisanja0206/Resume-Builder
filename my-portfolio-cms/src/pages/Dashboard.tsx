@@ -116,10 +116,6 @@ export default function Dashboard() {
   const [showTitleDialog, setShowTitleDialog] = useState(false);
   const [resumeTitle, setResumeTitle] = useState('');
   const [currentDraftId, setCurrentDraftId] = useState<string | null>(null);
-  const [saveStrategy, setSaveStrategy] = useState<{
-    isUpdate: boolean;
-    resumeIdToUpdate: string | null;
-  }>({ isUpdate: false, resumeIdToUpdate: null });
 
   const selectedTemplate = initialTemplate && validTemplates.includes(initialTemplate as TemplateId)
     ? (initialTemplate as TemplateId)
@@ -234,6 +230,9 @@ export default function Dashboard() {
         getCurrentDraftResumeId(userEmail).then(draftId => {
           console.log('Dashboard: Found draft resume ID:', draftId);
           setCurrentDraftId(draftId);
+          if (draftId) {
+            localStorage.setItem('selectedResumeId', draftId);
+          }
         });
       }
     }
@@ -255,41 +254,30 @@ export default function Dashboard() {
       return;
     }
 
-    // Validate resume completeness before allowing save
+    // Warn if incomplete, but allow save
     const validationErrors = validateResumeCompleteness(localFormData);
-    if (validationErrors.length > 0) {
-      showToast(`Resume is incomplete: ${validationErrors.join(', ')}`, 'error');
+    const isIncomplete = validationErrors.length > 0;
+    if (isIncomplete) {
+      showToast(`Resume is incomplete: ${validationErrors.join(', ')}`, 'info');
+      // Save immediately with default title logic
+      let defaultTitle = '';
+      if (selectedResumeId && specificResumeData && specificResumeData.title) {
+        defaultTitle = specificResumeData.title;
+      } else {
+        const userName = localFormData.basicInfo?.name || currentUser.name || '';
+        defaultTitle = userName ? `${userName}'s Resume` : 'My Resume';
+      }
+      await performSave(defaultTitle);
       return;
     }
-
-    // Determine save strategy BEFORE showing dialog
-    const selectedResumeId = localStorage.getItem('selectedResumeId');
-    let resumeIdToUpdate: string | null = null;
-    let isUpdate = false;
-
-    // Priority 1: If there's a selectedResumeId (editing specific resume), use it
-    if (selectedResumeId) {
-      resumeIdToUpdate = selectedResumeId;
-      isUpdate = true;
-    }
-    // Priority 2: If there's a current draft (working on draft), use it  
-    else if (currentDraftId) {
-      resumeIdToUpdate = currentDraftId;
-      isUpdate = true;
-    }
-
-    // Store the save strategy
-    setSaveStrategy({ isUpdate, resumeIdToUpdate });
-    
-    // Set default title based on existing title or user's name
+    // If complete, open dialog for user to confirm/change title
     let defaultTitle = '';
     if (selectedResumeId && specificResumeData && specificResumeData.title) {
-      defaultTitle = specificResumeData.title; // Use existing title as default
+      defaultTitle = specificResumeData.title;
     } else {
       const userName = localFormData.basicInfo?.name || currentUser.name || '';
       defaultTitle = userName ? `${userName}'s Resume` : 'My Resume';
     }
-    
     setResumeTitle(defaultTitle);
     setShowTitleDialog(true);
   };
@@ -305,10 +293,43 @@ export default function Dashboard() {
         throw new Error('No authentication token found');
       }
 
+      // Fetch all user resumes to check for duplicate title
+      const allResumesResp = await fetch(`/api/users/resumes?email=${currentUser!.email}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      // Use Resume type for type safety
+      type Resume = { _id: string; title: string };
+      const allResumes: Resume[] = allResumesResp.ok ? await allResumesResp.json() : [];
+      const duplicate = allResumes.some((r) => r.title.trim().toLowerCase() === titleToUse.trim().toLowerCase() && (!currentDraftId || r._id !== currentDraftId));
+      if (duplicate) {
+        showToast('A resume with this name already exists. Please choose a different name.', 'error');
+        setIsSaving(false);
+        return;
+      }
+
+      // Determine status based on completeness
+      let status: 'completed' | 'incomplete' | 'draft' = 'completed';
+      const basicInfo = localFormData.basicInfo;
+      const hasBasic = basicInfo && basicInfo.name && basicInfo.email && basicInfo.contact_no && basicInfo.location && basicInfo.about;
+      const hasEducation = localFormData.education && localFormData.education.length > 0;
+      const hasExperience = localFormData.experiences && localFormData.experiences.length > 0;
+
+      if (hasBasic && hasEducation && hasExperience) {
+        status = 'completed';
+      } else if (hasBasic) {
+        status = 'incomplete';
+      } else {
+        status = 'draft';
+      }
+
       const resumeData = {
         userEmail: currentUser!.email,
         title: titleToUse.trim(),
-        status: 'completed',
+        status,
         basic: localFormData.basicInfo,
         education: localFormData.education,
         experience: localFormData.experiences,
@@ -317,15 +338,19 @@ export default function Dashboard() {
         template: selectedTemplate
       };
 
-      // Use the pre-determined save strategy
+      // Always use selectedResumeId from localStorage or currentDraftId for update
+      const selectedResumeId = localStorage.getItem('selectedResumeId');
+      const resumeIdToUpdate = selectedResumeId || currentDraftId;
       let url: string;
       let method: string;
 
-      if (saveStrategy.isUpdate && saveStrategy.resumeIdToUpdate) {
-        console.log('Dashboard: Updating existing resume:', saveStrategy.resumeIdToUpdate);
-        url = `/api/users/resumes/${saveStrategy.resumeIdToUpdate}`;
+      if (resumeIdToUpdate) {
+        // Always update if a draft exists
+        console.log('Dashboard: Updating existing resume:', resumeIdToUpdate);
+        url = `/api/users/resumes/${resumeIdToUpdate}`;
         method = 'PUT';
       } else {
+        // Only create if no draft exists
         console.log('Dashboard: Creating new resume');
         url = '/api/users/resumes';
         method = 'POST';
@@ -347,19 +372,21 @@ export default function Dashboard() {
 
       const result = await response.json();
       console.log('Dashboard: Resume saved successfully:', result);
-      
+
       showToast('Resume saved successfully!', 'success');
       setShowTitleDialog(false);
       setResumeTitle('');
       setCurrentDraftId(null); // Clear draft ID since it's now completed
-      
+
       // Clean up localStorage after successful save
-      if (saveStrategy.isUpdate) {
+      if (resumeIdToUpdate) {
         // Only remove selectedResumeId if we were updating it
         localStorage.removeItem('selectedResumeId');
       }
       localStorage.removeItem('isNewResume');
-      
+
+      // Notify ProfilePage to refetch resumes
+      window.dispatchEvent(new Event('resume-saved'));
       navigate('/profile');
     } catch (error) {
       console.error('Save error:', error);
@@ -373,33 +400,20 @@ export default function Dashboard() {
   const validateResumeCompleteness = (data: FullResumeData): string[] => {
     const errors: string[] = [];
 
-    // --- Basic Information (All fields are mandatory) ---
-    if (!data.basicInfo) {
-      errors.push('Basic information is missing');
-    } else {
-      if (!data.basicInfo.name?.trim()) errors.push('Name');
-      if (!data.basicInfo.contact_no?.trim()) errors.push('Contact number');
-      if (!data.basicInfo.email?.trim()) errors.push('Email');
-      if (!data.basicInfo.location?.trim()) errors.push('Location');
-      if (!data.basicInfo.about?.trim()) errors.push('About section');
-    }
+    // --- Basic Information (All fields are mandatory for incomplete/completed) ---
+    const hasBasic = data.basicInfo && data.basicInfo.name?.trim() && data.basicInfo.contact_no?.trim() && data.basicInfo.email?.trim() && data.basicInfo.location?.trim() && data.basicInfo.about?.trim();
+    const hasEducation = data.education && data.education.length > 0;
+    const hasExperience = data.experiences && data.experiences.length > 0;
 
-    // --- Education (At least one entry is mandatory) ---
-    if (!data.education || data.education.length === 0) {
-        errors.push('At least one education entry is required');
-    } else {
+    // Only require all for completed
+    if (hasBasic && hasEducation && hasExperience) {
+      // Check for missing fields in education and experience for 'completed'
       data.education.forEach((edu, index) => {
         if (!edu.institution?.trim()) errors.push(`Education ${index + 1}: Institution name`);
         if (!edu.degree?.trim()) errors.push(`Education ${index + 1}: Degree`);
         if (!edu.startDate) errors.push(`Education ${index + 1}: Start date`);
         if (!edu.Grade?.trim()) errors.push(`Education ${index + 1}: Grade/GPA`);
       });
-    }
-
-    // --- Experience (At least one entry is mandatory) ---
-    if (!data.experiences || data.experiences.length === 0) {
-        errors.push('At least one experience entry is required');
-    } else {
       data.experiences.forEach((exp, index) => {
         if (!exp.company?.trim()) errors.push(`Experience ${index + 1}: Company name`);
         if (!exp.position?.trim()) errors.push(`Experience ${index + 1}: Position`);
@@ -408,17 +422,22 @@ export default function Dashboard() {
           errors.push(`Experience ${index + 1}: Skills learned`);
         }
       });
-    }
-
-    // --- Projects (Optional, but if present, must be complete) ---
-    if (data.projects && data.projects.length > 0) {
-      data.projects.forEach((project, index) => {
-        if (!project.title?.trim()) errors.push(`Project ${index + 1}: Title`);
-        if (!project.description?.trim()) errors.push(`Project ${index + 1}: Description`);
-        if (!project.techStack || project.techStack.length === 0) {
-          errors.push(`Project ${index + 1}: Tech stack`);
-        }
-      });
+      // Projects (optional, but if present, must be complete)
+      if (data.projects && data.projects.length > 0) {
+        data.projects.forEach((project, index) => {
+          if (!project.title?.trim()) errors.push(`Project ${index + 1}: Title`);
+          if (!project.description?.trim()) errors.push(`Project ${index + 1}: Description`);
+          if (!project.techStack || project.techStack.length === 0) {
+            errors.push(`Project ${index + 1}: Tech stack`);
+          }
+        });
+      }
+    } else if (hasBasic) {
+      // Only require basic info for 'incomplete'
+      // No further checks
+    } else {
+      // For 'draft', require nothing
+      if (!data.basicInfo) errors.push('Basic information is missing');
     }
 
     // --- Skills (Optional, but if present, must be complete) ---
@@ -470,10 +489,13 @@ export default function Dashboard() {
     );
   }, [localFormData]);
 
+  // Show 'Complete' only if all required sections are filled (status would be 'completed')
   const isResumeComplete = useMemo(() => {
-    const validationErrors = validateResumeCompleteness(localFormData);
-    console.log('Dashboard: Validation errors:', validationErrors);
-    return validationErrors.length === 0;
+    const basicInfo = localFormData.basicInfo;
+    const hasBasic = basicInfo && basicInfo.name && basicInfo.email && basicInfo.contact_no && basicInfo.location && basicInfo.about;
+    const hasEducation = localFormData.education && localFormData.education.length > 0;
+    const hasExperience = localFormData.experiences && localFormData.experiences.length > 0;
+    return Boolean(hasBasic && hasEducation && hasExperience);
   }, [localFormData]);
 
   // MAIN: Live updates from child forms (now without toast spam for Education typing)
@@ -645,14 +667,14 @@ export default function Dashboard() {
                   Clear Resume
                 </Button>
                 <Button 
-                  onClick={handleSaveResume} 
-                  className="flex items-center gap-2" 
-                  disabled={isSaving || !isResumeComplete || !currentUser}
+                  onClick={handleSaveResume}
+                  className="flex items-center gap-2"
+                  disabled={isSaving || !currentUser}
                   title={
-                    !currentUser 
-                      ? "Please log in to save" 
-                      : !isResumeComplete 
-                      ? "Complete all required fields before saving" 
+                    !currentUser
+                      ? "Please log in to save"
+                      : !isResumeComplete
+                      ? "Resume will be saved as incomplete."
                       : "Save your resume"
                   }
                 >

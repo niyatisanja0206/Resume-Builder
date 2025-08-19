@@ -136,6 +136,14 @@ exports.createResume = async (req, res) => {
             }
         }
 
+        // Prevent multiple drafts: check if a draft already exists for this user
+        if (status === 'draft') {
+            const existingDraft = await Resume.findOne({ userEmail, status: 'draft' });
+            if (existingDraft) {
+                return res.status(400).json({ message: 'You already have a draft resume. Please complete or delete it before creating a new one.' });
+            }
+        }
+
         // Use provided title or generate a default one
         let resumeTitle = title;
         if (!resumeTitle) {
