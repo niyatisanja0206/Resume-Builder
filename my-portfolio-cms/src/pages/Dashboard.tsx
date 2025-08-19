@@ -119,7 +119,8 @@ export default function Dashboard() {
   const [resumeTitle, setResumeTitle] = useState('');
   const [currentDraftId, setCurrentDraftId] = useState<string | null>(null);
 
-  const selectedTemplate = initialTemplate && validTemplates.includes(initialTemplate as TemplateId)
+  // Template selection logic: for saved resumes use template from resume data, for drafts use query param or fallback to classic
+  const selectedTemplate: TemplateId = initialTemplate && validTemplates.includes(initialTemplate as TemplateId)
     ? (initialTemplate as TemplateId)
     : 'classic';
 
@@ -256,7 +257,7 @@ export default function Dashboard() {
       return;
     }
 
-    // Require basic info before saving
+    // Require at least basic info before saving (allow incomplete save)
     const basicInfo = localFormData.basicInfo;
     const hasBasic = basicInfo && basicInfo.name && basicInfo.email && basicInfo.contact_no && basicInfo.location && basicInfo.about;
     if (!hasBasic) {
@@ -267,33 +268,43 @@ export default function Dashboard() {
     // Warn if incomplete, but allow save
     const validationErrors = validateResumeCompleteness(localFormData);
     const isIncomplete = validationErrors.length > 0;
+    // If editing a previously saved resume (has id and data) and not changing from draft/incomplete to completed, save immediately
+    if (
+      selectedResumeId &&
+      specificResumeData &&
+      specificResumeData.title &&
+      (
+        isIncomplete ||
+        // Not transitioning to completed
+        !(specificResumeData.status === 'draft' || specificResumeData.status === 'incomplete') ||
+        // Already completed
+        (specificResumeData.status === 'completed' && resumeStatus === 'Complete')
+      )
+    ) {
+      await performSave(specificResumeData.title, true); // skip duplicate check
+      return;
+    }
     if (isIncomplete) {
       showToast(`Resume is incomplete: ${validationErrors.join(', ')}`, 'info');
       // Save immediately with default title logic
       let defaultTitle = '';
-      if (selectedResumeId && specificResumeData && specificResumeData.title) {
-        defaultTitle = specificResumeData.title;
-      } else {
-        const userName = localFormData.basicInfo?.name || currentUser.name || '';
-        defaultTitle = userName ? `${userName}'s Resume` : 'My Resume';
-      }
+      const userName = localFormData.basicInfo?.name || currentUser.name || '';
+      defaultTitle = userName ? `${userName}'s Resume` : 'My Resume';
       await performSave(defaultTitle);
       return;
     }
-    // If complete, open dialog for user to confirm/change title
+    // If new or being completed for the first time, open dialog for user to confirm/change title
     let defaultTitle = '';
-    if (selectedResumeId && specificResumeData && specificResumeData.title) {
-      defaultTitle = specificResumeData.title;
-    } else {
-      const userName = localFormData.basicInfo?.name || currentUser.name || '';
-      defaultTitle = userName ? `${userName}'s Resume` : 'My Resume';
-    }
+    const userName = localFormData.basicInfo?.name || currentUser.name || '';
+    defaultTitle = userName ? `${userName}'s Resume` : 'My Resume';
     setResumeTitle(defaultTitle);
     setShowTitleDialog(true);
   };
 
   // Extracted save logic to be reused
-  const performSave = async (titleToUse: string) => {
+
+  // skipDuplicateCheck: if true, do not check for duplicate title
+  const performSave = async (titleToUse: string, skipDuplicateCheck = false) => {
     try {
       setIsSaving(true);
       showToast('Saving your resume...', 'info');
@@ -303,26 +314,30 @@ export default function Dashboard() {
         throw new Error('No authentication token found');
       }
 
-      // Fetch all user resumes to check for duplicate title
-      const allResumesResp = await fetch(`/api/users/resumes?email=${currentUser!.email}`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      });
+      if (!skipDuplicateCheck) {
+        // Fetch all user resumes to check for duplicate title
+        const allResumesResp = await fetch(`/api/users/resumes?email=${currentUser!.email}`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
 
-      // Use Resume type for type safety
-      type Resume = { _id: string; title: string };
-      const allResumes: Resume[] = allResumesResp.ok ? await allResumesResp.json() : [];
-      const duplicate = allResumes.some((r) => r.title.trim().toLowerCase() === titleToUse.trim().toLowerCase() && (!currentDraftId || r._id !== currentDraftId));
-      if (duplicate) {
-        showToast('A resume with this name already exists. Please choose a different name.', 'error');
-        setIsSaving(false);
-        return;
+        // Use Resume type for type safety
+        type Resume = { _id: string; title: string };
+        const allResumes: Resume[] = allResumesResp.ok ? await allResumesResp.json() : [];
+        // Ignore current resume's own title for duplicate check
+        const resumeIdToUpdate = localStorage.getItem('selectedResumeId') || currentDraftId;
+        const duplicate = allResumes.some((r) => r.title.trim().toLowerCase() === titleToUse.trim().toLowerCase() && r._id !== resumeIdToUpdate);
+        if (duplicate) {
+          showToast('A resume with this name already exists. Please choose a different name.', 'error');
+          setIsSaving(false);
+          return;
+        }
       }
 
       // Determine status based on completeness
-      let status: 'completed' | 'incomplete' | 'draft' = 'completed';
+      let status: 'completed' | 'incomplete' | 'draft' = 'draft';
       const basicInfo = localFormData.basicInfo;
       const hasBasic = basicInfo && basicInfo.name && basicInfo.email && basicInfo.contact_no && basicInfo.location && basicInfo.about;
       const hasEducation = localFormData.education && localFormData.education.length > 0;
@@ -389,8 +404,11 @@ export default function Dashboard() {
       setCurrentDraftId(null); // Clear draft ID since it's now completed
 
       // Clean up localStorage after successful save
-      if (resumeIdToUpdate) {
-        // Only remove selectedResumeId if we were updating it
+      // Only remove selectedResumeId if status transitioned to completed for the first time
+      if (
+        resumeIdToUpdate &&
+        ((specificResumeData && (specificResumeData.status === 'draft' || specificResumeData.status === 'incomplete')) && status === 'completed')
+      ) {
         localStorage.removeItem('selectedResumeId');
       }
       localStorage.removeItem('isNewResume');
@@ -503,12 +521,14 @@ export default function Dashboard() {
   }, [localFormData]);
 
   // Show 'Complete' only if all required sections are filled (status would be 'completed')
-  const isResumeComplete = useMemo(() => {
+  const resumeStatus = useMemo(() => {
     const basicInfo = localFormData.basicInfo;
     const hasBasic = basicInfo && basicInfo.name && basicInfo.email && basicInfo.contact_no && basicInfo.location && basicInfo.about;
     const hasEducation = localFormData.education && localFormData.education.length > 0;
     const hasExperience = localFormData.experiences && localFormData.experiences.length > 0;
-    return Boolean(hasBasic && hasEducation && hasExperience);
+    if (hasBasic && hasEducation && hasExperience) return 'Complete';
+    if (hasBasic) return 'Incomplete';
+    return 'Draft';
   }, [localFormData]);
 
   // MAIN: Live updates from child forms (now without toast spam for Education typing)
@@ -662,14 +682,14 @@ export default function Dashboard() {
               {/* Resume Completion Status */}
               <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
                 <div className="flex items-center justify-between mb-2">
-                  <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">Resume Completion</h3>
-                  <span className={`text-sm font-medium ${isResumeComplete ? 'text-green-600' : 'text-orange-600'}`}>
-                    {isResumeComplete ? 'Complete' : 'Incomplete'}
+                  <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">Resume Status</h3>
+                  <span className={`text-sm font-medium ${resumeStatus === 'Complete' ? 'text-green-600' : resumeStatus === 'Incomplete' ? 'text-orange-600' : 'text-gray-500'}`}>
+                    {resumeStatus}
                   </span>
                 </div>
-                {!isResumeComplete && (
+                {resumeStatus !== 'Complete' && (
                   <div className="text-xs text-gray-600 dark:text-gray-400">
-                    All sections must be filled before saving
+                    {resumeStatus === 'Incomplete' ? 'All sections must be filled before saving as complete.' : 'Please fill basic information to start your resume.'}
                   </div>
                 )}
               </div>
@@ -686,7 +706,7 @@ export default function Dashboard() {
                   title={
                     !currentUser
                       ? "Please log in to save"
-                      : !isResumeComplete
+                      : resumeStatus !== 'Complete'
                       ? "Resume will be saved as incomplete."
                       : "Save your resume"
                   }

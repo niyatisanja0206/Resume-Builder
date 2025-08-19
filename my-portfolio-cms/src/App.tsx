@@ -52,6 +52,14 @@ export default function App() {
                   } 
                 />
                 <Route 
+                  path="/dashboard/:resumeId" 
+                  element={
+                    <ErrorBoundary fallback={<div>Dashboard Error</div>}>
+                      <Dashboard />
+                    </ErrorBoundary>
+                  } 
+                />
+                <Route 
                   path="/profile" 
                   element={
                     <ErrorBoundary fallback={<div>Profile Error</div>}>

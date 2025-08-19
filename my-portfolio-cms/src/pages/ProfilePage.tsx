@@ -144,17 +144,49 @@ export default function ProfilePage() {
     }
   });
 
+
+  // Helper to get a valid template for navigation (edit/preview)
+  const getValidTemplate = (resume: Resume): 'classic' | 'modern' | 'creative' => {
+    const validTemplates = ['classic', 'modern', 'creative'];
+    // 1. Try resume.template
+    if (resume.template && validTemplates.includes(resume.template)) {
+      return resume.template;
+    }
+    // 2. Try last selected from localStorage
+    const lastSelected = localStorage.getItem('lastSelectedTemplate');
+    if (lastSelected && validTemplates.includes(lastSelected)) {
+      return lastSelected as 'classic' | 'modern' | 'creative';
+    }
+    // 3. Fallback to classic
+    return 'classic';
+  };
+
   const handleEditResume = (resume: Resume) => {
     // Store the selected resume ID in localStorage so Dashboard can load it
     localStorage.setItem('selectedResumeId', resume._id);
     localStorage.removeItem('isNewResume'); // Ensure this is not a new resume
-    //navigate to resume with previously selected template only
-    navigate(`/dashboard?template=${resume.template || 'classic'}`);
+    // Always use fallback logic for drafts or missing template
+    let templateToUse = getValidTemplate(resume);
+    // If it's a draft and has no template, force use of lastSelectedTemplate or default
+    if (resume.status === 'draft' && (!resume.template || !['classic','modern','creative'].includes(resume.template))) {
+      const lastSelected = localStorage.getItem('lastSelectedTemplate');
+      if (lastSelected && ['classic','modern','creative'].includes(lastSelected)) {
+        templateToUse = lastSelected as 'classic' | 'modern' | 'creative';
+      } else {
+        templateToUse = 'classic';
+      }
+    }
+    localStorage.setItem('lastSelectedTemplate', templateToUse);
+    // Always include resumeId in the dashboard route for both drafts and completed resumes
+    navigate(`/dashboard/${resume._id}?template=${templateToUse}`);
   };
 
   const handlePreviewResume = (resume: Resume) => {
-    // Navigate to the resume preview page
-    navigate(`/resume/${resume._id}`);
+    // Save last selected template for fallback
+    const templateToUse = getValidTemplate(resume);
+    localStorage.setItem('lastSelectedTemplate', templateToUse);
+    // Navigate to the resume preview page with template param
+    navigate(`/resume/${resume._id}?template=${templateToUse}`);
   };
 
   const handleDeleteResume = (resumeId: string, resumeTitle: string) => {

@@ -332,7 +332,7 @@ const creativeStyles = StyleSheet.create({
   },
   link: {
       fontSize: 9,
-      color: 'blue',
+      color: 'white',
       textDecoration: 'underline',
       marginTop: 2
   },
@@ -460,9 +460,9 @@ const SimpleDocument = ({ basicInfo, projects, experiences, skills, education, t
         <View style={modernStyles.header}>
           <Text style={modernStyles.name}>{safeText(validBasicInfo.name)}</Text>
           <View style={modernStyles.contactInfo}>
-            <Link style={{...modernStyles.contactItem, ...classicStyles.link}} src={`mailto:${safeText(validBasicInfo.email)}`}>{safeText(validBasicInfo.email)}</Link>
+            <Link style={{...creativeStyles.contactItem, ...classicStyles.link}} src={`mailto:${safeText(validBasicInfo.email)}`}>{safeText(validBasicInfo.email)}</Link>
             <Text>•</Text>
-            <Link style={{...modernStyles.contactItem, ...classicStyles.link}} src={`tel:${safeText(validBasicInfo.contact_no)}`}>{safeText(validBasicInfo.contact_no)}</Link>
+            <Link style={{...creativeStyles.contactItem, ...classicStyles.link}} src={`tel:${safeText(validBasicInfo.contact_no)}`}>{safeText(validBasicInfo.contact_no)}</Link>
             <Text>•</Text>
             <Text style={modernStyles.contactItem}>{safeText(validBasicInfo.location)}</Text>
           </View>
@@ -550,8 +550,8 @@ const SimpleDocument = ({ basicInfo, projects, experiences, skills, education, t
         <Text style={creativeStyles.name}>{safeText(validBasicInfo.name)}</Text>
         
         <View style={{marginTop: 10, marginBottom: 15}}>
-          <Link style={{...creativeStyles.contactItem, ...classicStyles.link}} src={`mailto:${safeText(validBasicInfo.email)}`}>{safeText(validBasicInfo.email)}</Link>
-          <Link style={{...creativeStyles.contactItem, ...classicStyles.link}} src={`tel:${safeText(validBasicInfo.contact_no)}`}>{safeText(validBasicInfo.contact_no)}</Link>
+          <Link style={{...creativeStyles.contactItem, ...creativeStyles.link}} src={`mailto:${safeText(validBasicInfo.email)}`}>{safeText(validBasicInfo.email)}</Link>
+          <Link style={{...creativeStyles.contactItem, ...creativeStyles.link}} src={`tel:${safeText(validBasicInfo.contact_no)}`}>{safeText(validBasicInfo.contact_no)}</Link>
           <Text style={creativeStyles.contactItem}>{safeText(validBasicInfo.location)}</Text>
         </View>
 
@@ -590,7 +590,7 @@ const SimpleDocument = ({ basicInfo, projects, experiences, skills, education, t
         {validBasicInfo.about && (
           <View style={creativeStyles.rightSection}>
             <Text style={creativeStyles.rightSectionTitle}>Profile</Text>
-            <Text style={creativeStyles.profileText}>{safeText(validBasicInfo.about)}</Text>
+            <Text style={creativeStyles.expDescription}>{safeText(validBasicInfo.about)}</Text>
           </View>
         )}
 
