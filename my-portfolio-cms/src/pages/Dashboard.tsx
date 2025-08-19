@@ -373,7 +373,7 @@ export default function Dashboard() {
   const validateResumeCompleteness = (data: FullResumeData): string[] => {
     const errors: string[] = [];
 
-    // Validate basic information (all fields required)
+    // --- Basic Information (All fields are mandatory) ---
     if (!data.basicInfo) {
       errors.push('Basic information is missing');
     } else {
@@ -384,18 +384,10 @@ export default function Dashboard() {
       if (!data.basicInfo.about?.trim()) errors.push('About section');
     }
 
-    // Check if at least one of the other sections has an entry
-    const hasEducation = data.education && data.education.length > 0;
-    const hasExperience = data.experiences && data.experiences.length > 0;
-    const hasProjects = data.projects && data.projects.length > 0;
-    const hasSkills = data.skills && data.skills.length > 0;
-
-    if (!hasEducation && !hasExperience && !hasProjects && !hasSkills) {
-      errors.push('At least one of Education, Experience, Projects, or Skills is required');
-    }
-
-    // Validate each filled section's entries (if present)
-    if (hasEducation) {
+    // --- Education (At least one entry is mandatory) ---
+    if (!data.education || data.education.length === 0) {
+        errors.push('At least one education entry is required');
+    } else {
       data.education.forEach((edu, index) => {
         if (!edu.institution?.trim()) errors.push(`Education ${index + 1}: Institution name`);
         if (!edu.degree?.trim()) errors.push(`Education ${index + 1}: Degree`);
@@ -403,7 +395,11 @@ export default function Dashboard() {
         if (!edu.Grade?.trim()) errors.push(`Education ${index + 1}: Grade/GPA`);
       });
     }
-    if (hasExperience) {
+
+    // --- Experience (At least one entry is mandatory) ---
+    if (!data.experiences || data.experiences.length === 0) {
+        errors.push('At least one experience entry is required');
+    } else {
       data.experiences.forEach((exp, index) => {
         if (!exp.company?.trim()) errors.push(`Experience ${index + 1}: Company name`);
         if (!exp.position?.trim()) errors.push(`Experience ${index + 1}: Position`);
@@ -413,7 +409,9 @@ export default function Dashboard() {
         }
       });
     }
-    if (hasProjects) {
+
+    // --- Projects (Optional, but if present, must be complete) ---
+    if (data.projects && data.projects.length > 0) {
       data.projects.forEach((project, index) => {
         if (!project.title?.trim()) errors.push(`Project ${index + 1}: Title`);
         if (!project.description?.trim()) errors.push(`Project ${index + 1}: Description`);
@@ -422,7 +420,9 @@ export default function Dashboard() {
         }
       });
     }
-    if (hasSkills) {
+
+    // --- Skills (Optional, but if present, must be complete) ---
+    if (data.skills && data.skills.length > 0) {
       data.skills.forEach((skill, index) => {
         if (!skill.name?.trim()) errors.push(`Skill ${index + 1}: Name`);
         if (!skill.level) errors.push(`Skill ${index + 1}: Level`);

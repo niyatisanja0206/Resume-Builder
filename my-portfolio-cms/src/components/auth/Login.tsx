@@ -63,8 +63,8 @@ export default function Login() {
                 location: ''
             });
             
-            // Redirect to dashboard
-            navigate('/dashboard');
+            // Redirect to profile page
+            navigate('/profile');
             
         } catch (error) {
             setError(error instanceof Error ? error.message : 'An error occurred');
