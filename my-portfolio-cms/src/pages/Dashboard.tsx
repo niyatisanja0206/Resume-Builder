@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { useQuery } from '@tanstack/react-query';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { ChevronDown, ChevronUp, Save, Trash2 } from 'lucide-react';
@@ -101,6 +102,7 @@ type TemplateId = 'classic' | 'modern' | 'creative';
 const validTemplates: TemplateId[] = ['classic', 'modern', 'creative'];
 
 export default function Dashboard() {
+  const queryClient = useQueryClient();
   const { currentUser, setCurrentUser } = useUserContext();
   const { showToast } = useToast();
   const [searchParams] = useSearchParams();
@@ -393,7 +395,10 @@ export default function Dashboard() {
       }
       localStorage.removeItem('isNewResume');
 
-      // Notify ProfilePage to refetch resumes
+      // Invalidate userResumes query so ProfilePage updates instantly
+      queryClient.invalidateQueries({ queryKey: ['userResumes'] });
+
+      // Notify ProfilePage to refetch resumes (for legacy event-based listeners)
       window.dispatchEvent(new Event('resume-saved'));
       navigate('/profile');
     } catch (error) {

@@ -5,16 +5,6 @@ import React, { useEffect } from 'react';
 // This CSS provides the basic A4 container structure and print-friendly styles.
 const componentStyles = `
   /* A4 Container Styling for screen preview */
-  .a4-container {
-    /* This is the grey background area that centers the page */
-    width: 100%;
-    padding: 1.5rem;
-    background-color: #f0f2f5;
-    display: flex;
-    justify-content: center;
-    align-items: flex-start; /* Aligns the resume to the top */
-    box-sizing: border-box;
-  }
 
   .resume-template-wrapper {
     background-color: white;
@@ -35,25 +25,12 @@ const componentStyles = `
   }
 
   /* Responsive scaling for all screens using transform: scale() */
-  .a4-container {
-    width: 100vw;
-    padding: 1.5rem;
-    background-color: #f0f2f5;
-    display: flex;
-    justify-content: center;
-    align-items: flex-start;
-    box-sizing: border-box;
-    /* Calculate scale based on viewport width, keeping A4 ratio */
-  }
 
   @media (max-width: 900px) {
     .resume-template-wrapper {
       width: 816px;
       max-width: 816px;
       aspect-ratio: 210/297;
-    }
-    .a4-container {
-      padding: 0.5rem;
     }
   }
 
@@ -67,9 +44,6 @@ const componentStyles = `
       max-width: unset;
       max-height: unset;
     }
-    .a4-container {
-      padding: 0;
-    }
   }
 
   @media (max-width: 600px) {
@@ -77,9 +51,6 @@ const componentStyles = `
       transform: scale(calc((100vw - 4px) / 816));
       width: 816px;
       height: 1152px;
-    }
-    .a4-container {
-      padding: 0;
     }
   }
 
@@ -293,12 +264,6 @@ const componentStyles = `
     @page {
       size: A4;
       margin: 0;
-    }
-    body, .a4-container {
-      margin: 0 !important;
-      padding: 0 !important;
-      box-shadow: none !important;
-      background-color: white !important;
     }
     .resume-template-wrapper {
       transform: scale(1) !important;
@@ -696,7 +661,6 @@ const ResumePreview = ({
   }, [template]); // Rerun if template changes to scroll to top
 
   return (
-    <div className="a4-container">
         <div className="resume-template-wrapper">
             {(() => {
                 switch (template) {
@@ -710,7 +674,6 @@ const ResumePreview = ({
                 }
             })()}
         </div>
-    </div>
   );
 };
 

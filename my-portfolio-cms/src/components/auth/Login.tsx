@@ -76,7 +76,7 @@ export default function Login() {
                 });
                 if (resumesResp.ok) {
                     const resumes = await resumesResp.json();
-                    const draftResume = resumes.find((resume: any) => resume.status === 'draft' && !resume.isDownloaded);
+                    const draftResume = resumes.find((resume: { status: string; isDownloaded: boolean; _id: string }) => resume.status === 'draft' && !resume.isDownloaded);
                     if (draftResume) {
                         // Optionally set selectedResumeId in localStorage
                         localStorage.setItem('selectedResumeId', draftResume._id);
