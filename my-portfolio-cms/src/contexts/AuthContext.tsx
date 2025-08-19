@@ -35,7 +35,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const setAuth = (token: string, user: User) => {
-    Cookies.set('token', token || '', { expires: 7 });
+  Cookies.set('token', token || '', { expires: 1 }); // expires in 1 day
     Cookies.set('user', JSON.stringify(user), { expires: 7 });
     Cookies.set('currentUserEmail', user?.email || '', { expires: 7 });
     setToken(token);

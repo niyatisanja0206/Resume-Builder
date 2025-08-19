@@ -3,7 +3,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import resume4 from "@/assets/resume4.png";
 import resume5 from "@/assets/resume5.png";
 import resume6 from "@/assets/resume6.png";
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth } from '@/hooks/auth/useAuth';
 
 // Define the available templates
 const templates = [

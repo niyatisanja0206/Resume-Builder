@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { type Project } from "../types/portfolio";
+import { type Project } from "../../types/portfolio";
 import axios from 'axios';
 
 const API_BASE_URL = "/api/pro";

@@ -12,7 +12,7 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
-import { useEducation } from '../../hooks/useEducation';
+import { useEducation } from '../../hooks/dashboard/useEducation';
 import { useUserContext } from '@/hooks/useUserContext';
 import { type Education } from '@/types/portfolio';
 import { useToast } from '../../contexts/ToastContext';

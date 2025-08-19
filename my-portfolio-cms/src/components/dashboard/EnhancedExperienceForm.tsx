@@ -12,7 +12,7 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { useExperience } from '../../hooks/useExperience';
+import { useExperience } from '../../hooks/dashboard/useExperience';
 import { useUserContext } from '@/hooks/useUserContext';
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";

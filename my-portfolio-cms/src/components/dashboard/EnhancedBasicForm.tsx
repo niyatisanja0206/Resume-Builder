@@ -13,7 +13,7 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
-import { useBasicForm } from '../../hooks/useBasic';
+import { useBasicForm } from '../../hooks/dashboard/useBasic';
 import { Textarea } from '@/components/ui/textarea';
 import { type Basic } from '@/types/portfolio';
 import { useUserContext } from '@/hooks/useUserContext';

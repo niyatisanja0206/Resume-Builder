@@ -21,7 +21,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { type Skill } from "@/types/portfolio";
-import { useSkill } from "../../hooks/useSkills";
+import { useSkill } from "../../hooks/dashboard/useSkills";
 import { useUserContext } from "@/hooks/useUserContext";
 import { useToast } from '../../contexts/ToastContext';
 import { shouldShowToast } from '@/utils/toastUtils';
