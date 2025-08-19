@@ -270,7 +270,7 @@ const ClassicTemplate: React.FC<Omit<ResumePreviewProps, 'template'>> = ({ basic
                                   <span className="text-gray-600 text-base font-bold">{formatDate(edu.startDate)} - {formatDate(edu.endDate)}</span>
                               </div>
                               <p className="italic text-base">{edu.degree}</p>
-                              <p className="text-gray-700 leading-relaxed text-base whitespace-pre-line">{edu.Grade}</p>
+                              {edu.Grade && <p className="text-gray-700 leading-relaxed text-base">Grade: {edu.Grade}</p>}
                           </div>
                       ))}
                   </Section>
@@ -286,14 +286,16 @@ const ClassicTemplate: React.FC<Omit<ResumePreviewProps, 'template'>> = ({ basic
                               </div>
                               <p className="italic mb-2 text-base">{exp.position}</p>
                               {exp.description && <p className="text-gray-700 leading-relaxed text-base whitespace-pre-line">{exp.description}</p>}
-                              <div className=''>
-                                <h4 className="font-bold">Skills learned:</h4>
-                                <ul className="list-disc list-inside">
-                                  {exp.skillsLearned?.map((resp, i) => (
-                                    <li key={i} className="text-gray-600">{resp}</li>
-                                  ))}
-                                </ul>
-                              </div>
+                              {exp.skillsLearned && exp.skillsLearned.length > 0 && (
+                                <div className='mt-2'>
+                                  <h4 className="font-bold text-base">Skills learned:</h4>
+                                  <ul className="list-disc list-inside">
+                                    {exp.skillsLearned.map((resp, i) => (
+                                      <li key={i} className="text-gray-600">{resp}</li>
+                                    ))}
+                                  </ul>
+                                </div>
+                              )}
                           </div>
                       ))}
                   </Section>
@@ -304,15 +306,17 @@ const ClassicTemplate: React.FC<Omit<ResumePreviewProps, 'template'>> = ({ basic
                       {projects.map((project, index) => (
                           <div key={index} className="mb-3">
                               <h3 className="font-bold font-merriweather">{project.title}</h3>
-                              <p className="text-gray-700 text-base">{project.description}</p>
+                              {project.description && <p className="text-gray-700 text-base">{project.description}</p>}
                               {project.techStack && project.techStack.length > 0 && (
                                   <p className="text-gray-600 text-sm mt-1">Tech Stack: {project.techStack.join(', ')}</p>
                               )}
-                              <div className='Link'>
-                                <a href={project.link} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">
-                                  View Project
-                                </a>
-                              </div>
+                              {project.link && (
+                                <div className='Link mt-1'>
+                                  <a href={project.link} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">
+                                    View Project
+                                  </a>
+                                </div>
+                              )}
                           </div>
                       ))}
                   </Section>
@@ -323,7 +327,7 @@ const ClassicTemplate: React.FC<Omit<ResumePreviewProps, 'template'>> = ({ basic
                       <div className="flex flex-wrap gap-2">
                           {skills.map((skill, index) => (
                               <span key={index} className="bg-gray-200 text-gray-800 text-sm font-medium mr-2 px-2.5 py-0.5 rounded">
-                                  {skill.name}:{skill.level}
+                                  {skill.name} ({skill.level})
                               </span>
                           ))}
                       </div>
@@ -337,6 +341,12 @@ const ClassicTemplate: React.FC<Omit<ResumePreviewProps, 'template'>> = ({ basic
 
 // --- MODERN TEMPLATE ---
 const ModernTemplate: React.FC<Omit<ResumePreviewProps, 'template'>> = ({ basicInfo, projects, experiences, skills, education }) => {
+    const Section: React.FC<{ title: string; children: React.ReactNode; className?: string }> = ({ title, children, className }) => (
+      <section className={`py-6 ${className}`}>
+        <h2 className="mb-6">{title}</h2>
+        <div className="space-y-6">{children}</div>
+      </section>
+    );
 
     return (
         <div className="resume-template modern-template bg-white font-opensans text-gray-700">
@@ -351,61 +361,67 @@ const ModernTemplate: React.FC<Omit<ResumePreviewProps, 'template'>> = ({ basicI
 
             <main>
                 {basicInfo?.about && (
-                    <div className=''>
-                        <p className="text-center text-base leading-relaxed">{basicInfo.about.split('.').slice(1).join('.').trim() }</p>
-                    </div>
+                    <section className='py-6'>
+                        <p className="text-center text-base leading-relaxed whitespace-pre-line">{basicInfo.about}</p>
+                    </section>
                 )}
 
-                <div className="">
-                    {experiences.map((exp, index) => (
-                        <div key={index} className="mb-6">
-                            <div className="flex justify-between items-baseline">
-                                <h3 className="font-bold text-gray-800">{exp.position}</h3>
-                                <p className="text-gray-500 text-sm font-semibold">{formatDate(exp.startDate)} - {formatDate(exp.endDate)}</p>
+                {experiences && experiences.length > 0 && (
+                    <Section title="Professional Experience">
+                        {experiences.map((exp, index) => (
+                            <div key={index}>
+                                <div className="flex justify-between items-baseline">
+                                    <h3 className="font-bold text-gray-800">{exp.position}</h3>
+                                    <p className="text-gray-500 text-sm font-semibold">{formatDate(exp.startDate)} - {formatDate(exp.endDate)}</p>
+                                </div>
+                                <p className="font-semibold text-base">{exp.company}</p>
+                                {exp.description && <p className="mt-2 text-base leading-relaxed whitespace-pre-line">{exp.description}</p>}
+                                {exp.skillsLearned && exp.skillsLearned.length > 0 && (
+                                    <p className="text-sm mt-1 text-gray-500">Skills Learned: {exp.skillsLearned.join(', ')}</p>
+                                )}
                             </div>
-                            <p className="font-semibold text-base">{exp.company}</p>
-                            <p className="mt-2 text-base leading-relaxed whitespace-pre-line">{exp.description}</p>
-                            <div>
-                              {exp.skillsLearned && exp.skillsLearned.length > 0 && (
-                                <p className="text-sm text-gray-500">Skills Learned: {exp.skillsLearned.join(', ')}</p>
-                              )}
-                            </div>
-                        </div>
-                    ))}
-                </div>
+                        ))}
+                    </Section>
+                )}
                 
-                 <div className="">
-                    {projects.map((project, index) => (
-                        <div key={index} className="mb-6">
-                             <h3 className="font-bold text-gray-800">{project.title}</h3>
-                             <p className="mt-2 text-base leading-relaxed">{project.description}</p>
-                              {project.techStack && project.techStack.length > 0 && (
-                                <p className="text-gray-600 text-sm mt-1">Tech Stack: {project.techStack.join(', ')}</p>
-                              )}
-                              <div className='Link'>
-                                  <a href={project.link} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">
-                                      View Project
-                                  </a>
-                              </div>
-                        </div>
-                    ))}
-                </div>
-
-                <div className=''>
-                    {education.map((edu, index) => (
-                        <div key={index} className="mb-4">
-                            <div className="flex justify-between items-baseline">
-                                <h3 className="font-bold text-gray-800">{edu.degree}</h3>
-                                 <p className="text-gray-500 text-sm font-semibold">{formatDate(edu.startDate)} - {formatDate(edu.endDate)}</p>
+                 {projects && projects.length > 0 && (
+                    <Section title="Projects">
+                        {projects.map((project, index) => (
+                            <div key={index}>
+                                <h3 className="font-bold text-gray-800">{project.title}</h3>
+                                {project.description && <p className="mt-2 text-base leading-relaxed">{project.description}</p>}
+                                {project.techStack && project.techStack.length > 0 && (
+                                    <p className="text-gray-600 text-sm mt-1">Tech Stack: {project.techStack.join(', ')}</p>
+                                )}
+                                {project.link && (
+                                    <div className='Link mt-1'>
+                                        <a href={project.link} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">
+                                            View Project
+                                        </a>
+                                    </div>
+                                )}
                             </div>
-                            <p className="font-semibold text-base">{edu.institution}</p>
-                            <p className="mt-2 text-base leading-relaxed">{edu.Grade}</p>
-                        </div>
-                    ))}
-                </div>
+                        ))}
+                    </Section>
+                )}
+
+                {education && education.length > 0 && (
+                    <Section title="Education">
+                        {education.map((edu, index) => (
+                            <div key={index}>
+                                <div className="flex justify-between items-baseline">
+                                    <h3 className="font-bold text-gray-800">{edu.degree}</h3>
+                                    <p className="text-gray-500 text-sm font-semibold">{formatDate(edu.startDate)} - {formatDate(edu.endDate)}</p>
+                                </div>
+                                <p className="font-semibold text-base">{edu.institution}</p>
+                                {edu.Grade && <p className="mt-2 text-base leading-relaxed">Grade: {edu.Grade}</p>}
+                            </div>
+                        ))}
+                    </Section>
+                )}
 
                 {skills && skills.length > 0 && (
-                    <div className=''>
+                    <Section title="Technical Expertise">
                        <div className="grid grid-cols-2 gap-x-12 gap-y-4">
                            {skills.map((skill, index) => (
                                <div key={index}>
@@ -414,7 +430,7 @@ const ModernTemplate: React.FC<Omit<ResumePreviewProps, 'template'>> = ({ basicI
                                </div>
                            ))}
                        </div>
-                    </div>
+                    </Section>
                 )}
             </main>
         </div>
@@ -441,7 +457,7 @@ const CreativeTemplate: React.FC<Omit<ResumePreviewProps, 'template'>> = ({ basi
                     <h2 className="text-xl font-semibold border-b border-gray-400">Skills</h2>
                     <ul className="mt-2 space-y-1 list-disc list-inside">
                         {skills.map((skill, index) => (
-                            <li key={index} className="text-sm">{skill.name} : {skill.level}</li>
+                            <li key={index} className="text-sm">{skill.name} ({skill.level})</li>
                         ))}
                     </ul>
                 </div>
@@ -455,7 +471,7 @@ const CreativeTemplate: React.FC<Omit<ResumePreviewProps, 'template'>> = ({ basi
                             <h3 className="font-bold text-base">{edu.degree}</h3>
                             <p className="text-sm">{edu.institution}</p>
                             <p className="text-sm text-gray-400">{formatDate(edu.startDate)} - {formatDate(edu.endDate)}</p>
-                            <p className="text-sm text-gray-400">{edu.Grade}</p>
+                            {edu.Grade && <p className="text-sm text-gray-400">Grade: {edu.Grade}</p>}
                         </div>
                     ))}
                 </div>
@@ -471,30 +487,6 @@ const CreativeTemplate: React.FC<Omit<ResumePreviewProps, 'template'>> = ({ basi
                 </div>
             )}
 
-            {projects && projects.length > 0 && (
-                <div className="mb-8">
-                    <h2 className="font-bold text-gray-800 border-b-2 border-gray-200">Projects</h2>
-                    {projects.map((project, index) => (
-                        <div key={index} className="mb-4 mt-3">
-                            <h3 className="font-bold text-lg">{project.title}</h3>
-                            <p className="text-sm text-gray-700 my-1">{project.description}</p>
-                            {project.techStack && project.techStack.length > 0 && (
-                                <div className="flex flex-wrap gap-2 mt-2">
-                                    {project.techStack.map((tech, i) => (
-                                        <span key={i} className="text-xs bg-gray-200 text-gray-800 px-2 py-1 rounded-full">{tech}</span>
-                                    ))}
-                                </div>
-                            )}
-                            <div className='Link'>
-                                <a href={project.link} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">
-                                    View Project
-                                </a>
-                            </div>
-                        </div>
-                    ))}
-                </div>
-            )}
-
             {experiences && experiences.length > 0 && (
                 <div className="mb-8">
                     <h2 className="font-bold text-gray-800 border-b-2 border-gray-200">Professional Experience</h2>
@@ -504,7 +496,40 @@ const CreativeTemplate: React.FC<Omit<ResumePreviewProps, 'template'>> = ({ basi
                             <p className="text-base font-semibold text-gray-600 mb-2">{exp.company} | {formatDate(exp.startDate)} - {formatDate(exp.endDate)}</p>
                             {exp.description && <p className="text-sm leading-relaxed whitespace-pre-line">{exp.description}</p>}
                             {exp.skillsLearned && exp.skillsLearned.length > 0 && (
-                                <p className="text-sm text-gray-500">Skills Learned: {exp.skillsLearned.join(', ')}</p>
+                                <div className='mt-2'>
+                                    <h4 className="font-bold text-sm">Skills Learned:</h4>
+                                    <ul className="list-disc list-inside text-sm text-gray-600">
+                                    {exp.skillsLearned.map((skill, i) => (
+                                        <li key={i}>{skill}</li>
+                                    ))}
+                                    </ul>
+                                </div>
+                            )}
+                        </div>
+                    ))}
+                </div>
+            )}
+
+            {projects && projects.length > 0 && (
+                <div className="mb-8">
+                    <h2 className="font-bold text-gray-800 border-b-2 border-gray-200">Projects</h2>
+                    {projects.map((project, index) => (
+                        <div key={index} className="mb-4 mt-3">
+                            <h3 className="font-bold text-lg">{project.title}</h3>
+                            {project.description && <p className="text-sm text-gray-700 my-1">{project.description}</p>}
+                            {project.techStack && project.techStack.length > 0 && (
+                                <div className="flex flex-wrap gap-2 mt-2">
+                                    {project.techStack.map((tech, i) => (
+                                        <span key={i} className="text-xs bg-gray-200 text-gray-800 px-2 py-1 rounded-full">{tech}</span>
+                                    ))}
+                                </div>
+                            )}
+                            {project.link && (
+                                <div className='Link mt-2'>
+                                    <a href={project.link} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline text-sm">
+                                        View Project
+                                    </a>
+                                </div>
                             )}
                         </div>
                     ))}
