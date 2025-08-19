@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { useUserContext } from '@/hooks/useUserContext';
 import { useToast } from '@/contexts/ToastContext';
+import type { Basic, Project, Experience, Skill, Education } from '@/types/portfolio';
 
 // Resume interface matching the backend model
 interface Resume {
@@ -16,13 +17,12 @@ interface Resume {
   downloadCount: number;
   createdAt: string;
   updatedAt: string;
-  basic?: {
-    name: string;
-    email: string;
-    contact_no: string;
-    location: string;
-    about: string;
-  };
+  basic?: Basic;
+  projects?: Project[];
+  experience?: Experience[];
+  skills?: Skill[];
+  education?: Education[];
+  template?: 'classic' | 'modern' | 'creative';
 }
 
 // API functions

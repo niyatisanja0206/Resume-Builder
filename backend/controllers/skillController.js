@@ -1,3 +1,4 @@
+// backend/controllers/skillController.js
 const Resume = require('../models/resumes');
 const { incrementResumeCountByEmail } = require('../utils/userUtils');
 
@@ -9,7 +10,7 @@ exports.getSkills = async (req, res) => {
             return res.status(400).json({ message: 'Email is required as a query parameter.' });
         }
 
-        const resume = await Resume.findOne({ userEmail: email, isDownloaded: false });
+        const resume = await Resume.findOne({ userEmail: email, status: 'draft' });
         if (!resume) {
             return res.status(404).json({ message: 'Resume not found' });
         }
@@ -21,29 +22,23 @@ exports.getSkills = async (req, res) => {
 
 exports.addSkill = async (req, res) => {
     try {
-        console.log('Skill Controller - Add Skill Request:', req.body);
         const { email, skill } = req.body;
 
         if (!email || !skill) {
-            console.log('Missing email or skill data:', { email, skill });
             return res.status(400).json({ message: 'Email and skill data are required.' });
         }
 
-        console.log('Looking for resume with userEmail:', email);
-        let resume = await Resume.findOne({ userEmail: email, isDownloaded: false });
+        let resume = await Resume.findOne({ userEmail: email, status: 'draft' });
         
         if (!resume) {
-            // Create new resume if it doesn't exist
             resume = new Resume({
                 userEmail: email,
                 skills: [skill],
-                isDownloaded: false
+                status: 'draft'
             });
             
-            // Increment resume count for the user since this is a new resume
             await incrementResumeCountByEmail(email);
         } else {
-            // Add the new skill entry to the array
             if (!resume.skills) {
                 resume.skills = [];
             }
@@ -52,7 +47,6 @@ exports.addSkill = async (req, res) => {
         
         await resume.save();
 
-        console.log('Skill added successfully, returning skills:', resume.skills);
         res.status(201).json({ message: 'Skill added successfully', data: resume.skills });
     } catch (error) {
         res.status(500).json({ message: 'Server error', error: error.message });
@@ -68,7 +62,7 @@ exports.deleteSkill = async (req, res) => {
         }
 
         const updatedResume = await Resume.findOneAndUpdate(
-            { userEmail: email, isDownloaded: false },
+            { userEmail: email, status: 'draft' },
             { $pull: { skills: { _id: id } } },
             { new: true }
         );
@@ -92,7 +86,7 @@ exports.deleteAllSkills = async (req, res) => {
         }
 
         const updatedResume = await Resume.findOneAndUpdate(
-            { userEmail: email, isDownloaded: false },
+            { userEmail: email, status: 'draft' },
             { $set: { skills: [] } },
             { new: true }
         );
@@ -116,7 +110,7 @@ exports.updateSkill = async (req, res) => {
         }
 
         const updatedResume = await Resume.findOneAndUpdate(
-            { userEmail: email, isDownloaded: false, "skills._id": id },
+            { userEmail: email, status: 'draft', "skills._id": id },
             { $set: { "skills.$": skill } },
             { new: true, runValidators: true }
         );

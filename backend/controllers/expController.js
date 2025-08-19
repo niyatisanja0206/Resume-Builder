@@ -1,3 +1,4 @@
+// backend/controllers/expController.js
 const Resume = require('../models/resumes');
 const { incrementResumeCountByEmail } = require('../utils/userUtils');
 
@@ -9,7 +10,7 @@ exports.getExperience = async (req, res) => {
             return res.status(400).json({ message: 'Email is required as a query parameter.' });
         }
 
-        const resume = await Resume.findOne({ userEmail: email, isDownloaded: false });
+        const resume = await Resume.findOne({ userEmail: email, status: 'draft' });
         if (!resume) {
             return res.status(404).json({ message: 'Resume not found' });
         }
@@ -27,18 +28,16 @@ exports.addExperience = async (req, res) => {
             return res.status(400).json({ message: 'Email and experience data are required' });
         }
 
-        let resume = await Resume.findOne({ userEmail: email, isDownloaded: false });
+        let resume = await Resume.findOne({ userEmail: email, status: 'draft' });
         
         if (!resume) {
             resume = new Resume({
                 userEmail: email,
                 experience: [experience],
-                isDownloaded: false
+                status: 'draft'
             });
             
-            // await incrementResumeCountByEmail(email);
             await incrementResumeCountByEmail(email);
-            console.log('New resume created for:', email);
         } else {
             if (!resume.experience) {
                 resume.experience = [];
@@ -61,7 +60,7 @@ exports.deleteExperience = async (req, res) => {
             return res.status(400).json({ message: 'Email and experience ID are required' });
         }
 
-        const resume = await Resume.findOne({ userEmail: email, isDownloaded: false });
+        const resume = await Resume.findOne({ userEmail: email, status: 'draft' });
         if (!resume) {
             return res.status(404).json({ message: 'Resume not found' });
         }
@@ -84,7 +83,7 @@ exports.deleteAllExperience = async (req, res) => {
         }
 
         const updated = await Resume.findOneAndUpdate(
-            { userEmail: email, isDownloaded: false },
+            { userEmail: email, status: 'draft' },
             { $set: { experience: [] } },
             { new: true }
         );
@@ -106,7 +105,7 @@ exports.updateExperience = async (req, res) => {
         }
 
         const updated = await Resume.findOneAndUpdate(
-            { userEmail: email, isDownloaded: false, "experience._id": id },
+            { userEmail: email, status: 'draft', "experience._id": id },
             { $set: { "experience.$": experience } },
             { new: true, runValidators: true }
         );

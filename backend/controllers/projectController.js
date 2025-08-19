@@ -1,3 +1,4 @@
+// backend/controllers/projectController.js
 const Resume = require('../models/resumes');
 const { incrementResumeCountByEmail } = require('../utils/userUtils');
 
@@ -9,7 +10,7 @@ exports.getProject = async (req, res) => {
             return res.status(400).json({ message: 'Email is required as a query parameter.' });
         }
 
-        const resume = await Resume.findOne({ userEmail: email, isDownloaded: false });
+        const resume = await Resume.findOne({ userEmail: email, status: 'draft' });
         if (!resume) {
             return res.status(404).json({ message: 'Resume not found' });
         }
@@ -26,20 +27,17 @@ exports.addProject = async (req, res) => {
       return res.status(400).json({ message: 'Email and Project data are required' });
     }
 
-    let resume = await Resume.findOne({ userEmail: email, isDownloaded: false });
+    let resume = await Resume.findOne({ userEmail: email, status: 'draft' });
     
     if (!resume) {
-        // Create new resume if it doesn't exist
         resume = new Resume({
             userEmail: email,
             projects: [project],
-            isDownloaded: false
+            status: 'draft'
         });
         
-        // Increment resume count for the user since this is a new resume
         await incrementResumeCountByEmail(email);
     } else {
-        // Add the new project entry to the array
         if (!resume.projects) {
             resume.projects = [];
         }
@@ -62,7 +60,7 @@ exports.deleteProject = async (req, res) => {
     }
 
     const updated = await Resume.findOneAndUpdate(
-      { userEmail: email, isDownloaded: false },
+      { userEmail: email, status: 'draft' },
       { $pull: { projects: { _id: id } } },
       { new: true }
     );
@@ -83,7 +81,7 @@ exports.updateProject = async (req, res) => {
     }
 
     const updated = await Resume.findOneAndUpdate(
-      { userEmail: email, isDownloaded: false, "projects._id": id },
+      { userEmail: email, status: 'draft', "projects._id": id },
       { $set: { "projects.$": project } },
       { new: true, runValidators: true }
     );
@@ -104,7 +102,7 @@ exports.deleteAllProjects = async (req, res) => {
     }
 
     const updated = await Resume.findOneAndUpdate(
-      { userEmail: email, isDownloaded: false },
+      { userEmail: email, status: 'draft' },
       { $set: { projects: [] } },
       { new: true }
     );

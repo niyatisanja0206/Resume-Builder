@@ -1,10 +1,7 @@
-// controllers/eduController.js
+// backend/controllers/eduController.js
 const Resume = require('../models/resumes');
 const { incrementResumeCountByEmail } = require('../utils/userUtils');
 
-// @desc    Get education data for a specific user
-// @route   GET /api/edu?email=...
-// @access  Public
 exports.getEducation = async (req, res) => {
     try {
         const { email } = req.query;
@@ -13,7 +10,7 @@ exports.getEducation = async (req, res) => {
             return res.status(400).json({ message: 'Email is required as a query parameter.' });
         }
 
-        const resume = await Resume.findOne({ userEmail: email, isDownloaded: false });
+        const resume = await Resume.findOne({ userEmail: email, status: 'draft' });
         if (!resume) {
             return res.status(404).json({ message: 'Resume not found' });
         }
@@ -23,9 +20,6 @@ exports.getEducation = async (req, res) => {
     }
 };
 
-// @desc    Add or update education data for a specific user
-// @route   POST /api/edu
-// @access  Public
 exports.addEducation = async (req, res) => {
     try {
         const { email, education } = req.body;
@@ -34,20 +28,17 @@ exports.addEducation = async (req, res) => {
             return res.status(400).json({ message: 'Email and education data are required.' });
         }
 
-        let resume = await Resume.findOne({ userEmail: email, isDownloaded: false });
+        let resume = await Resume.findOne({ userEmail: email, status: 'draft' });
         
         if (!resume) {
-            // Create new resume if it doesn't exist
             resume = new Resume({
                 userEmail: email,
                 education: [education],
-                isDownloaded: false
+                status: 'draft'
             });
             
-            // Increment resume count for the user since this is a new resume
             await incrementResumeCountByEmail(email);
         } else {
-            // Add the new education entry to the array
             if (!resume.education) {
                 resume.education = [];
             }
@@ -65,9 +56,6 @@ exports.addEducation = async (req, res) => {
     }
 };
 
-// @desc    Delete a specific education entry from a user's profile
-// @route   DELETE /api/edu?email=...&id=...
-// @access  Public
 exports.deleteEducation = async (req, res) => {
     try {
         const { email, id } = req.query;
@@ -76,12 +64,11 @@ exports.deleteEducation = async (req, res) => {
             return res.status(400).json({ message: 'Email and education ID are required as query parameters.' });
         }
 
-        const resume = await Resume.findOne({ userEmail: email, isDownloaded: false });
+        const resume = await Resume.findOne({ userEmail: email, status: 'draft' });
         if (!resume) {
             return res.status(404).json({ message: 'Resume not found' });
         }
 
-        // Use $pull to remove the item from the education array
         resume.education.pull({ _id: id });
         await resume.save();
 
@@ -100,7 +87,7 @@ exports.deleteAllEducation = async (req, res) => {
         }
 
         const updated = await Resume.findOneAndUpdate(
-            { userEmail: email, isDownloaded: false },
+            { userEmail: email, status: 'draft' },
             { $set: { education: [] } },
             { new: true }
         );
@@ -122,7 +109,7 @@ exports.updateEducation = async (req, res) => {
         }
 
         const updated = await Resume.findOneAndUpdate(
-            { userEmail: email, isDownloaded: false, "education._id": id },
+            { userEmail: email, status: 'draft', "education._id": id },
             { $set: { "education.$": education } },
             { new: true, runValidators: true }
         );
