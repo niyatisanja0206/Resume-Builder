@@ -56,5 +56,5 @@ yarn-error.log*
 coverage/
 
 # Package lock files (keep only one)
-package-lock.json
-
+/backend/package-lock.json
+/my-portfolio-cms/package-lock.json

@@ -17,8 +17,8 @@ import ForgetPass from './components/auth/ForgetPass';
 import ErrorBoundary from './components/dashboard/ErrorBoundary';
 
 // Import the new layout components
-import ProtectedLayout from './layout/ProtectedLayout';
-import PublicLayout from './layout/PublicLayout';
+import ProtectedRoute from './routes/ProtectedRoute';
+import PublicRoute from './routes/PublicRoute';
 
 const queryClient = new QueryClient();
 
@@ -41,8 +41,8 @@ export default function App() {
                   } 
                 />
 
-              {/* Routes for authenticated users only */}
-              <Route element={<ProtectedLayout />}>
+              {/* Protected routes for authenticated users only */}
+              <Route element={<ProtectedRoute />}>
                 <Route 
                   path="/dashboard" 
                   element={
@@ -77,8 +77,8 @@ export default function App() {
                 />
               </Route>
 
-              {/* Routes for unauthenticated users only */}
-              <Route element={<PublicLayout />}>
+              {/* Public routes for unauthenticated users only */}
+              <Route element={<PublicRoute />}>
                 <Route path="/signup" element={<Signup />} />
                 <Route path="/login" element={<Login />} />
                 <Route path="/forget-password" element={<ForgetPass />} />
